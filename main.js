@@ -5,6 +5,7 @@
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
   const EFFECTS_PER_SECONDS = 10;
+  const AUTO_SAVE_MS = 10000;
   const PENALTY_MS = 30000;
   const MAX_OFFLINE_MS = 2 * 60 * 60 * 1000;
   const MAX_LOGS = 50;
@@ -96,6 +97,7 @@
       if (!raw) { state = createInitialState(); return; }
       state = normalizeState(JSON.parse(raw));
       calculateOfflineReward();
+      claimCompletedMissions();
     } catch (error) {
       console.warn("Save data could not be loaded.", error);
       state = createInitialState();
@@ -124,6 +126,7 @@
     state = createInitialState();
     penaltyElapsed = 0;
     scheduleNextTick();
+    claimCompletedMissions();
     saveGame();
     render();
   }
@@ -191,6 +194,7 @@
       showFirstHireHelp(employee);
       scheduleNextTick();
     }
+    claimCompletedMissions();
     saveGame();
     render();
   }
@@ -210,7 +214,8 @@
     penaltyElapsed += elapsedForPenalty;
     if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
     updateCompanyLevel(previousLevel, true);
-    saveGame();
+    claimCompletedMissions();
+    if (state.companyLevel !== previousLevel) saveGame();
     render();
     scheduleNextTick();
   }
@@ -383,32 +388,34 @@
       const done = Boolean(mission.done());
       return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(mission.text) + '</span><span class="mission-reward">+' + formatCurrency(mission.reward) + '</span></div>';
     }).join("");
-    claimCompletedMissions();
   }
 
   function getCurrentMissionStage() {
     return MISSION_STAGES.find(function (stage) {
-      return stage.missions.some(function (mission) { return !mission.done(); });
+      return stage.missions.some(function (mission) { return !mission.done() || !isMissionClaimed(mission.id); });
     }) || MISSION_STAGES[MISSION_STAGES.length - 1];
   }
 
   function claimCompletedMissions() {
     let claimed = false;
-    MISSION_STAGES.forEach(function (stage) {
-      stage.missions.forEach(function (mission) {
-        if (mission.done() && state.claimedMissions.indexOf(mission.id) === -1) {
-          state.claimedMissions.push(mission.id);
-          state.money += mission.reward;
-          state.totalMoney += mission.reward;
-          addLog("success", "ミッション達成: " + mission.text + "。報酬" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
-          claimed = true;
-        }
-      });
+    const stage = getCurrentMissionStage();
+    stage.missions.forEach(function (mission) {
+      if (mission.done() && !isMissionClaimed(mission.id)) {
+        state.claimedMissions.push(mission.id);
+        state.money += mission.reward;
+        state.totalMoney += mission.reward;
+        addLog("success", "ミッション達成: " + mission.text + "。報酬" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
+        claimed = true;
+      }
     });
     if (claimed) {
       updateCompanyLevel(state.companyLevel, true);
       saveGame();
     }
+  }
+
+  function isMissionClaimed(missionId) {
+    return state.claimedMissions.indexOf(missionId) !== -1;
   }
 
   function renderRiskPanel() {
@@ -547,8 +554,8 @@
     render();
     scheduleRandomReport();
     scheduleNextTick();
-    window.setInterval(saveGame, TICK_MS);
-    document.getElementById("saveButton").addEventListener("click", function () { saveGame(); addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); renderLogs(); });
+    window.setInterval(saveGame, AUTO_SAVE_MS);
+    document.getElementById("saveButton").addEventListener("click", function () { addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); saveGame(); renderLatestLog(); renderLogs(); });
     document.getElementById("resetButton").addEventListener("click", resetGame);
     const onboardingClose = document.getElementById("onboardingClose");
     if (onboardingClose) onboardingClose.addEventListener("click", dismissOnboarding);
