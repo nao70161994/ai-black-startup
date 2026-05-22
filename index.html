@@ -14,6 +14,14 @@
       <p class="tagline">社長も社員もAI。誰も止めないブラック起業。</p>
       <div class="level-pill"><span>会社Lv</span><strong id="companyLevel">1</strong></div>
     </header>
+    <div class="level-toast" id="levelToast" hidden></div>
+    <section class="onboarding-panel" id="onboardingPanel" aria-label="初回案内">
+      <div>
+        <strong>まずDev-01かSales-02を雇用してください</strong>
+        <p>初回のみ、創業クレジットでLv1社員を1体だけ無料雇用できます。雇用すると10秒ごとに売上が動き始めます。</p>
+      </div>
+      <button id="onboardingClose" type="button" aria-label="案内を閉じる">OK</button>
+    </section>
     <main>
       <section class="status-grid" aria-label="会社ステータス">
         <article class="status-card"><span>売上</span><strong id="money">¥0</strong></article>
@@ -21,7 +29,20 @@
         <article class="status-card"><span>ユーザー数</span><strong id="users">0</strong></article>
         <article class="status-card bug"><span>バグ</span><strong id="bugs">0</strong></article>
         <article class="status-card fire"><span>炎上度</span><strong id="fire">0</strong></article>
-        <article class="status-card"><span>次の会社Lv</span><strong id="nextLevel">¥5.0K</strong></article>
+        <article class="status-card next-level-card" id="nextLevelCard"><span>次の会社Lv</span><strong id="nextLevel">¥5.0K</strong><small id="nextUnlock"></small></article>
+        <article class="status-card boost"><span id="startupBoostLabel">稼働状態</span><strong id="startupBoost">通常稼働</strong></article>
+      </section>
+      <section class="risk-panel" id="riskPanel" aria-live="polite">
+        <strong id="riskTitle">リスク監視: 平常</strong>
+        <p id="riskText">バグと炎上度が50を超えると、30秒ごとに事故判定が入ります。</p>
+      </section>
+      <section class="next-goal-panel" id="nextGoalPanel" hidden>
+        <strong>次の目標</strong>
+        <ul>
+          <li>売上を貯めて社員を強化</li>
+          <li>累計売上で会社Lvアップ</li>
+          <li>新しいAI社員を解放</li>
+        </ul>
       </section>
       <section class="office-panel" id="officePanel" aria-label="仮想オフィス">
         <div class="cloud-grid"></div>
@@ -30,13 +51,13 @@
           <div class="core-label"><strong id="officeName">仮想ワンルーム</strong><span id="officeMood">起業直後。まだクラウド代の方が重いです。</span></div>
         </div>
       </section>
+      <section class="section-block log-section">
+        <div class="section-heading"><h2>業務報告ログ</h2><span>会社の主役 / 最新50件</span></div>
+        <div class="log-list" id="logList" aria-live="polite"></div>
+      </section>
       <section class="section-block">
         <div class="section-heading"><h2>AI社員</h2><span id="incomeRate">+¥0 / 10秒</span></div>
         <div class="employee-list" id="employeeList"></div>
-      </section>
-      <section class="section-block">
-        <div class="section-heading"><h2>業務報告ログ</h2><span>最新50件</span></div>
-        <div class="log-list" id="logList" aria-live="polite"></div>
       </section>
       <section class="actions" aria-label="操作">
         <button id="saveButton" type="button">手動保存</button>
