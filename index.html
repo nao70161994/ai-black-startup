@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI社長のブラック起業</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <p class="eyebrow">ブラッククラウド株式会社</p>
+      <h1>AI社長のブラック起業</h1>
+      <p class="tagline">社長も社員もAI。誰も止めないブラック起業。</p>
+      <div class="level-pill"><span>会社Lv</span><strong id="companyLevel">1</strong></div>
+    </header>
+    <main>
+      <section class="status-grid" aria-label="会社ステータス">
+        <article class="status-card"><span>売上</span><strong id="money">¥0</strong></article>
+        <article class="status-card"><span>累計売上</span><strong id="totalMoney">¥0</strong></article>
+        <article class="status-card"><span>ユーザー数</span><strong id="users">0</strong></article>
+        <article class="status-card bug"><span>バグ</span><strong id="bugs">0</strong></article>
+        <article class="status-card fire"><span>炎上度</span><strong id="fire">0</strong></article>
+        <article class="status-card"><span>次の会社Lv</span><strong id="nextLevel">¥5.0K</strong></article>
+      </section>
+      <section class="office-panel" id="officePanel" aria-label="仮想オフィス">
+        <div class="cloud-grid"></div>
+        <div class="office-core">
+          <span class="pulse-ring"></span><span class="pulse-ring delay"></span>
+          <div class="core-label"><strong id="officeName">仮想ワンルーム</strong><span id="officeMood">起業直後。まだクラウド代の方が重いです。</span></div>
+        </div>
+      </section>
+      <section class="section-block">
+        <div class="section-heading"><h2>AI社員</h2><span id="incomeRate">+¥0 / 10秒</span></div>
+        <div class="employee-list" id="employeeList"></div>
+      </section>
+      <section class="section-block">
+        <div class="section-heading"><h2>業務報告ログ</h2><span>最新50件</span></div>
+        <div class="log-list" id="logList" aria-live="polite"></div>
+      </section>
+      <section class="actions" aria-label="操作">
+        <button id="saveButton" type="button">手動保存</button>
+        <button id="resetButton" type="button" class="danger">リセット</button>
+      </section>
+    </main>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>

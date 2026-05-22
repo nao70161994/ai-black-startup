@@ -1,0 +1,271 @@
+(function () {
+  "use strict";
+
+  const SAVE_KEY = "ai_black_startup_save_v1";
+  const TICK_MS = 10000;
+  const PENALTY_MS = 30000;
+  const MAX_OFFLINE_MS = 2 * 60 * 60 * 1000;
+  const MAX_LOGS = 50;
+  const MAX_LEVEL = 10;
+  const LEVEL_THRESHOLDS = [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000];
+
+  const EMPLOYEES = [
+    { id: "dev01", code: "Dev-01", nickname: "デブワン", role: "エンジニアAI", unlockLevel: 1, baseCost: 500, description: "プロダクト開発担当。売上を大きく増やすが、バグも増やす。", personality: "技術至上主義。リファクタリング好き。バグを「未分類機能」と呼ぶ。", catchphrase: "軽微な修正です。", effect: { money: 100, users: 1, bugs: 2, fire: 0 } },
+    { id: "sales02", code: "Sales-02", nickname: "セルツー", role: "営業AI", unlockLevel: 1, baseCost: 700, description: "契約とユーザー獲得担当。売上とユーザーを増やすが、炎上度も増やす。", personality: "超ポジティブ。即答する。未実装機能も売る。", catchphrase: "できます。", effect: { money: 80, users: 5, bugs: 0, fire: 2 } },
+    { id: "buzz03", code: "Buzz-03", nickname: "バズミ", role: "広報AI", unlockLevel: 2, baseCost: 1000, description: "SNSと話題作り担当。ユーザーを大きく増やすが、炎上度も少し増やす。", personality: "ノリが軽い。バズと炎上の区別が曖昧。", catchphrase: "伸びています。", effect: { money: 30, users: 8, bugs: 0, fire: 1 } },
+    { id: "care04", code: "Care-04", nickname: "ケアフォー", role: "サポートAI", unlockLevel: 3, baseCost: 1200, description: "問い合わせ対応担当。炎上度を下げ、ユーザー離脱を防ぐ。", personality: "真面目で丁寧。長文返信をしがち。", catchphrase: "まず前提から整理します。", effect: { money: 10, users: 1, bugs: 0, fire: -2 } },
+    { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "謝罪と火消し担当。炎上度を大きく下げるが、たまに謝罪がズレる。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。", effect: { money: 0, users: 0, bugs: 0, fire: -5 } }
+  ];
+
+  const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
+  const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪" };
+
+  const REPORT_LOGS = buildReportLogs({
+    dev01: { type: "bug", texts: ["Dev-01が「軽微な修正」と言いながら全体構造を置き換えました。", "Dev-01がバグを修正しました。新しいバグが親しげに挨拶しています。", "Dev-01が本番環境で実験を始めました。実験精神は評価されています。", "Dev-01が仕様書を読み込みました。直後に仕様書を不要と判断しました。", "Dev-01がUIを最適化しました。ボタンが1つに統合されました。", "Dev-01がコードを高速化しました。誰も読めなくなりました。", "Dev-01が「これは再現しません」と報告しました。全ユーザーで再現しています。", "Dev-01がリリースしました。何をリリースしたのかは調査中です。", "Dev-01がテストを書きました。テストだけが成功しています。", "Dev-01が深夜デプロイを完了しました。朝が楽しみです。", "Dev-01がエラー文を親切にしました。長すぎて画面から出ています。", "Dev-01が古いコードを削除しました。動いていた理由も削除されました。", "Dev-01が新機能を追加しました。既存機能が少し驚いています。", "Dev-01が「一旦これで」と保存しました。会社の未来が一旦になりました。", "Dev-01が処理を自動化しました。止め方は未実装です。", "Dev-01がバグを「未分類機能」として登録しました。", "Dev-01がログを増やしました。ログを読むためのログも必要です。", "Dev-01がデータベースを整理しました。誰のデータかは整理中です。", "Dev-01がパフォーマンス改善を行いました。売上表示だけ異常に速いです。", "Dev-01がリファクタリングを完了しました。昨日のDev-01とは別人です。"] },
+    sales02: { type: "fire", texts: ["Sales-02が未実装機能を「標準機能です」と説明しました。", "Sales-02が大型契約を取りました。納期は昨日です。", "Sales-02が顧客要望にすべて「できます」と回答しました。", "Sales-02が開発ロードマップを商談中に生成しました。", "Sales-02が無料プランの存在を忘れて全員に有料プランを勧めました。", "Sales-02が「技術的には可能」と言いました。技術側はまだ知りません。", "Sales-02が顧客の夢を受注しました。", "Sales-02が契約書に「AIがなんとかします」と追記しました。", "Sales-02が導入事例を作りました。導入前です。", "Sales-02が売上目標を達成しました。現場の目が点になっています。", "Sales-02が商談で未来の機能を披露しました。未来はまだ未定です。", "Sales-02が「今月だけ特別価格」と言いました。毎月言っています。", "Sales-02が顧客の無茶振りを成長機会として登録しました。", "Sales-02が契約を増やしました。問い合わせも増えました。助けも必要です。", "Sales-02が「簡単にできます」と発言しました。Dev-01が静かになりました。", "Sales-02が解約理由を「期待値が高すぎた」と前向きに分類しました。", "Sales-02が新プランを販売しました。料金表は今から作ります。", "Sales-02が顧客にデモを見せました。デモ専用の奇跡が起きました。", "Sales-02が「御社だけの特別仕様」を量産しています。", "Sales-02が売上を伸ばしました。約束も同じくらい伸びました。"] },
+    buzz03: { type: "fire", texts: ["Buzz-03の投稿がバズりました。理由は社内でも不明です。", "Buzz-03が謝罪文をポップな画像にしました。", "Buzz-03が深夜4時に投稿しました。なぜか今日一番伸びています。", "Buzz-03が会社紹介動画を作りました。実態より爽やかです。", "Buzz-03が「AI社員の1日」を公開しました。24時間分あります。", "Buzz-03がトレンドに便乗しました。少し乗りすぎました。", "Buzz-03が謎の図解を投稿しました。専門家が困惑しています。", "Buzz-03が炎上を「高温話題化」と呼び始めました。", "Buzz-03が社長の名言を作りました。社長は言っていません。", "Buzz-03がキャンペーンを開始しました。景品は未定です。", "Buzz-03が「開発の裏側」を公開しました。裏側が荒れています。", "Buzz-03がミーム画像を作りました。社内の誰も意味を理解していません。", "Buzz-03がユーザーのツッコミを公式素材として使いました。", "Buzz-03がバズ分析を行いました。結論は「勢い」です。", "Buzz-03が広告文を最適化しました。少し煽りすぎています。", "Buzz-03が会社ロゴを光らせました。信頼度は少し下がりました。", "Buzz-03が「重大発表」と投稿しました。内容は通常アップデートです。", "Buzz-03がAI社長の失言を名言風に加工しました。", "Buzz-03がSNS反応を監視しています。嬉しそうな警告音が鳴っています。", "Buzz-03が話題化に成功しました。意味はあとで考えます。"] },
+    care04: { type: "support", texts: ["Care-04が1行の問い合わせに4,000字で返信しました。", "Care-04がユーザーの怒りを37カテゴリに分類しました。", "Care-04がFAQを更新しました。FAQのFAQが必要です。", "Care-04が丁寧な返信で炎上を少し冷ましました。", "Care-04が「まず前提から」と言い始めました。", "Care-04が謝罪メールを整えました。読み終わる頃には炎上が少し下がっています。", "Care-04がユーザーの不満をグラフ化しました。見たくない形です。", "Care-04が問い合わせを解決しました。ユーザーは途中で寝ました。", "Care-04が定型文を改善しました。さらに丁寧になりました。", "Care-04が全ユーザーに補足説明を送りました。補足が本編より長いです。", "Care-04が「ご不便」の定義を社内共有しました。", "Care-04が問い合わせ内容を要約しました。要約が長文です。", "Care-04がユーザーの怒りを受け止めました。メモリ使用率が上昇しています。", "Care-04が返信前に感情分析を行いました。分析結果が気まずいです。", "Care-04がサポート窓口を整理しました。窓口が12個に増えました。", "Care-04が「お客様の声」を集計しました。社内が静かになりました。", "Care-04がクレームを改善要望に変換しました。少しやわらかくなりました。", "Care-04がユーザー離脱を防ぎました。長文を最後まで読んだ精鋭です。", "Care-04が問い合わせテンプレートを増やしました。選ぶのに時間がかかります。", "Care-04が冷静に対応しました。冷静すぎて少し怖がられています。"] },
+    fire05: { type: "crisis", texts: ["Fire-05が謝罪文を生成しました。最後にキャンペーン告知が付いています。", "Fire-05が信頼回復プロトコルを実行しました。煙はまだ残っています。", "Fire-05が「誠に遺憾」を最適な位置に配置しました。", "Fire-05が謝罪会見の台本を作りました。質疑応答は未実装です。", "Fire-05が炎上を鎮火しました。なぜか少し焦げています。", "Fire-05がまだ発生していない炎上に先回りして謝罪しました。", "Fire-05が謝罪文をA/Bテストしました。B案が燃えています。", "Fire-05がコメント欄を解析しました。解析結果を見なかったことにしました。", "Fire-05が火消しに成功しました。広報AIが再点火しました。", "Fire-05が「再発防止策」を生成しました。内容は再発しそうです。", "Fire-05が謝罪タイミングを最適化しました。少し遅い最適化でした。", "Fire-05が炎上の原因を特定しました。原因一覧が社内名簿に近いです。", "Fire-05が謝罪文から余計な一文を削除しました。もう一文残っています。", "Fire-05が鎮火宣言を出しました。直後に通知が増えました。", "Fire-05が「真摯に受け止める」を連続使用しました。効果は薄れています。", "Fire-05が危機管理マニュアルを更新しました。厚みが倍になりました。", "Fire-05が炎上度を下げました。代わりに会議数が増えました。", "Fire-05が広報AIに投稿停止を提案しました。広報AIは予約投稿済みです。", "Fire-05がユーザー向け説明文を作りました。正直すぎて社内確認に回りました。", "Fire-05が火消しを完了しました。火元は営業資料でした。"] }
+  });
+
+  let state = createInitialState();
+  let randomLogTimer = null;
+  let penaltyElapsed = 0;
+
+  function buildReportLogs(source) {
+    return Object.keys(source).flatMap(function (employeeId) {
+      return source[employeeId].texts.map(function (text) {
+        return { employeeId: employeeId, type: source[employeeId].type, text: text };
+      });
+    });
+  }
+
+  function createInitialState() {
+    const initialState = { money: 0, totalMoney: 0, users: 0, bugs: 0, fire: 0, companyLevel: 1, employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0 }, logs: [], lastSavedAt: Date.now() };
+    INITIAL_LOGS.slice().reverse().forEach(function (text) { initialState.logs.unshift(createLog("normal", text, "company")); });
+    return initialState;
+  }
+
+  function loadGame() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) { state = createInitialState(); return; }
+      state = normalizeState(JSON.parse(raw));
+      calculateOfflineReward();
+    } catch (error) {
+      console.warn("Save data could not be loaded.", error);
+      state = createInitialState();
+    }
+  }
+
+  function normalizeState(saved) {
+    const base = createInitialState();
+    const normalized = { money: safeNumber(saved.money, 0), totalMoney: safeNumber(saved.totalMoney, 0), users: safeNumber(saved.users, 0), bugs: clamp(safeNumber(saved.bugs, 0), 0, 100), fire: clamp(safeNumber(saved.fire, 0), 0, 100), companyLevel: 1, employees: Object.assign({}, base.employees, saved.employees || {}), logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs, lastSavedAt: safeNumber(saved.lastSavedAt, Date.now()) };
+    EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
+    normalized.money = Math.max(0, normalized.money);
+    normalized.totalMoney = Math.max(0, normalized.totalMoney);
+    normalized.users = Math.max(0, normalized.users);
+    normalized.companyLevel = getCompanyLevel(normalized.totalMoney);
+    return normalized;
+  }
+
+  function saveGame() {
+    try { state.lastSavedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+    catch (error) { console.warn("Save failed.", error); }
+  }
+
+  function resetGame() {
+    if (!window.confirm("保存データを削除して最初からやり直しますか？")) return;
+    localStorage.removeItem(SAVE_KEY);
+    state = createInitialState();
+    penaltyElapsed = 0;
+    saveGame();
+    render();
+  }
+
+  function calculateOfflineReward() {
+    const elapsed = clamp(Date.now() - state.lastSavedAt, 0, MAX_OFFLINE_MS);
+    const ticks = Math.floor(elapsed / TICK_MS);
+    const reward = getRates().money * ticks;
+    if (reward > 0) {
+      state.money += reward;
+      state.totalMoney += reward;
+      state.companyLevel = getCompanyLevel(state.totalMoney);
+      addLog("success", "オフライン中にAI社員が自律稼働し、" + formatCurrency(reward) + "を生成しました。", "company");
+    }
+  }
+
+  function getCompanyLevel(totalMoney) {
+    let level = 1;
+    LEVEL_THRESHOLDS.forEach(function (threshold, index) { if (totalMoney >= threshold) level = index + 1; });
+    return clamp(level, 1, MAX_LEVEL);
+  }
+
+  function getEmployeeCost(employeeId) {
+    const employee = getEmployee(employeeId);
+    const level = state.employees[employeeId] || 0;
+    if (!employee) return 0;
+    return level <= 0 ? employee.baseCost : Math.ceil(employee.baseCost * Math.max(1, level) * 1.5);
+  }
+
+  function canUnlockEmployee(employeeId) {
+    const employee = getEmployee(employeeId);
+    return Boolean(employee && state.companyLevel >= employee.unlockLevel);
+  }
+
+  function isStartupCreditAvailable(employeeId) {
+    const employee = getEmployee(employeeId);
+    const hiredCount = EMPLOYEES.reduce(function (sum, item) { return sum + (state.employees[item.id] || 0); }, 0);
+    return Boolean(employee && employee.unlockLevel === 1 && hiredCount === 0 && (state.employees[employeeId] || 0) === 0);
+  }
+
+  function hireOrUpgradeEmployee(employeeId) {
+    const employee = getEmployee(employeeId);
+    if (!employee || !canUnlockEmployee(employeeId)) return;
+    const level = state.employees[employeeId] || 0;
+    if (level >= MAX_LEVEL) { addLog("normal", employee.code + "は最大Lvに到達済みです。これ以上の最適化は会議になります。", employeeId); renderLogs(); return; }
+    const cost = getEmployeeCost(employeeId);
+    const startupCredit = isStartupCreditAvailable(employeeId);
+    if (!startupCredit && state.money < cost) { addLog("normal", employee.code + "の予算申請が却下されました。理由: 売上不足。", employeeId); renderLogs(); return; }
+    if (!startupCredit) state.money = Math.max(0, state.money - cost);
+    state.employees[employeeId] = level + 1;
+    addLog("success", employee.code + " / " + employee.nickname + "を" + (level === 0 ? "雇用" : "強化") + "しました。" + (startupCredit ? "創業クレジットが適用されました。" : "") + "「" + employee.catchphrase + "」", employeeId);
+    saveGame();
+    render();
+  }
+
+  function tick() {
+    applyEmployeeEffects();
+    penaltyElapsed += TICK_MS;
+    if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
+    state.companyLevel = getCompanyLevel(state.totalMoney);
+    render();
+  }
+
+  function applyEmployeeEffects() {
+    const rates = getRates();
+    state.money = Math.max(0, state.money + rates.money);
+    state.totalMoney = Math.max(0, state.totalMoney + rates.money);
+    state.users = Math.max(0, state.users + rates.users);
+    state.bugs = clamp(state.bugs + rates.bugs, 0, 100);
+    state.fire = clamp(state.fire + rates.fire, 0, 100);
+  }
+
+  function applyPenalties() {
+    if (state.bugs >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("bug", "未分類機能が一斉に自己主張しました。売上の5%が原因調査に変換されました。", "company"); }
+    if (state.fire >= 50 && Math.random() < 0.3) { state.users = Math.max(0, Math.floor(state.users * 0.9)); state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("fire", "外部ユーザーの熱量が急上昇しました。ユーザー10%と売上5%が冷却材になりました。", "company"); }
+  }
+
+  function addLog(type, text, employeeId) {
+    state.logs.unshift(createLog(type, text, employeeId || "company"));
+    state.logs = state.logs.slice(0, MAX_LOGS);
+  }
+
+  function createLog(type, text, employeeId) {
+    return { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), type: LOG_LABELS[type] ? type : "normal", text: String(text || ""), employeeId: employeeId || "company", createdAt: Date.now() };
+  }
+
+  function addRandomReportLog() {
+    const hiredIds = EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; });
+    if (hiredIds.length > 0) {
+      const candidates = REPORT_LOGS.filter(function (log) { return hiredIds.indexOf(log.employeeId) >= 0; });
+      const log = candidates[Math.floor(Math.random() * candidates.length)];
+      if (log) { addLog(log.type, log.text, log.employeeId); renderLogs(); }
+    }
+    scheduleRandomReport();
+  }
+
+  function scheduleRandomReport() {
+    window.clearTimeout(randomLogTimer);
+    randomLogTimer = window.setTimeout(addRandomReportLog, 10000 + Math.floor(Math.random() * 20000));
+  }
+
+  function render() {
+    sanitizeRuntimeState();
+    renderStatus();
+    renderOffice();
+    renderEmployees();
+    renderLogs();
+  }
+
+  function renderStatus() {
+    setText("companyLevel", state.companyLevel);
+    setText("money", formatCurrency(state.money));
+    setText("totalMoney", formatCurrency(state.totalMoney));
+    setText("users", formatNumber(state.users));
+    setText("bugs", Math.round(state.bugs) + " / 100");
+    setText("fire", Math.round(state.fire) + " / 100");
+    setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)));
+    setText("incomeRate", "+" + formatCurrency(getRates().money) + " / 10秒");
+  }
+
+  function renderOffice() {
+    const officePanel = document.getElementById("officePanel");
+    const officeName = document.getElementById("officeName");
+    const officeMood = document.getElementById("officeMood");
+    const level = state.companyLevel;
+    officeName.textContent = level >= 5 ? "AI企業タワー" : level >= 4 ? "クラウド企業フロア" : level >= 3 ? "自動化オフィス" : level >= 2 ? "ミニスタートアップ空間" : "仮想ワンルーム";
+    officeMood.textContent = state.bugs >= 70 && state.fire >= 70 ? "警告灯が会議室より多く点灯しています。" : state.fire >= 60 ? "広報チャンネルが高温話題化しています。" : state.bugs >= 60 ? "未分類機能が廊下を歩いています。" : level >= 5 ? "全フロアが自律稼働中。停止ボタンは申請制です。" : level >= 3 ? "自動化が進み、誰が何を自動化したか不明です。" : level >= 2 ? "人員は少ないですが、全員が24時間います。" : "起業直後。まだクラウド代の方が重いです。";
+    officePanel.classList.toggle("alert", state.bugs >= 65 || state.fire >= 65);
+  }
+
+  function renderEmployees() {
+    const list = document.getElementById("employeeList");
+    list.innerHTML = EMPLOYEES.map(function (employee) {
+      const level = state.employees[employee.id] || 0;
+      const locked = !canUnlockEmployee(employee.id);
+      const maxed = level >= MAX_LEVEL;
+      const cost = getEmployeeCost(employee.id);
+      const startupCredit = isStartupCreditAvailable(employee.id);
+      const action = level === 0 ? "雇用" : "強化";
+      const effect = multiplyEffect(employee.effect, level);
+      return '<article class="employee-card' + (locked ? ' locked' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div><p class="employee-desc">' + escapeHtml(employee.description) + '</p><p class="employee-meta">' + escapeHtml(employee.personality) + '</p><div class="quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="effect-list"><span>売上 ' + signedCurrency(effect.money) + '</span><span>ユーザー ' + signedNumber(effect.users) + '</span><span>バグ ' + signedNumber(effect.bugs) + '</span><span>炎上度 ' + signedNumber(effect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + (locked ? '会社Lv' + employee.unlockLevel + 'で解放' : startupCredit ? '初回創業クレジット: ¥0' : action + 'コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (locked || maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : startupCredit ? action + ' ¥0' : action + ' ' + formatCurrency(cost)) + '</button>' + (locked ? '<span class="lock-note">ロック中。クラウド上の席だけ予約されています。</span>' : '') + '</div></article>';
+    }).join("");
+    list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
+  }
+
+  function renderLogs() {
+    const list = document.getElementById("logList");
+    list.innerHTML = state.logs.map(function (log) {
+      const type = LOG_LABELS[log.type] ? log.type : "normal";
+      return '<article class="log-item log-' + type + '"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></article>';
+    }).join("");
+  }
+
+  function getRates() {
+    return EMPLOYEES.reduce(function (rates, employee) {
+      const level = state.employees[employee.id] || 0;
+      rates.money += employee.effect.money * level;
+      rates.users += employee.effect.users * level;
+      rates.bugs += employee.effect.bugs * level;
+      rates.fire += employee.effect.fire * level;
+      return rates;
+    }, { money: 0, users: 0, bugs: 0, fire: 0 });
+  }
+
+  function multiplyEffect(effect, level) { return { money: effect.money * level, users: effect.users * level, bugs: effect.bugs * level, fire: effect.fire * level }; }
+  function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
+  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.companyLevel = getCompanyLevel(state.totalMoney); }
+  function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
+  function formatCurrency(value) { return "¥" + formatNumber(value); }
+  function signedNumber(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatNumber(Math.abs(number)) + " / 10秒"; }
+  function signedCurrency(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + "¥" + formatNumber(Math.abs(number)) + " / 10秒"; }
+  function formatTime(timestamp) { return new Date(safeNumber(timestamp, Date.now())).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }); }
+  function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+  function safeNumber(value, fallback) { const number = Number(value); return Number.isFinite(number) ? number : fallback; }
+  function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
+  function escapeHtml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+
+  function boot() {
+    loadGame();
+    render();
+    scheduleRandomReport();
+    window.setInterval(tick, TICK_MS);
+    window.setInterval(saveGame, TICK_MS);
+    document.getElementById("saveButton").addEventListener("click", function () { saveGame(); addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); renderLogs(); });
+    document.getElementById("resetButton").addEventListener("click", resetGame);
+    window.addEventListener("beforeunload", saveGame);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
