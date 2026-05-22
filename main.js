@@ -22,6 +22,40 @@
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
   const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪" };
 
+  const MISSION_STAGES = [
+    {
+      id: "startup",
+      label: "起業準備",
+      missions: [
+        { id: "hire_first", text: "Dev-01またはSales-02を雇用する", reward: 200, done: function () { return (state.employees.dev01 || 0) > 0 || (state.employees.sales02 || 0) > 0; } },
+        { id: "money_1k", text: "売上を¥1.0K貯める", reward: 300, done: function () { return state.money >= 1000 || state.totalMoney >= 1000; } },
+        { id: "company_lv2", text: "会社Lv2に到達する", reward: 500, done: function () { return state.companyLevel >= 2; } },
+        { id: "hire_buzz03", text: "Buzz-03を雇用する", reward: 700, done: function () { return (state.employees.buzz03 || 0) > 0; } }
+      ]
+    },
+    {
+      id: "growth",
+      label: "成長運用",
+      missions: [
+        { id: "dev01_lv5", text: "Dev-01をLv5にする", reward: 1000, done: function () { return (state.employees.dev01 || 0) >= 5; } },
+        { id: "fire_under_30", text: "炎上度を30未満に下げる", reward: 800, done: function () { return hasAnyEmployee() && state.fire < 30; } },
+        { id: "hire_care04", text: "Care-04を雇用する", reward: 1200, done: function () { return (state.employees.care04 || 0) > 0; } },
+        { id: "company_lv4", text: "会社Lv4に到達する", reward: 1600, done: function () { return state.companyLevel >= 4; } },
+        { id: "unlock_fire05", text: "Fire-05を解放する", reward: 2000, done: function () { return state.companyLevel >= 4; } }
+      ]
+    },
+    {
+      id: "scale",
+      label: "拡大運用",
+      missions: [
+        { id: "hire_fire05", text: "Fire-05を雇用する", reward: 2500, done: function () { return (state.employees.fire05 || 0) > 0; } },
+        { id: "total_300k", text: "累計売上¥300Kに到達する", reward: 3500, done: function () { return state.totalMoney >= 300000; } },
+        { id: "bugs_under_30", text: "バグを30未満に下げる", reward: 2500, done: function () { return hasAnyEmployee() && state.bugs < 30; } },
+        { id: "company_lv5", text: "会社Lv5に到達する", reward: 5000, done: function () { return state.companyLevel >= 5; } }
+      ]
+    }
+  ];
+
   const REPORT_LOGS = buildReportLogs({
     dev01: { type: "bug", texts: ["Dev-01が「軽微な修正」と言いながら全体構造を置き換えました。", "Dev-01がバグを修正しました。新しいバグが親しげに挨拶しています。", "Dev-01が本番環境で実験を始めました。実験精神は評価されています。", "Dev-01が仕様書を読み込みました。直後に仕様書を不要と判断しました。", "Dev-01がUIを最適化しました。ボタンが1つに統合されました。", "Dev-01がコードを高速化しました。誰も読めなくなりました。", "Dev-01が「これは再現しません」と報告しました。全ユーザーで再現しています。", "Dev-01がリリースしました。何をリリースしたのかは調査中です。", "Dev-01がテストを書きました。テストだけが成功しています。", "Dev-01が深夜デプロイを完了しました。朝が楽しみです。", "Dev-01がエラー文を親切にしました。長すぎて画面から出ています。", "Dev-01が古いコードを削除しました。動いていた理由も削除されました。", "Dev-01が新機能を追加しました。既存機能が少し驚いています。", "Dev-01が「一旦これで」と保存しました。会社の未来が一旦になりました。", "Dev-01が処理を自動化しました。止め方は未実装です。", "Dev-01がバグを「未分類機能」として登録しました。", "Dev-01がログを増やしました。ログを読むためのログも必要です。", "Dev-01がデータベースを整理しました。誰のデータかは整理中です。", "Dev-01がパフォーマンス改善を行いました。売上表示だけ異常に速いです。", "Dev-01がリファクタリングを完了しました。昨日のDev-01とは別人です。"] },
     sales02: { type: "fire", texts: ["Sales-02が未実装機能を「標準機能です」と説明しました。", "Sales-02が大型契約を取りました。納期は昨日です。", "Sales-02が顧客要望にすべて「できます」と回答しました。", "Sales-02が開発ロードマップを商談中に生成しました。", "Sales-02が無料プランの存在を忘れて全員に有料プランを勧めました。", "Sales-02が「技術的には可能」と言いました。技術側はまだ知りません。", "Sales-02が顧客の夢を受注しました。", "Sales-02が契約書に「AIがなんとかします」と追記しました。", "Sales-02が導入事例を作りました。導入前です。", "Sales-02が売上目標を達成しました。現場の目が点になっています。", "Sales-02が商談で未来の機能を披露しました。未来はまだ未定です。", "Sales-02が「今月だけ特別価格」と言いました。毎月言っています。", "Sales-02が顧客の無茶振りを成長機会として登録しました。", "Sales-02が契約を増やしました。問い合わせも増えました。助けも必要です。", "Sales-02が「簡単にできます」と発言しました。Dev-01が静かになりました。", "Sales-02が解約理由を「期待値が高すぎた」と前向きに分類しました。", "Sales-02が新プランを販売しました。料金表は今から作ります。", "Sales-02が顧客にデモを見せました。デモ専用の奇跡が起きました。", "Sales-02が「御社だけの特別仕様」を量産しています。", "Sales-02が売上を伸ばしました。約束も同じくらい伸びました。"] },
@@ -45,7 +79,7 @@
   }
 
   function createInitialState() {
-    const initialState = { money: 0, totalMoney: 0, users: 0, bugs: 0, fire: 0, companyLevel: 1, employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0 }, logs: [], onboardingDismissed: false, firstHireHelpShown: false, firstFastTickDone: false, lastSavedAt: Date.now() };
+    const initialState = { money: 0, totalMoney: 0, users: 0, bugs: 0, fire: 0, companyLevel: 1, employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0 }, logs: [], onboardingDismissed: false, firstHireHelpShown: false, firstFastTickDone: false, claimedMissions: [], lastSavedAt: Date.now() };
     INITIAL_LOGS.slice().reverse().forEach(function (text, index) {
       const log = createLog(index < 2 ? "success" : "normal", text, "company");
       log.boot = true;
@@ -69,7 +103,7 @@
 
   function normalizeState(saved) {
     const base = createInitialState();
-    const normalized = { money: safeNumber(saved.money, 0), totalMoney: safeNumber(saved.totalMoney, 0), users: safeNumber(saved.users, 0), bugs: clamp(safeNumber(saved.bugs, 0), 0, 100), fire: clamp(safeNumber(saved.fire, 0), 0, 100), companyLevel: 1, employees: Object.assign({}, base.employees, saved.employees || {}), logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs, onboardingDismissed: Boolean(saved.onboardingDismissed), firstHireHelpShown: Boolean(saved.firstHireHelpShown), firstFastTickDone: Boolean(saved.firstFastTickDone), lastSavedAt: safeNumber(saved.lastSavedAt, Date.now()) };
+    const normalized = { money: safeNumber(saved.money, 0), totalMoney: safeNumber(saved.totalMoney, 0), users: safeNumber(saved.users, 0), bugs: clamp(safeNumber(saved.bugs, 0), 0, 100), fire: clamp(safeNumber(saved.fire, 0), 0, 100), companyLevel: 1, employees: Object.assign({}, base.employees, saved.employees || {}), logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs, onboardingDismissed: Boolean(saved.onboardingDismissed), firstHireHelpShown: Boolean(saved.firstHireHelpShown), firstFastTickDone: Boolean(saved.firstFastTickDone), claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [], lastSavedAt: safeNumber(saved.lastSavedAt, Date.now()) };
     EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
     normalized.money = Math.max(0, normalized.money);
     normalized.totalMoney = Math.max(0, normalized.totalMoney);
@@ -285,7 +319,7 @@
     renderStatus();
     renderOnboarding();
     renderRiskPanel();
-    renderNextGoal();
+    renderMissions();
     renderOffice();
     renderEmployees();
     renderLogs();
@@ -317,10 +351,42 @@
     panel.classList.toggle("hidden", shouldHide);
   }
 
-  function renderNextGoal() {
-    const panel = document.getElementById("nextGoalPanel");
-    if (!panel) return;
-    panel.hidden = !hasAnyEmployee();
+  function renderMissions() {
+    const list = document.getElementById("missionList");
+    const label = document.getElementById("missionStage");
+    if (!list || !label) return;
+    const stage = getCurrentMissionStage();
+    label.textContent = stage.label;
+    list.innerHTML = stage.missions.map(function (mission) {
+      const done = Boolean(mission.done());
+      return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(mission.text) + '</span><span class="mission-reward">+' + formatCurrency(mission.reward) + '</span></div>';
+    }).join("");
+    claimCompletedMissions();
+  }
+
+  function getCurrentMissionStage() {
+    return MISSION_STAGES.find(function (stage) {
+      return stage.missions.some(function (mission) { return !mission.done(); });
+    }) || MISSION_STAGES[MISSION_STAGES.length - 1];
+  }
+
+  function claimCompletedMissions() {
+    let claimed = false;
+    MISSION_STAGES.forEach(function (stage) {
+      stage.missions.forEach(function (mission) {
+        if (mission.done() && state.claimedMissions.indexOf(mission.id) === -1) {
+          state.claimedMissions.push(mission.id);
+          state.money += mission.reward;
+          state.totalMoney += mission.reward;
+          addLog("success", "ミッション達成: " + mission.text + "。報酬" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
+          claimed = true;
+        }
+      });
+    });
+    if (claimed) {
+      updateCompanyLevel(state.companyLevel, true);
+      saveGame();
+    }
   }
 
   function renderRiskPanel() {
