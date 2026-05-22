@@ -18,24 +18,37 @@
     <section class="onboarding-panel" id="onboardingPanel" aria-label="初回案内">
       <div>
         <strong>まずDev-01かSales-02を雇用してください</strong>
-        <p>初回のみ、創業クレジットでLv1社員を1体だけ無料雇用できます。雇用すると10秒ごとに売上が動き始めます。</p>
+        <p>初回のみ、創業クレジットでLv1社員を1体だけ無料雇用できます。雇用すると1秒ごとに売上が動き始めます。</p>
       </div>
       <button id="onboardingClose" type="button" aria-label="案内を閉じる">OK</button>
     </section>
     <main>
-      <section class="status-grid" aria-label="会社ステータス">
-        <article class="status-card"><span>売上</span><strong id="money">¥0</strong></article>
-        <article class="status-card"><span>累計売上</span><strong id="totalMoney">¥0</strong></article>
-        <article class="status-card"><span>ユーザー数</span><strong id="users">0</strong></article>
+      <section class="status-grid compact-status" aria-label="会社ステータス">
+        <article class="status-card money-card"><span>売上</span><strong id="money">¥0</strong></article>
+        <article class="status-card"><span>ユーザー</span><strong id="users">0</strong></article>
+        <article class="status-card"><span>会社Lv</span><strong id="inlineCompanyLevel">1</strong></article>
         <article class="status-card bug"><span>バグ</span><strong id="bugs">0</strong></article>
-        <article class="status-card fire"><span>炎上度</span><strong id="fire">0</strong></article>
-        <article class="status-card next-level-card" id="nextLevelCard"><span>次の会社Lv</span><strong id="nextLevel">¥5.0K</strong><small id="nextUnlock"></small></article>
+        <article class="status-card fire"><span>炎上</span><strong id="fire">0</strong></article>
+        <article class="status-card next-level-card" id="nextLevelCard"><span>次Lv</span><strong id="nextLevel">¥5.0K</strong><small id="nextUnlock"></small></article>
         <article class="status-card boost"><span id="startupBoostLabel">稼働状態</span><strong id="startupBoost">通常稼働</strong></article>
+        <article class="status-card"><span>累計</span><strong id="totalMoney">¥0</strong></article>
       </section>
-      <section class="risk-panel" id="riskPanel" aria-live="polite">
-        <strong id="riskTitle">リスク監視: 平常</strong>
-        <p id="riskText">バグと炎上度が50を超えると、30秒ごとに事故判定が入ります。</p>
+
+      <section class="activity-panel" id="activityPanel">
+        <strong>現在の主な動き</strong>
+        <span id="activityText">AI社員の起動待ちです</span>
       </section>
+
+      <section class="latest-log-panel" id="latestLogPanel" aria-live="polite">
+        <div class="latest-log-label"><span id="latestLogType">LOG</span><small>最新の業務報告</small></div>
+        <p id="latestLogText">経営最適化AIが起動しました。</p>
+      </section>
+
+      <section class="section-block log-section">
+        <div class="section-heading"><h2>業務報告ログ</h2><span>最新50件</span></div>
+        <div class="log-list" id="logList" aria-live="polite"></div>
+      </section>
+
       <section class="mission-panel" id="missionPanel" aria-label="現在のミッション">
         <div class="mission-head">
           <strong>現在のミッション</strong>
@@ -43,6 +56,12 @@
         </div>
         <div class="mission-list" id="missionList"></div>
       </section>
+
+      <section class="risk-panel" id="riskPanel" aria-live="polite">
+        <strong id="riskTitle">リスク監視: 平常</strong>
+        <p id="riskText">バグと炎上度が50を超えると、30秒ごとに事故判定が入ります。</p>
+      </section>
+
       <section class="office-panel" id="officePanel" aria-label="仮想オフィス">
         <div class="cloud-grid"></div>
         <div class="office-core">
@@ -50,12 +69,9 @@
           <div class="core-label"><strong id="officeName">仮想ワンルーム</strong><span id="officeMood">起業直後。まだクラウド代の方が重いです。</span></div>
         </div>
       </section>
-      <section class="section-block log-section">
-        <div class="section-heading"><h2>業務報告ログ</h2><span>会社の主役 / 最新50件</span></div>
-        <div class="log-list" id="logList" aria-live="polite"></div>
-      </section>
+
       <section class="section-block">
-        <div class="section-heading"><h2>AI社員</h2><span id="incomeRate">+¥0 / 10秒</span></div>
+        <div class="section-heading"><h2>AI社員</h2><span id="incomeRate">+¥0 / 秒</span></div>
         <div class="employee-list" id="employeeList"></div>
       </section>
       <section class="actions" aria-label="操作">

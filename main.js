@@ -2,8 +2,9 @@
   "use strict";
 
   const SAVE_KEY = "ai_black_startup_save_v1";
-  const TICK_MS = 10000;
-  const FIRST_TICK_MS = 3000;
+  const TICK_MS = 1000;
+  const FIRST_TICK_MS = 1000;
+  const EFFECTS_PER_SECONDS = 10;
   const PENALTY_MS = 30000;
   const MAX_OFFLINE_MS = 2 * 60 * 60 * 1000;
   const MAX_LOGS = 50;
@@ -322,11 +323,13 @@
     renderMissions();
     renderOffice();
     renderEmployees();
+    renderLatestLog();
     renderLogs();
   }
 
   function renderStatus() {
     setText("companyLevel", state.companyLevel);
+    setText("inlineCompanyLevel", state.companyLevel);
     setText("money", formatCurrency(state.money));
     setText("totalMoney", formatCurrency(state.totalMoney));
     setText("users", formatNumber(state.users));
@@ -334,13 +337,32 @@
     setText("fire", Math.round(state.fire) + " / 100");
     setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)));
     setText("nextUnlock", getNextUnlockText());
-    setText("incomeRate", "+" + formatCurrency(getRates().money) + " / 10秒");
+    setText("incomeRate", "+" + formatCurrency(getRates().money) + " / 秒");
+    renderActivity();
     setText("startupBoostLabel", getEarlyStageMultiplier() > 1 ? "創業加速" : "稼働状態");
     setText("startupBoost", getEarlyStageMultiplier() > 1 ? "売上・ユーザー x" + getEarlyStageMultiplier() : "通常稼働");
     const boostCard = document.getElementById("startupBoost") ? document.getElementById("startupBoost").closest(".status-card") : null;
     if (boostCard) boostCard.classList.toggle("active", getEarlyStageMultiplier() > 1);
     const nextCard = document.getElementById("nextLevelCard");
     if (nextCard) nextCard.classList.toggle("has-unlock", Boolean(getNextUnlockText()));
+  }
+
+  function renderActivity() {
+    const element = document.getElementById("activityText");
+    if (!element) return;
+    const rates = getRates();
+    if (!hasAnyEmployee()) {
+      element.textContent = "AI社員の起動待ちです。まず無料雇用を使いましょう。";
+      return;
+    }
+    const parts = [];
+    if (rates.money > 0) parts.push("売上 +" + formatCurrency(rates.money) + "/秒");
+    if (rates.users > 0) parts.push("ユーザー +" + formatNumber(rates.users) + "/秒");
+    if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
+    if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
+    if (rates.bugs < 0) parts.push("バグ " + rates.bugs.toFixed(1) + "/秒");
+    if (rates.fire < 0) parts.push("炎上 " + rates.fire.toFixed(1) + "/秒");
+    element.textContent = parts.join(" / ") || "AI社員は静かに待機中です。";
   }
 
   function renderOnboarding() {
@@ -447,11 +469,23 @@
     list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
   }
 
+  function renderLatestLog() {
+    const latest = state.logs[0];
+    const text = document.getElementById("latestLogText");
+    const type = document.getElementById("latestLogType");
+    const panel = document.getElementById("latestLogPanel");
+    if (!latest || !text || !type || !panel) return;
+    const logType = LOG_LABELS[latest.type] ? latest.type : "normal";
+    text.textContent = latest.text;
+    type.textContent = LOG_LABELS[logType];
+    panel.className = "latest-log-panel latest-" + logType;
+  }
+
   function renderLogs() {
     const list = document.getElementById("logList");
-    list.innerHTML = state.logs.map(function (log, index) {
+    list.innerHTML = state.logs.slice(1).map(function (log, index) {
       const type = LOG_LABELS[log.type] ? log.type : "normal";
-      const ageClass = index === 0 ? ' latest-log' : index >= 6 ? ' old-log' : '';
+      const ageClass = index >= 5 ? ' old-log' : '';
       return '<article class="log-item log-' + type + ageClass + (log.boot ? ' boot-log' : '') + '"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></article>';
     }).join("");
   }
@@ -471,6 +505,10 @@
     rates.users *= multiplier;
     if (rates.bugs > 0) rates.bugs *= riskMultiplier;
     if (rates.fire > 0) rates.fire *= riskMultiplier;
+    rates.money /= EFFECTS_PER_SECONDS;
+    rates.users /= EFFECTS_PER_SECONDS;
+    rates.bugs /= EFFECTS_PER_SECONDS;
+    rates.fire /= EFFECTS_PER_SECONDS;
     return rates;
   }
 
