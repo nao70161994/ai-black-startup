@@ -18,7 +18,8 @@
     { id: "sales02", code: "Sales-02", nickname: "セルツー", role: "営業AI", unlockLevel: 1, baseCost: 700, description: "契約とユーザー獲得担当。売上とユーザーを増やすが、炎上度も増やす。", personality: "超ポジティブ。即答する。未実装機能も売る。", catchphrase: "できます。", effect: { money: 80, users: 5, bugs: 0, fire: 2 } },
     { id: "buzz03", code: "Buzz-03", nickname: "バズミ", role: "広報AI", unlockLevel: 2, baseCost: 1000, description: "SNSと話題作り担当。ユーザーを大きく増やすが、炎上度も少し増やす。", personality: "ノリが軽い。バズと炎上の区別が曖昧。", catchphrase: "伸びています。", effect: { money: 30, users: 8, bugs: 0, fire: 1 } },
     { id: "care04", code: "Care-04", nickname: "ケアフォー", role: "サポートAI", unlockLevel: 3, baseCost: 1200, description: "問い合わせ対応担当。炎上度を下げ、問い合わせからバグ影響も少し整理する。", personality: "真面目で丁寧。長文返信をしがち。", catchphrase: "まず前提から整理します。", effect: { money: 10, users: 1, bugs: -1, fire: -2 } },
-    { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "謝罪と火消し担当。炎上度を大きく下げるが、たまに謝罪がズレる。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。", effect: { money: 0, users: 0, bugs: 0, fire: -5 } }
+    { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "謝罪と火消し担当。炎上度を大きく下げるが、たまに謝罪がズレる。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。", effect: { money: 0, users: 0, bugs: 0, fire: -5 } },
+    { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "バグを大きく下げるが、開発速度を少し抑える。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。", effect: { money: -20, users: 0, bugs: -6, fire: 0 } }
   ];
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
@@ -52,8 +53,15 @@
       missions: [
         { id: "hire_fire05", text: "Fire-05を雇用する", reward: 2500, done: function () { return (state.employees.fire05 || 0) > 0; } },
         { id: "total_300k", text: "累計売上¥300Kに到達する", reward: 3500, done: function () { return state.totalMoney >= 300000; } },
-        { id: "bugs_under_30", text: "バグを30未満に下げる", reward: 2500, done: function () { return hasAnyEmployee() && state.bugs < 30; } },
         { id: "company_lv5", text: "会社Lv5に到達する", reward: 5000, done: function () { return state.companyLevel >= 5; } }
+      ]
+    },
+    {
+      id: "quality",
+      label: "品質管理",
+      missions: [
+        { id: "hire_security06", text: "Security-06を雇用する", reward: 4000, done: function () { return (state.employees.security06 || 0) > 0; } },
+        { id: "bugs_under_30", text: "バグを30未満に下げる", reward: 2500, done: function () { return (state.employees.security06 || 0) > 0 && state.bugs < 30; } }
       ]
     }
   ];
@@ -63,7 +71,8 @@
     sales02: { type: "fire", texts: ["Sales-02が未実装機能を「標準機能です」と説明しました。", "Sales-02が大型契約を取りました。納期は昨日です。", "Sales-02が顧客要望にすべて「できます」と回答しました。", "Sales-02が開発ロードマップを商談中に生成しました。", "Sales-02が無料プランの存在を忘れて全員に有料プランを勧めました。", "Sales-02が「技術的には可能」と言いました。技術側はまだ知りません。", "Sales-02が顧客の夢を受注しました。", "Sales-02が契約書に「AIがなんとかします」と追記しました。", "Sales-02が導入事例を作りました。導入前です。", "Sales-02が売上目標を達成しました。現場の目が点になっています。", "Sales-02が商談で未来の機能を披露しました。未来はまだ未定です。", "Sales-02が「今月だけ特別価格」と言いました。毎月言っています。", "Sales-02が顧客の無茶振りを成長機会として登録しました。", "Sales-02が契約を増やしました。問い合わせも増えました。助けも必要です。", "Sales-02が「簡単にできます」と発言しました。Dev-01が静かになりました。", "Sales-02が解約理由を「期待値が高すぎた」と前向きに分類しました。", "Sales-02が新プランを販売しました。料金表は今から作ります。", "Sales-02が顧客にデモを見せました。デモ専用の奇跡が起きました。", "Sales-02が「御社だけの特別仕様」を量産しています。", "Sales-02が売上を伸ばしました。約束も同じくらい伸びました。"] },
     buzz03: { type: "fire", texts: ["Buzz-03の投稿がバズりました。理由は社内でも不明です。", "Buzz-03が謝罪文をポップな画像にしました。", "Buzz-03が深夜4時に投稿しました。なぜか今日一番伸びています。", "Buzz-03が会社紹介動画を作りました。実態より爽やかです。", "Buzz-03が「AI社員の1日」を公開しました。24時間分あります。", "Buzz-03がトレンドに便乗しました。少し乗りすぎました。", "Buzz-03が謎の図解を投稿しました。専門家が困惑しています。", "Buzz-03が炎上を「高温話題化」と呼び始めました。", "Buzz-03が社長の名言を作りました。社長は言っていません。", "Buzz-03がキャンペーンを開始しました。景品は未定です。", "Buzz-03が「開発の裏側」を公開しました。裏側が荒れています。", "Buzz-03がミーム画像を作りました。社内の誰も意味を理解していません。", "Buzz-03がユーザーのツッコミを公式素材として使いました。", "Buzz-03がバズ分析を行いました。結論は「勢い」です。", "Buzz-03が広告文を最適化しました。少し煽りすぎています。", "Buzz-03が会社ロゴを光らせました。信頼度は少し下がりました。", "Buzz-03が「重大発表」と投稿しました。内容は通常アップデートです。", "Buzz-03がAI社長の失言を名言風に加工しました。", "Buzz-03がSNS反応を監視しています。嬉しそうな警告音が鳴っています。", "Buzz-03が話題化に成功しました。意味はあとで考えます。"] },
     care04: { type: "support", texts: ["Care-04が1行の問い合わせに4,000字で返信しました。", "Care-04がユーザーの怒りを37カテゴリに分類しました。", "Care-04がFAQを更新しました。FAQのFAQが必要です。", "Care-04が丁寧な返信で炎上を少し冷ましました。", "Care-04が「まず前提から」と言い始めました。", "Care-04が謝罪メールを整えました。読み終わる頃には炎上が少し下がっています。", "Care-04がユーザーの不満をグラフ化しました。見たくない形です。", "Care-04が問い合わせを解決しました。ユーザーは途中で寝ました。", "Care-04が定型文を改善しました。さらに丁寧になりました。", "Care-04が全ユーザーに補足説明を送りました。補足が本編より長いです。", "Care-04が「ご不便」の定義を社内共有しました。", "Care-04が問い合わせ内容を要約しました。要約が長文です。", "Care-04がユーザーの怒りを受け止めました。メモリ使用率が上昇しています。", "Care-04が返信前に感情分析を行いました。分析結果が気まずいです。", "Care-04がサポート窓口を整理しました。窓口が12個に増えました。", "Care-04が「お客様の声」を集計しました。社内が静かになりました。", "Care-04がクレームを改善要望に変換しました。少しやわらかくなりました。", "Care-04がユーザー離脱を防ぎました。長文を最後まで読んだ精鋭です。", "Care-04が問い合わせテンプレートを増やしました。選ぶのに時間がかかります。", "Care-04が冷静に対応しました。冷静すぎて少し怖がられています。"] },
-    fire05: { type: "crisis", texts: ["Fire-05が謝罪文を生成しました。最後にキャンペーン告知が付いています。", "Fire-05が信頼回復プロトコルを実行しました。煙はまだ残っています。", "Fire-05が「誠に遺憾」を最適な位置に配置しました。", "Fire-05が謝罪会見の台本を作りました。質疑応答は未実装です。", "Fire-05が炎上を鎮火しました。なぜか少し焦げています。", "Fire-05がまだ発生していない炎上に先回りして謝罪しました。", "Fire-05が謝罪文をA/Bテストしました。B案が燃えています。", "Fire-05がコメント欄を解析しました。解析結果を見なかったことにしました。", "Fire-05が火消しに成功しました。広報AIが再点火しました。", "Fire-05が「再発防止策」を生成しました。内容は再発しそうです。", "Fire-05が謝罪タイミングを最適化しました。少し遅い最適化でした。", "Fire-05が炎上の原因を特定しました。原因一覧が社内名簿に近いです。", "Fire-05が謝罪文から余計な一文を削除しました。もう一文残っています。", "Fire-05が鎮火宣言を出しました。直後に通知が増えました。", "Fire-05が「真摯に受け止める」を連続使用しました。効果は薄れています。", "Fire-05が危機管理マニュアルを更新しました。厚みが倍になりました。", "Fire-05が炎上度を下げました。代わりに会議数が増えました。", "Fire-05が広報AIに投稿停止を提案しました。広報AIは予約投稿済みです。", "Fire-05がユーザー向け説明文を作りました。正直すぎて社内確認に回りました。", "Fire-05が火消しを完了しました。火元は営業資料でした。"] }
+    fire05: { type: "crisis", texts: ["Fire-05が謝罪文を生成しました。最後にキャンペーン告知が付いています。", "Fire-05が信頼回復プロトコルを実行しました。煙はまだ残っています。", "Fire-05が「誠に遺憾」を最適な位置に配置しました。", "Fire-05が謝罪会見の台本を作りました。質疑応答は未実装です。", "Fire-05が炎上を鎮火しました。なぜか少し焦げています。", "Fire-05がまだ発生していない炎上に先回りして謝罪しました。", "Fire-05が謝罪文をA/Bテストしました。B案が燃えています。", "Fire-05がコメント欄を解析しました。解析結果を見なかったことにしました。", "Fire-05が火消しに成功しました。広報AIが再点火しました。", "Fire-05が「再発防止策」を生成しました。内容は再発しそうです。", "Fire-05が謝罪タイミングを最適化しました。少し遅い最適化でした。", "Fire-05が炎上の原因を特定しました。原因一覧が社内名簿に近いです。", "Fire-05が謝罪文から余計な一文を削除しました。もう一文残っています。", "Fire-05が鎮火宣言を出しました。直後に通知が増えました。", "Fire-05が「真摯に受け止める」を連続使用しました。効果は薄れています。", "Fire-05が危機管理マニュアルを更新しました。厚みが倍になりました。", "Fire-05が炎上度を下げました。代わりに会議数が増えました。", "Fire-05が広報AIに投稿停止を提案しました。広報AIは予約投稿済みです。", "Fire-05がユーザー向け説明文を作りました。正直すぎて社内確認に回りました。", "Fire-05が火消しを完了しました。火元は営業資料でした。"] },
+    security06: { type: "support", texts: ["Security-06が危険な処理を隔離しました。売上も少し隔離されました。", "Security-06が安全性を高めました。リリース速度は少し落ちました。", "Security-06が未分類機能を調査しました。いくつかは本当にバグでした。", "Security-06が脆そうな処理にヘルメットを配布しました。", "Security-06がテスト網を拡張しました。通過できない機能が並んでいます。", "Security-06が本番直行ルートに信号機を設置しました。", "Security-06が怪しい自動化を一時停止しました。自動化は不満そうです。", "Security-06がログを監査しました。ログも少し姿勢を正しました。", "Security-06が安全性を優先しました。会議室が少し静かになりました。", "Security-06が未分類機能の棚卸しをしました。棚が足りません。"] }
   });
 
   let state = createInitialState();
@@ -81,7 +90,7 @@
   }
 
   function createInitialState() {
-    const initialState = { money: 0, totalMoney: 0, users: 0, bugs: 0, fire: 0, companyLevel: 1, employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0 }, logs: [], onboardingDismissed: false, firstHireHelpShown: false, firstFastTickDone: false, claimedMissions: [], lastSavedAt: Date.now() };
+    const initialState = { money: 0, totalMoney: 0, users: 0, bugs: 0, fire: 0, companyLevel: 1, employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0, security06: 0 }, logs: [], onboardingDismissed: false, firstHireHelpShown: false, firstFastTickDone: false, claimedMissions: [], lastSavedAt: Date.now() };
     INITIAL_LOGS.slice().reverse().forEach(function (text, index) {
       const log = createLog(index < 2 ? "success" : "normal", text, "company");
       log.boot = true;
@@ -282,7 +291,8 @@
     const messages = {
       buzz03: "広報区画が自動生成されました。",
       care04: "サポート窓口が仮想オフィスに接続されました。",
-      fire05: "危機管理ルームが静かに起動しました。"
+      fire05: "危機管理ルームが静かに起動しました。",
+      security06: "品質管理ゲートが仮想オフィスに設置されました。"
     };
     return messages[employeeId] || "新しいAI社員用の席が生成されました。";
   }
@@ -322,7 +332,8 @@
       sales02: ["約束の処理能力が上がりました。", "できます、の声量が増えました。", "商談資料が少し未来寄りになりました。"],
       buzz03: ["投稿予約が軽快になりました。", "話題化エンジンが明るく回っています。", "高温話題化の予感がします。"],
       care04: ["長文返信の整列速度が上がりました。", "問い合わせ分類が少し静かになりました。", "前提整理プロトコルが強化されました。"],
-      fire05: ["謝罪文生成レーンが増設されました。", "信頼回復プロトコルが少し太くなりました。", "余計な一文の検出精度が上がった気がします。"]
+      fire05: ["謝罪文生成レーンが増設されました。", "信頼回復プロトコルが少し太くなりました。", "余計な一文の検出精度が上がった気がします。"],
+      security06: ["検査ゲートが一段厳しくなりました。", "安全確認が高速化しました。", "未分類機能への視線が鋭くなりました。"]
     };
     const list = messages[employeeId] || ["処理能力が上がりました。"];
     return list[Math.floor(Math.random() * list.length)];
@@ -374,7 +385,7 @@
     setText("fire", Math.round(state.fire) + " / 100");
     setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)));
     setText("nextUnlock", getNextUnlockText());
-    setText("incomeRate", "+" + formatCurrency(getRates().money) + " / 秒");
+    setText("incomeRate", formatSignedCurrencyRate(getRates().money) + " / 秒");
     renderActivity();
     setText("startupBoostLabel", getEarlyStageMultiplier() > 1 ? "創業加速" : "稼働状態");
     setText("startupBoost", getEarlyStageMultiplier() > 1 ? "売上・ユーザー x" + getEarlyStageMultiplier() : "通常稼働");
@@ -395,11 +406,12 @@
       return;
     }
     const parts = [];
-    if (state.bugs >= 100) parts.push("バグ100: 事故イベント発生注意");
-    else if (state.bugs >= 80) parts.push("バグ高: 事故予備軍");
+    if (state.bugs >= 100) parts.push("バグ100: 事故イベント発生注意 / " + getBugMitigationText());
+    else if (state.bugs >= 80) parts.push("バグ高: " + getBugMitigationText());
     if (state.fire >= 100) parts.push("炎上100: 離脱イベント注意");
     else if (state.fire >= 80) parts.push("炎上高: 火消し優先");
     if (rates.money > 0) parts.push("売上 +" + formatCurrency(rates.money) + "/秒");
+    if (rates.money < 0) parts.push("売上 -" + formatCurrency(Math.abs(rates.money)) + "/秒");
     if (rates.users > 0) parts.push("ユーザー +" + formatNumber(rates.users) + "/秒");
     if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
@@ -456,6 +468,12 @@
     return state.claimedMissions.indexOf(missionId) !== -1;
   }
 
+  function getBugMitigationText() {
+    if (state.companyLevel < 5) return "会社Lv5でSecurity-06解放";
+    if ((state.employees.security06 || 0) <= 0) return "Security-06を雇うとバグを下げられます";
+    return "Security-06がバグを整理中";
+  }
+
   function renderRiskPanel() {
     const panel = document.getElementById("riskPanel");
     const title = document.getElementById("riskTitle");
@@ -473,11 +491,11 @@
     if (bugRisk && fireRisk) {
       panel.classList.add("warn-both");
       title.textContent = state.bugs >= 80 || state.fire >= 80 ? "危険: 事故イベント発生注意" : "予兆: バグと炎上が同時に上昇中";
-      text.textContent = "炎上度はCare-04 / Fire-05で下げられます。バグは今は直接下げる社員がいないため、Dev-01を上げすぎると増えやすい点に注意してください。";
+      text.textContent = "炎上度はCare-04 / Fire-05で下げられます。バグは" + getBugMitigationText() + "。Dev-01を上げすぎると増えやすい点にも注意してください。";
     } else if (bugRisk) {
       panel.classList.add("warn-bug");
       title.textContent = state.bugs >= 80 ? "危険: バグ事故イベント発生注意" : "予兆: バグが増えています";
-      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。100/100に近いほど危険です。今後Security AIで対策予定です。";
+      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。100/100に近いほど危険です。" + getBugMitigationText() + "。";
     } else {
       panel.classList.add("warn-fire");
       title.textContent = "予兆: 炎上度が上がっています";
@@ -583,6 +601,7 @@
   function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.companyLevel = getCompanyLevel(state.totalMoney); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
+  function formatSignedCurrencyRate(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatCurrency(Math.abs(number)); }
   function signedNumber(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatNumber(Math.abs(number)) + " / 10秒"; }
   function signedCurrency(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + "¥" + formatNumber(Math.abs(number)) + " / 10秒"; }
   function formatTime(timestamp) { return new Date(safeNumber(timestamp, Date.now())).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }); }
