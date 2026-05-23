@@ -47,6 +47,8 @@ AI社長とAI社員たちは、その仮想オフィスで24時間自律稼働�
 - localStorage保存
 - オフライン報酬
 - 手動保存とリセット
+- PWA/Service Workerによるキャッシュ更新対応
+- CSS/JS cache bustingによる古いファイル読み込み対策
 
 
 ### Security-06 / セキュロク
@@ -74,7 +76,13 @@ cd /home/ai-black-startup
 python3 -m http.server 8000
 ```
 
-その後、ブラウザで `http://localhost:8000` を開きます。
+その後、ブラウザで以下を開きます。
+
+```text
+http://localhost:8000/?v=20260524-1
+```
+
+PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。
 
 ## 技術構成
 
@@ -83,12 +91,16 @@ python3 -m http.server 8000
 - JavaScript
 - 外部ライブラリなし
 - サーバー不要
-- 3ファイル構成
+- 主要3ファイル構成
   - `index.html`
   - `style.css`
   - `main.js`
+- PWA/Service Worker更新対応
+  - `sw.js`
+- 回帰テスト
+  - `tests/test_regressions.py`
 
-現在はMVPのため、ビルド環境、PWA、課金、広告、オンライン要素、ランキングは未実装です。
+現在はMVPのため、ビルド環境、課金、広告、オンライン要素、ランキングは未実装です。
 
 ## 保存仕様
 
@@ -113,6 +125,7 @@ ai_black_startup_save_v1
 - ミッション達成状況
 - 初回案内状態
 - 最終保存時刻
+- appVersion
 
 保存タイミング:
 
@@ -127,6 +140,47 @@ ai_black_startup_save_v1
 オフライン報酬は、最後の保存時刻からの経過時間を元に計算します。
 最大2時間分まで売上のみ加算されます。
 
+`appVersion` は現在の実装バージョンを保存するための値です。古いセーブデータに `appVersion` や新しい社員IDが存在しない場合でも、起動時の正規化処理で補完されます。
+
+## キャッシュ更新仕様
+
+現在のアプリバージョンは `2026.05.24.1` です。
+
+`index.html` ではCSS/JSにcache busting用のクエリを付けています。
+
+```html
+<link rel="stylesheet" href="style.css?v=20260524-1">
+<script src="main.js?v=20260524-1"></script>
+```
+
+Service Workerも同じバージョンのキャッシュ名を使います。
+
+```text
+ai-black-startup-2026.05.24.1
+```
+
+`sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。
+
+キャッシュが残る場合の対処:
+
+- URLに `?v=20260524-1` を付けて開く
+- ブラウザで強制リロードする
+- PWAとして追加している場合は一度ホーム画面から削除して追加し直す
+- ブラウザのサイトデータまたはキャッシュストレージを削除する
+- 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
+
+## テスト方法
+
+構文チェックと回帰テストは以下で確認します。
+
+```sh
+node --check main.js
+node --check sw.js
+pytest
+```
+
+`pytest` では、cache busting/app versionの整合性、Service Worker更新処理、既存セーブへの新規社員補完、会社Lv5でのSecurity-06表示を確認しています。
+
 ## 今後の改善予定
 
 - 実機スマホでのUI微調整
@@ -136,7 +190,7 @@ ai_black_startup_save_v1
 - Security-06以降の品質管理ミッション拡充
 - 会社Lv後半の遊びの追加
 - バランス調整
-- PWA対応
+- PWA体験の実機安定化
 - Androidアプリ化の検討
 - セーブデータのバージョン管理強化
 
