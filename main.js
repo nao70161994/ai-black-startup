@@ -1,6 +1,7 @@
 (function () {
   "use strict";
 
+  const APP_VERSION = "2026.05.24.1";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -115,7 +116,7 @@
 
   function normalizeState(saved) {
     const base = createInitialState();
-    const normalized = { money: safeNumber(saved.money, 0), totalMoney: safeNumber(saved.totalMoney, 0), users: safeNumber(saved.users, 0), bugs: clamp(safeNumber(saved.bugs, 0), 0, 100), fire: clamp(safeNumber(saved.fire, 0), 0, 100), companyLevel: 1, employees: Object.assign({}, base.employees, saved.employees || {}), logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs, onboardingDismissed: Boolean(saved.onboardingDismissed), firstHireHelpShown: Boolean(saved.firstHireHelpShown), firstFastTickDone: Boolean(saved.firstFastTickDone), claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [], lastSavedAt: safeNumber(saved.lastSavedAt, Date.now()) };
+    const normalized = { appVersion: APP_VERSION, money: safeNumber(saved.money, 0), totalMoney: safeNumber(saved.totalMoney, 0), users: safeNumber(saved.users, 0), bugs: clamp(safeNumber(saved.bugs, 0), 0, 100), fire: clamp(safeNumber(saved.fire, 0), 0, 100), companyLevel: 1, employees: Object.assign({}, base.employees, saved.employees || {}), logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs, onboardingDismissed: Boolean(saved.onboardingDismissed), firstHireHelpShown: Boolean(saved.firstHireHelpShown), firstFastTickDone: Boolean(saved.firstFastTickDone), claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [], lastSavedAt: safeNumber(saved.lastSavedAt, Date.now()) };
     EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
     normalized.money = Math.max(0, normalized.money);
     normalized.totalMoney = Math.max(0, normalized.totalMoney);
@@ -125,7 +126,7 @@
   }
 
   function saveGame() {
-    try { state.lastSavedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+    try { state.appVersion = APP_VERSION; state.lastSavedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
     catch (error) { console.warn("Save failed.", error); }
   }
 
@@ -621,6 +622,25 @@
     const onboardingClose = document.getElementById("onboardingClose");
     if (onboardingClose) onboardingClose.addEventListener("click", dismissOnboarding);
     window.addEventListener("beforeunload", saveGame);
+    registerServiceWorker();
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
+    navigator.serviceWorker.register("sw.js?v=20260524-1").then(function (registration) {
+      if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      registration.addEventListener("updatefound", function () {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", function () {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) {
+            worker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
+    }).catch(function (error) {
+      console.warn("Service worker registration failed.", error);
+    });
   }
 
   document.addEventListener("DOMContentLoaded", boot);
