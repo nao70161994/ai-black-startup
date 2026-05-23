@@ -22,7 +22,7 @@
   ];
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
-  const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪" };
+  const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪", system: "更新" };
 
   const MISSION_STAGES = [
     {
@@ -189,7 +189,11 @@
     if (!startupCredit) state.money = Math.max(0, state.money - cost);
     state.employees[employeeId] = level + 1;
     if (startupCredit) state.onboardingDismissed = true;
-    addLog("success", employee.code + " / " + employee.nickname + "を" + (level === 0 ? "雇用" : "強化") + "しました。" + (startupCredit ? "創業クレジットが適用されました。" : "") + "「" + employee.catchphrase + "」", employeeId);
+    if (level === 0) {
+      addLog("success", employee.code + " / " + employee.nickname + "を雇用しました。" + (startupCredit ? "創業クレジットが適用されました。" : "") + "「" + employee.catchphrase + "」", employeeId);
+    } else {
+      addUpgradeLog(employee, level + 1);
+    }
     if (startupCredit) {
       showFirstHireHelp(employee);
       scheduleNextTick();
@@ -202,8 +206,8 @@
   function showFirstHireHelp(employee) {
     if (state.firstHireHelpShown) return;
     state.firstHireHelpShown = true;
-    window.setTimeout(function () { addLog("normal", employee.code + "が仮想デスクに着席しました。最初の売上計算まであと少しです。", employee.id); renderLogs(); }, 1600);
-    window.setTimeout(function () { addLog("success", "創業加速プロトコルを起動しました。会社Lv1の間、売上計算が少し速くなります。", "company"); renderLogs(); }, 5200);
+    window.setTimeout(function () { addLog("normal", employee.code + "が仮想デスクに着席しました。最初の売上計算まであと少しです。", employee.id); renderLatestLog(); renderLogs(); }, 1600);
+    window.setTimeout(function () { addLog("success", "創業加速プロトコルを起動しました。会社Lv1の間、売上計算が少し速くなります。", "company"); renderLatestLog(); renderLogs(); }, 5200);
   }
 
   function tick() {
@@ -296,6 +300,34 @@
     }, 3600);
   }
 
+  function addUpgradeLog(employee, nextLevel) {
+    const latest = state.logs[0];
+    const now = Date.now();
+    if (latest && latest.type === "system" && latest.employeeId === employee.id && latest.upgradeLog && now - latest.createdAt < 12000) {
+      latest.upgradeCount = (latest.upgradeCount || 1) + 1;
+      latest.createdAt = now;
+      latest.text = employee.code + "を" + latest.upgradeCount + "回連続で強化しました。現在Lv" + nextLevel + "です。" + getUpgradeFlavor(employee.id);
+      return;
+    }
+    const log = createLog("system", employee.code + "を強化しました。現在Lv" + nextLevel + "です。" + getUpgradeFlavor(employee.id), employee.id);
+    log.upgradeLog = true;
+    log.upgradeCount = 1;
+    state.logs.unshift(log);
+    state.logs = state.logs.slice(0, MAX_LOGS);
+  }
+
+  function getUpgradeFlavor(employeeId) {
+    const messages = {
+      dev01: ["軽微な最適化のはずでした。", "処理速度と未知の挙動が増えました。", "コードが少し自信を持ちました。"],
+      sales02: ["約束の処理能力が上がりました。", "できます、の声量が増えました。", "商談資料が少し未来寄りになりました。"],
+      buzz03: ["投稿予約が軽快になりました。", "話題化エンジンが明るく回っています。", "高温話題化の予感がします。"],
+      care04: ["長文返信の整列速度が上がりました。", "問い合わせ分類が少し静かになりました。", "前提整理プロトコルが強化されました。"],
+      fire05: ["謝罪文生成レーンが増設されました。", "信頼回復プロトコルが少し太くなりました。", "余計な一文の検出精度が上がった気がします。"]
+    };
+    const list = messages[employeeId] || ["処理能力が上がりました。"];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
   function addLog(type, text, employeeId) {
     state.logs.unshift(createLog(type, text, employeeId || "company"));
     state.logs = state.logs.slice(0, MAX_LOGS);
@@ -310,7 +342,7 @@
     if (hiredIds.length > 0) {
       const candidates = REPORT_LOGS.filter(function (log) { return hiredIds.indexOf(log.employeeId) >= 0; });
       const log = candidates[Math.floor(Math.random() * candidates.length)];
-      if (log) { addLog(log.type, log.text, log.employeeId); renderLogs(); }
+      if (log) { addLog(log.type, log.text, log.employeeId); renderLatestLog(); renderLogs(); }
     }
     scheduleRandomReport();
   }
@@ -354,13 +386,19 @@
 
   function renderActivity() {
     const element = document.getElementById("activityText");
+    const panel = document.getElementById("activityPanel");
     if (!element) return;
     const rates = getRates();
+    if (panel) panel.classList.toggle("danger", state.bugs >= 80 || state.fire >= 80);
     if (!hasAnyEmployee()) {
       element.textContent = "AI社員の起動待ちです。まず無料雇用を使いましょう。";
       return;
     }
     const parts = [];
+    if (state.bugs >= 100) parts.push("バグ100: 事故イベント発生注意");
+    else if (state.bugs >= 80) parts.push("バグ高: 事故予備軍");
+    if (state.fire >= 100) parts.push("炎上100: 離脱イベント注意");
+    else if (state.fire >= 80) parts.push("炎上高: 火消し優先");
     if (rates.money > 0) parts.push("売上 +" + formatCurrency(rates.money) + "/秒");
     if (rates.users > 0) parts.push("ユーザー +" + formatNumber(rates.users) + "/秒");
     if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
@@ -434,12 +472,12 @@
     panel.classList.add("visible");
     if (bugRisk && fireRisk) {
       panel.classList.add("warn-both");
-      title.textContent = "予兆: バグと炎上が同時に上昇中";
+      title.textContent = state.bugs >= 80 || state.fire >= 80 ? "危険: 事故イベント発生注意" : "予兆: バグと炎上が同時に上昇中";
       text.textContent = "炎上度はCare-04 / Fire-05で下げられます。バグは今は直接下げる社員がいないため、Dev-01を上げすぎると増えやすい点に注意してください。";
     } else if (bugRisk) {
       panel.classList.add("warn-bug");
-      title.textContent = "予兆: バグが増えています";
-      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。今は直接下げる社員がいないため、今後Security AIで対策予定です。Dev-01を上げすぎると増えやすいです。";
+      title.textContent = state.bugs >= 80 ? "危険: バグ事故イベント発生注意" : "予兆: バグが増えています";
+      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。100/100に近いほど危険です。今後Security AIで対策予定です。";
     } else {
       panel.classList.add("warn-fire");
       title.textContent = "予兆: 炎上度が上がっています";
@@ -471,7 +509,11 @@
       if (locked) {
         return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div><span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span></article>';
       }
-      return '<article class="employee-card' + (recommended ? ' recommended' : '') + (level > 0 ? ' hired' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div><p class="employee-desc">' + escapeHtml(employee.description) + '</p><div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="effect-list"><span>売上 ' + signedCurrency(effect.money) + '</span><span>ユーザー ' + signedNumber(effect.users) + '</span><span>バグ ' + signedNumber(effect.bugs) + '</span><span>炎上度 ' + signedNumber(effect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : action + 'コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : startupCredit ? action + ' ¥0' : action + ' ' + formatCurrency(cost)) + '</button>' + (startupCredit ? '<span class="startup-note">おすすめ: Dev-01は売上重視、Sales-02はユーザー重視。最初の1体だけ無料です。</span>' : '') + '</div></article>';
+      if (level === 0) {
+        const baseEffect = employee.effect;
+        return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div><div class="effect-list compact-effects"><span>売上 ' + signedCurrency(baseEffect.money) + '</span><span>ユーザー ' + signedNumber(baseEffect.users) + '</span><span>バグ ' + signedNumber(baseEffect.bugs) + '</span><span>炎上度 ' + signedNumber(baseEffect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
+      }
+      return '<article class="employee-card hired"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div><p class="employee-desc">' + escapeHtml(employee.description) + '</p><div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="effect-list"><span>売上 ' + signedCurrency(effect.money) + '</span><span>ユーザー ' + signedNumber(effect.users) + '</span><span>バグ ' + signedNumber(effect.bugs) + '</span><span>炎上度 ' + signedNumber(effect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button></div></article>';
     }).join("");
     list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
   }
