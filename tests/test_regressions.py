@@ -1,5 +1,4 @@
 import json
-import re
 import subprocess
 from pathlib import Path
 
@@ -14,9 +13,19 @@ def test_cache_busting_versions_match_app_version():
     assert 'content="2026.05.24.1"' in index
     assert 'style.css?v=20260524-1' in index
     assert 'main.js?v=20260524-1' in index
+    assert 'manifest.webmanifest?v=20260524-1' in index
+    assert 'icon.svg?v=20260524-1' in index
+    assert '<meta name="theme-color" content="#19bde8">' in index
     assert 'const APP_VERSION = "2026.05.24.1"' in main
     assert 'const APP_VERSION = "2026.05.24.1"' in sw
     assert 'sw.js?v=20260524-1' in main
+
+    manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
+    assert manifest["name"] == "AI社長のブラック起業"
+    assert manifest["short_name"] == "AI社長"
+    assert manifest["start_url"] == "./index.html?v=20260524-1"
+    assert manifest["display"] == "standalone"
+    assert manifest["theme_color"] == "#19bde8"
 
 
 def test_service_worker_update_flow_present():
@@ -29,6 +38,20 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
+    assert "manifest.webmanifest?v=20260524-1" in sw
+    assert "icon.svg?v=20260524-1" in sw
+
+
+def test_share_button_and_share_fallback_present():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+
+    assert 'id="shareButton"' in index
+    assert "function createShareText()" in main
+    assert "navigator.share" in main
+    assert "navigator.clipboard.writeText" in main
+    assert "会社Lv: " in main
+    assert "最新ログ: " in main
 
 
 def run_browser_smoke(save):

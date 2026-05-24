@@ -558,6 +558,68 @@
     }).join("");
   }
 
+  function createShareText() {
+    const latest = state.logs[0] ? state.logs[0].text : "まだ業務報告はありません。";
+    return [
+      "AI社長のブラック起業",
+      "会社Lv: " + state.companyLevel,
+      "売上: " + formatCurrency(state.money),
+      "ユーザー: " + formatNumber(state.users),
+      "バグ: " + Math.round(state.bugs) + "/100",
+      "炎上度: " + Math.round(state.fire) + "/100",
+      "最新ログ: " + latest,
+      "#AI社長のブラック起業"
+    ].join("\n");
+  }
+
+  function shareGameStatus() {
+    const text = createShareText();
+    const shareData = { title: "AI社長のブラック起業", text: text };
+    if (navigator.share) {
+      navigator.share(shareData).then(function () {
+        addLog("success", "現在の経営状況を共有しました。投資家の通知欄が少し明るくなりました。", "company");
+        renderLatestLog();
+        renderLogs();
+      }).catch(function (error) {
+        if (error && error.name === "AbortError") return;
+        copyShareText(text);
+      });
+      return;
+    }
+    copyShareText(text);
+  }
+
+  function copyShareText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        addLog("success", "共有テキストをクリップボードにコピーしました。", "company");
+        renderLatestLog();
+        renderLogs();
+      }).catch(function () {
+        fallbackCopyShareText(text);
+      });
+      return;
+    }
+    fallbackCopyShareText(text);
+  }
+
+  function fallbackCopyShareText(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    let copied = false;
+    try { copied = document.execCommand("copy"); }
+    catch (error) { copied = false; }
+    document.body.removeChild(textarea);
+    addLog(copied ? "success" : "normal", copied ? "共有テキストをクリップボードにコピーしました。" : "共有テキストの自動コピーに失敗しました。ブラウザの共有メニューを確認してください。", "company");
+    renderLatestLog();
+    renderLogs();
+  }
+
   function getRates() {
     const rates = EMPLOYEES.reduce(function (rates, employee) {
       const level = state.employees[employee.id] || 0;
@@ -618,6 +680,8 @@
     scheduleNextTick();
     window.setInterval(saveGame, AUTO_SAVE_MS);
     document.getElementById("saveButton").addEventListener("click", function () { addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); saveGame(); renderLatestLog(); renderLogs(); });
+    const shareButton = document.getElementById("shareButton");
+    if (shareButton) shareButton.addEventListener("click", shareGameStatus);
     document.getElementById("resetButton").addEventListener("click", resetGame);
     const onboardingClose = document.getElementById("onboardingClose");
     if (onboardingClose) onboardingClose.addEventListener("click", dismissOnboarding);

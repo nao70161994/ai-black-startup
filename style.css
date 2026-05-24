@@ -264,3 +264,13 @@ main { gap: 6px; margin-top: 6px; }
   .latest-log-panel p { font-size: 14px; }
   .log-list { max-height: 300px; }
 }
+
+button.share {
+  border-color: rgba(72, 214, 109, 0.36);
+  background: linear-gradient(180deg, #72ea8d, var(--green));
+  box-shadow: 0 10px 20px rgba(72, 214, 109, 0.18);
+}
+.actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 360px) {
+  .actions { grid-template-columns: 1fr; }
+}

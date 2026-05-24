@@ -49,6 +49,7 @@ AI社長とAI社員たちは、その仮想オフィスで24時間自律稼働�
 - 手動保存とリセット
 - PWA/Service Workerによるキャッシュ更新対応
 - CSS/JS cache bustingによる古いファイル読み込み対策
+- Web Share API / クリップボードコピーによるプレイ状況共有
 
 
 ### Security-06 / セキュロク
@@ -96,11 +97,29 @@ PCで確認する場合は `http://localhost:8000` でも起動できます。�
   - `style.css`
   - `main.js`
 - PWA/Service Worker更新対応
+  - `manifest.webmanifest`
   - `sw.js`
+  - `icon.svg`
 - 回帰テスト
   - `tests/test_regressions.py`
 
 現在はMVPのため、ビルド環境、課金、広告、オンライン要素、ランキングは未実装です。
+
+
+## シェア機能
+
+操作エリアの「共有」ボタンから、現在のプレイ状況をテキスト化できます。
+
+共有テキストには以下が含まれます。
+
+- 会社Lv
+- 売上
+- ユーザー数
+- バグ
+- 炎上度
+- 最新ログ
+
+対応ブラウザではWeb Share APIの共有シートを開きます。未対応ブラウザではクリップボードへコピーします。コピーに成功すると業務報告ログにも記録されます。
 
 ## 保存仕様
 
@@ -146,6 +165,8 @@ ai_black_startup_save_v1
 
 現在のアプリバージョンは `2026.05.24.1` です。
 
+`manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
+
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
@@ -179,7 +200,7 @@ node --check sw.js
 pytest
 ```
 
-`pytest` では、cache busting/app versionの整合性、Service Worker更新処理、既存セーブへの新規社員補完、会社Lv5でのSecurity-06表示を確認しています。
+`pytest` では、cache busting/app versionの整合性、manifest読み込み、Service Worker更新処理、共有ボタン/共有処理、既存セーブへの新規社員補完、会社Lv5でのSecurity-06表示を確認しています。
 
 ## 今後の改善予定
 
