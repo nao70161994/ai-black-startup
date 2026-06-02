@@ -55,7 +55,7 @@ def test_share_button_and_share_fallback_present():
     assert "会社Lv: " in main
     assert "最新ログ: " in main
     assert "製品: " in main
-    assert "製品MRR: " in main
+    assert "MRR: " in main
 
 
 def run_browser_smoke(save):
@@ -151,8 +151,8 @@ def test_product_pipeline_minimum_definition_present():
     assert 'demand: 0.8' in main
     assert 'risk: 0.6' in main
     assert 'initialQuality: 60' in main
-    assert 'definition.monthlyPrice * product.customers' in main
-    assert 'getProductRevenuePerSecond(product)' in main
+    assert 'definition.monthlyPrice * Math.max(0, Math.floor' in main
+    assert 'getProductRevenuePerSecond(product, definition)' in main
     assert 'lifetimeRevenue' in main
     assert 'salesPityCounter' in main
     assert 'sellingSeconds' in main
@@ -160,8 +160,8 @@ def test_product_pipeline_minimum_definition_present():
     assert 'PRODUCTS.forEach(function (definition)' in main
     assert 'function applySingleProductPipeline(product, definition)' in main
     assert 'function addProductCustomer(product, definition, flags, firstGuaranteed)' in main
-    assert 'definition.monthlyPrice * product.customers' in main
-    assert 'return Math.max(0, safeNumber(product.mrr, 0)) / 300' in main
+    assert 'definition.monthlyPrice * Math.max(0, Math.floor' in main
+    assert 'return getProductMrr(product, definition || getProductDefinition(product.id)) / 300' in main
 
 
 def test_product_pipeline_ui_and_assignment_rules_present():
@@ -227,7 +227,7 @@ def test_revenue_product_keeps_tick_condition_present():
     main = (ROOT / "main.js").read_text()
 
     assert "function hasRevenueProduct()" in main
-    assert "product.customers > 0 || product.mrr > 0" in main
+    assert "product.customers > 0 || getProductMrr(product, definition) > 0" in main
     assert "!hasRevenueProduct()" in main
     assert "function applyProductRevenue()" in main
     assert "product.lifetimeRevenue" in main
@@ -301,3 +301,59 @@ def test_first_customer_guarantee_and_milestone_flags_present():
     assert "customer50Logged" in main
     assert "customer100Logged" in main
     assert "mrr100kLogged" in main
+
+
+def test_saved_mrr_is_derived_from_integer_customers():
+    old_save = {
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {
+            "dailyReportAi": {
+                "id": "dailyReportAi",
+                "status": "selling",
+                "progress": 100,
+                "quality": 70,
+                "bugs": 0,
+                "awareness": 10,
+                "customers": 2,
+                "mrr": 1400,
+                "lifetimeRevenue": 0,
+            }
+        },
+        "productFlags": {},
+        "assignments": {},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1780416183951,
+    }
+    output = run_browser_smoke(old_save)
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["customers"] == 2
+    assert product["mrr"] == 1000
+
+
+def test_product_mrr_and_revenue_are_derived_values():
+    main = (ROOT / "main.js").read_text()
+
+    assert "function getProductMrr(product, definition)" in main
+    assert "definition.monthlyPrice * Math.max(0, Math.floor" in main
+    assert "function getProductRevenuePerSecond(product, definition)" in main
+    assert "return getProductMrr(product, definition || getProductDefinition(product.id)) / 300" in main
+    assert "formatCurrency(getProductMrr(product, definition))" in main
+    assert "getProductMrr(getProduct(PRODUCTS[0].id), getProductDefinition(PRODUCTS[0].id))" in main
+
+
+def test_sales_target_ui_is_explicit():
+    main = (ROOT / "main.js").read_text()
+
+    assert "対象: " in main
+    assert "の新規顧客を確率で獲得" in main
+    assert "営業状態: " in main
+    assert "が" in main and "を販売中" in main
+    assert "未割り振り。既存顧客のMRRのみ継続" in main
+    assert "タスクは現在の製品にだけ作用します" in main

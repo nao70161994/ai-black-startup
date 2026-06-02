@@ -304,3 +304,6 @@ button.share {
 
 .assignment-help { margin-top: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .product-objective-panel { border-color: rgba(72, 214, 109, 0.3); background: linear-gradient(135deg, #ffffff, #f6ffef); }
+
+.product-sales-state, .assignment-rule { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.product-sales-state { padding: 6px 7px; border-radius: 7px; background: #f6fbfd; }
