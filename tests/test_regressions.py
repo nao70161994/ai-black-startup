@@ -115,6 +115,7 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["products"]["dailyReportAi"]["quality"] == 60
     assert output["save"]["assignments"] == {"development": None, "qa": None, "sales": None}
     assert output["save"]["productFlags"]["dailyReportAi"]["startedLogged"] is False
+    assert output["save"]["productFlags"]["dailyReportAi"]["firstCustomerGranted"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
     assert output["save"]["appVersion"] == "2026.05.24.2"
 
@@ -153,8 +154,14 @@ def test_product_pipeline_minimum_definition_present():
     assert 'definition.monthlyPrice * product.customers' in main
     assert 'getProductRevenuePerSecond(product)' in main
     assert 'lifetimeRevenue' in main
+    assert 'salesPityCounter' in main
+    assert 'sellingSeconds' in main
+    assert 'firstCustomerGranted' in main
     assert 'PRODUCTS.forEach(function (definition)' in main
     assert 'function applySingleProductPipeline(product, definition)' in main
+    assert 'function addProductCustomer(product, definition, flags, firstGuaranteed)' in main
+    assert 'definition.monthlyPrice * product.customers' in main
+    assert 'return Math.max(0, safeNumber(product.mrr, 0)) / 300' in main
 
 
 def test_product_pipeline_ui_and_assignment_rules_present():
@@ -212,6 +219,7 @@ def test_product_flags_migrate_from_legacy_shape():
     assert flags["mrr10kLogged"] is True
     assert flags["qaLogShown"] is True
     assert flags["salesStartedLogged"] is True
+    assert flags["firstCustomerGranted"] is False
     assert output["save"]["products"]["dailyReportAi"]["lifetimeRevenue"] == 1234
 
 
@@ -223,6 +231,9 @@ def test_revenue_product_keeps_tick_condition_present():
     assert "!hasRevenueProduct()" in main
     assert "function applyProductRevenue()" in main
     assert "product.lifetimeRevenue" in main
+    assert "product.salesPityCounter >= pityLimit" in main
+    assert "customerChance: clamp" in main
+    assert "初めての顧客が付きました" in main
 
 
 def test_product_objectives_are_separate_from_stage_missions():
@@ -234,3 +245,59 @@ def test_product_objectives_are_separate_from_stage_missions():
     assert "const PRODUCT_OBJECTIVES" in main
     assert "function renderProductObjectives()" in main
     assert 'id: "product_release"' not in main
+
+
+def test_fractional_customers_are_normalized_to_integer_mrr():
+    old_save = {
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {
+            "dailyReportAi": {
+                "id": "dailyReportAi",
+                "status": "selling",
+                "progress": 100,
+                "quality": 70,
+                "bugs": 0,
+                "awareness": 10,
+                "customers": 1.9,
+                "mrr": 950,
+                "lifetimeRevenue": 0,
+            }
+        },
+        "productFlags": {},
+        "assignments": {},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1780416183951,
+    }
+    output = run_browser_smoke(old_save)
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["customers"] == 1
+    assert product["mrr"] == 500
+    assert isinstance(product["customers"], int)
+
+
+def test_customer_display_and_share_use_integer_company_units():
+    main = (ROOT / "main.js").read_text()
+
+    assert "function formatCustomers(value)" in main
+    assert 'formatNumber(Math.floor(safeNumber(value, 0))) + "社"' in main
+    assert '"製品顧客数: " + formatCustomers' in main
+    assert "formatCurrencyPrecise(revenue)" in main
+
+
+def test_first_customer_guarantee_and_milestone_flags_present():
+    main = (ROOT / "main.js").read_text()
+
+    assert "product.sellingSeconds >= 3" in main
+    assert "customers === 0" in main
+    assert "flags.firstCustomerGranted" in main
+    assert "customer10Logged" in main
+    assert "customer50Logged" in main
+    assert "customer100Logged" in main
+    assert "mrr100kLogged" in main

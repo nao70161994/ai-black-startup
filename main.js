@@ -148,7 +148,7 @@
   function createInitialProducts() {
     const products = {};
     PRODUCTS.forEach(function (product) {
-      products[product.id] = { id: product.id, status: "idea", progress: 0, quality: product.initialQuality, bugs: 0, awareness: 0, customers: 0, mrr: 0, lifetimeRevenue: 0 };
+      products[product.id] = { id: product.id, status: "idea", progress: 0, quality: product.initialQuality, bugs: 0, awareness: 0, customers: 0, mrr: 0, lifetimeRevenue: 0, salesPityCounter: 0, sellingSeconds: 0 };
     });
     return products;
   }
@@ -160,7 +160,7 @@
   function createInitialProductFlags() {
     const flags = {};
     PRODUCTS.forEach(function (product) {
-      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, mrr10kLogged: false, qaLogShown: false };
+      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, firstCustomerGranted: false, customer10Logged: false, customer50Logged: false, customer100Logged: false, mrr10kLogged: false, mrr100kLogged: false, qaLogShown: false };
     });
     return flags;
   }
@@ -221,7 +221,9 @@
       product.quality = clamp(safeNumber(saved.quality, product.quality), 0, 100);
       product.bugs = clamp(safeNumber(saved.bugs, product.bugs), 0, 100);
       product.awareness = clamp(safeNumber(saved.awareness, product.awareness), 0, 100);
-      product.customers = Math.max(0, safeNumber(saved.customers, product.customers));
+      product.customers = Math.max(0, Math.floor(safeNumber(saved.customers, product.customers)));
+      product.salesPityCounter = Math.max(0, safeNumber(saved.salesPityCounter, product.salesPityCounter));
+      product.sellingSeconds = Math.max(0, safeNumber(saved.sellingSeconds, product.sellingSeconds));
       product.mrr = Math.max(0, safeNumber(saved.mrr, definition.monthlyPrice * product.customers));
       product.lifetimeRevenue = Math.max(0, safeNumber(saved.lifetimeRevenue, safeNumber(saved.totalRevenue, safeNumber(saved.totalSales, product.lifetimeRevenue))));
       recalculateProductMrr(product, definition);
@@ -237,7 +239,12 @@
       flags[product.id].startedLogged = Boolean(current.startedLogged);
       flags[product.id].completedLogged = Boolean(current.completedLogged);
       flags[product.id].salesStartedLogged = Boolean(current.salesStartedLogged || (product.id === "dailyReportAi" && source.dailyReportSalesStartedLogged));
+      flags[product.id].firstCustomerGranted = Boolean(current.firstCustomerGranted);
+      flags[product.id].customer10Logged = Boolean(current.customer10Logged);
+      flags[product.id].customer50Logged = Boolean(current.customer50Logged);
+      flags[product.id].customer100Logged = Boolean(current.customer100Logged);
       flags[product.id].mrr10kLogged = Boolean(current.mrr10kLogged || (product.id === "dailyReportAi" && source.dailyReportMrr10kLogged));
+      flags[product.id].mrr100kLogged = Boolean(current.mrr100kLogged);
       flags[product.id].qaLogShown = Boolean(current.qaLogShown || (product.id === "dailyReportAi" && source.dailyReportQaLogShown));
     });
     return flags;
@@ -437,16 +444,64 @@
           addLog("success", definition.name + "の販売を開始しました。Sales-02が「毎日が導入日です」と言っています。", product.id);
         }
       }
-      const sales = getSalesEffect(salesWorker, product, definition);
-      product.customers = Math.max(0, product.customers + sales.customers);
-      product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
-      state.fire = clamp(state.fire + sales.fire, 0, 100);
+      applySalesActivity(product, definition, salesWorker, flags);
     }
 
     recalculateProductMrr(product, definition);
+    addProductMilestoneLogs(product, definition, flags);
+  }
+
+  function applySalesActivity(product, definition, workerId, flags) {
+    const sales = getSalesEffect(workerId, product, definition);
+    product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
+    state.fire = clamp(state.fire + sales.fire, 0, 100);
+    product.sellingSeconds += 1;
+    product.salesPityCounter += 1;
+
+    if (product.customers === 0 && !flags.firstCustomerGranted && product.sellingSeconds >= 3) {
+      addProductCustomer(product, definition, flags, true);
+      flags.firstCustomerGranted = true;
+      product.salesPityCounter = 0;
+      return;
+    }
+
+    const pityLimit = workerId === "sales02" ? 20 : 30;
+    if (Math.random() < sales.customerChance || product.salesPityCounter >= pityLimit) {
+      addProductCustomer(product, definition, flags, false);
+      product.salesPityCounter = 0;
+    }
+  }
+
+  function addProductCustomer(product, definition, flags, firstGuaranteed) {
+    product.customers = Math.max(0, Math.floor(product.customers) + 1);
+    recalculateProductMrr(product, definition);
+    if (firstGuaranteed || (product.customers === 1 && !flags.firstCustomerGranted)) {
+      flags.firstCustomerGranted = true;
+      addLog("success", definition.name + "に初めての顧客が付きました。AI社長はこれを市場検証成功と呼んでいます。", product.id);
+    }
+    addProductMilestoneLogs(product, definition, flags);
+  }
+
+  function addProductMilestoneLogs(product, definition, flags) {
+    if (product.customers >= 10 && !flags.customer10Logged) {
+      flags.customer10Logged = true;
+      addLog("success", definition.name + "の顧客が10社に到達しました。日報が少しだけ会社を救っています。", product.id);
+    }
+    if (product.customers >= 50 && !flags.customer50Logged) {
+      flags.customer50Logged = true;
+      addLog("success", definition.name + "の顧客が50社に到達しました。毎朝の定型文に市場性が出ています。", product.id);
+    }
+    if (product.customers >= 100 && !flags.customer100Logged) {
+      flags.customer100Logged = true;
+      addLog("success", definition.name + "の顧客が100社に到達しました。AI社長が導入実績を連呼しています。", product.id);
+    }
     if (product.mrr >= 10000 && !flags.mrr10kLogged) {
       flags.mrr10kLogged = true;
       addLog("success", definition.name + "のMRRが¥10K/月を超えました。小さな継続収益が回り始めました。", product.id);
+    }
+    if (product.mrr >= 100000 && !flags.mrr100kLogged) {
+      flags.mrr100kLogged = true;
+      addLog("success", definition.name + "のMRRが¥100K/月を超えました。継続収益が会議より強くなっています。", product.id);
     }
   }
 
@@ -628,6 +683,9 @@
     if (rates.users > 0) parts.push("ユーザー +" + formatNumber(rates.users) + "/秒");
     if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
+    const sellingProduct = PRODUCTS.map(function (definition) { return getProduct(definition.id); }).find(function (product) { return product.status === "selling"; });
+    if (sellingProduct && state.assignments.sales) parts.push("顧客獲得判定中");
+    if (sellingProduct && sellingProduct.customers > 0) parts.push("MRR継続収益 " + formatCurrencyPrecise(getProductRevenuePerSecond(sellingProduct)) + "/秒");
     if (rates.bugs < 0) parts.push("バグ " + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire < 0) parts.push("炎上 " + rates.fire.toFixed(1) + "/秒");
     element.textContent = parts.join(" / ") || "AI社員は静かに待機中です。";
@@ -657,9 +715,9 @@
       '<span>品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
       '<span>製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
       '<span>認知度 <strong>' + Math.round(product.awareness) + '</strong></span>' +
-      '<span>顧客数 <strong>' + formatNumber(product.customers) + '</strong></span>' +
+      '<span>顧客数 <strong>' + formatCustomers(product.customers) + '</strong></span>' +
       '<span>MRR <strong>' + formatCurrency(product.mrr) + '/月</strong></span>' +
-      '<span class="wide">製品売上/秒 <strong>' + formatCurrency(revenue) + ' / 秒</strong></span>' +
+      '<span class="wide">製品売上/秒 <strong>' + formatCurrencyPrecise(revenue) + ' / 秒</strong></span>' +
       '</div>' +
       (canStart ? '<button type="button" id="startProductButton">開発開始</button>' : '') +
       '</article>';
@@ -833,7 +891,7 @@
       "炎上度: " + Math.round(state.fire) + "/100",
       "製品: " + getProductDefinition(PRODUCTS[0].id).name,
       "製品状態: " + getProductStatusLabel(getProduct(PRODUCTS[0].id).status),
-      "製品顧客数: " + formatNumber(getProduct(PRODUCTS[0].id).customers),
+      "製品顧客数: " + formatCustomers(getProduct(PRODUCTS[0].id).customers),
       "製品MRR: " + formatCurrency(getProduct(PRODUCTS[0].id).mrr) + "/月",
       "製品品質: " + Math.round(getProduct(PRODUCTS[0].id).quality),
       "製品バグ: " + getProduct(PRODUCTS[0].id).bugs.toFixed(1),
@@ -989,19 +1047,20 @@
   }
 
   function getSalesEffect(workerId, product, definition) {
-    const awarenessFactor = 0.5 + product.awareness / 100;
+    const awarenessFactor = 0.7 + product.awareness / 166.7;
     const qualityFactor = 0.5 + product.quality / 100;
     if (workerId === "sales02") {
       const level = state.employees.sales02 || 0;
-      return { customers: (0.15 + level * 0.05) * definition.demand * awarenessFactor * qualityFactor, awareness: 0.12, fire: 0.03 };
+      const baseChance = 0.06 + level * 0.01;
+      return { customerChance: clamp(baseChance * awarenessFactor * qualityFactor * definition.demand, 0, 0.35), awareness: 0.12, fire: 0.03 };
     }
-    return { customers: 0.03 * definition.demand * awarenessFactor * qualityFactor, awareness: 0.06, fire: 0 };
+    return { customerChance: clamp(0.02 * awarenessFactor * qualityFactor * definition.demand, 0, 0.35), awareness: 0.06, fire: 0 };
   }
 
   function getProduct(productId) { return state.products[productId] || createInitialProducts()[productId] || createInitialProducts()[PRODUCTS[0].id]; }
   function getProductDefinition(productId) { return PRODUCTS.find(function (product) { return product.id === productId; }) || PRODUCTS[0]; }
   function getProductFlags(productId) { if (!state.productFlags[productId]) state.productFlags[productId] = createInitialProductFlags()[productId]; return state.productFlags[productId]; }
-  function recalculateProductMrr(product, definition) { product.mrr = Math.max(0, definition.monthlyPrice * product.customers); }
+  function recalculateProductMrr(product, definition) { product.customers = Math.max(0, Math.floor(safeNumber(product.customers, 0))); product.mrr = Math.max(0, definition.monthlyPrice * product.customers); }
   function getProductRevenuePerSecond(product) { return Math.max(0, safeNumber(product.mrr, 0)) / 300; }
   function getProductRevenuePerSecondTotal() { return PRODUCTS.reduce(function (sum, definition) { return sum + getProductRevenuePerSecond(getProduct(definition.id)); }, 0); }
   function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return product.customers > 0 || product.mrr > 0; }); }
@@ -1022,6 +1081,8 @@
   function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.companyLevel = getCompanyLevel(state.totalMoney); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
+  function formatCurrencyPrecise(value) { const number = Math.max(0, safeNumber(value, 0)); return "¥" + (number > 0 && number < 10 ? number.toFixed(1) : formatNumber(number)); }
+  function formatCustomers(value) { return formatNumber(Math.floor(safeNumber(value, 0))) + "社"; }
   function formatSignedCurrencyRate(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatCurrency(Math.abs(number)); }
   function signedNumber(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatNumber(Math.abs(number)) + " / 10秒"; }
   function signedCurrency(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + "¥" + formatNumber(Math.abs(number)) + " / 10秒"; }
