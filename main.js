@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.2";
+  const APP_VERSION = "2026.05.24.3";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -90,7 +90,7 @@
     { id: "daily_report_start", productId: "dailyReportAi", text: "AI日報メーカーの開発を開始する", done: function () { return getProduct("dailyReportAi").status !== "idea"; } },
     { id: "daily_report_ready", productId: "dailyReportAi", text: "AI日報メーカーを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("dailyReportAi").status) !== -1; } },
     { id: "daily_report_10_customers", productId: "dailyReportAi", text: "AI日報メーカーの顧客を10人獲得する", done: function () { return getProduct("dailyReportAi").customers >= 10; } },
-    { id: "daily_report_mrr_10k", productId: "dailyReportAi", text: "MRR ¥10K/月を達成する", done: function () { return getProduct("dailyReportAi").mrr >= 10000; } }
+    { id: "daily_report_mrr_10k", productId: "dailyReportAi", text: "MRR ¥10K/月を達成する", done: function () { return getProductMrr(getProduct("dailyReportAi"), getProductDefinition("dailyReportAi")) >= 10000; } }
   ];
 
   const REPORT_LOGS = buildReportLogs({
@@ -172,6 +172,7 @@
       state = normalizeState(JSON.parse(raw));
       calculateOfflineReward();
       claimCompletedMissions();
+      saveGame();
     } catch (error) {
       console.warn("Save data could not be loaded.", error);
       state = createInitialState();
@@ -221,7 +222,7 @@
       product.quality = clamp(safeNumber(saved.quality, product.quality), 0, 100);
       product.bugs = clamp(safeNumber(saved.bugs, product.bugs), 0, 100);
       product.awareness = clamp(safeNumber(saved.awareness, product.awareness), 0, 100);
-      product.customers = Math.max(0, Math.floor(safeNumber(saved.customers, product.customers)));
+      product.customers = getProductCustomers({ customers: safeNumber(saved.customers, product.customers) });
       product.salesPityCounter = Math.max(0, safeNumber(saved.salesPityCounter, product.salesPityCounter));
       product.sellingSeconds = Math.max(0, safeNumber(saved.sellingSeconds, product.sellingSeconds));
       product.mrr = 0;
@@ -458,7 +459,7 @@
     product.sellingSeconds += 1;
     product.salesPityCounter += 1;
 
-    if (product.customers === 0 && !flags.firstCustomerGranted && product.sellingSeconds >= 3) {
+    if (getProductCustomers(product) === 0 && !flags.firstCustomerGranted && product.sellingSeconds >= 3) {
       addProductCustomer(product, definition, flags, true);
       flags.firstCustomerGranted = true;
       product.salesPityCounter = 0;
@@ -473,10 +474,10 @@
   }
 
   function addProductCustomer(product, definition, flags, firstGuaranteed) {
-    product.customers = Math.max(0, Math.floor(product.customers) + 1);
+    product.customers = getProductCustomers(product) + 1;
     recalculateProductMrr(product, definition);
     const mrrText = formatCurrency(getProductMrr(product, definition)) + "/月";
-    if (firstGuaranteed || (product.customers === 1 && !flags.firstCustomerGranted)) {
+    if (firstGuaranteed || (getProductCustomers(product) === 1 && !flags.firstCustomerGranted)) {
       flags.firstCustomerGranted = true;
       addLog("success", definition.name + "に初めての顧客が付きました。AI社長はこれを市場検証成功と呼んでいます。MRRは" + mrrText + "です。", product.id);
     } else {
@@ -486,15 +487,15 @@
   }
 
   function addProductMilestoneLogs(product, definition, flags) {
-    if (product.customers >= 10 && !flags.customer10Logged) {
+    if (getProductCustomers(product) >= 10 && !flags.customer10Logged) {
       flags.customer10Logged = true;
       addLog("success", definition.name + "の顧客が10社に到達しました。日報が少しだけ会社を救っています。", product.id);
     }
-    if (product.customers >= 50 && !flags.customer50Logged) {
+    if (getProductCustomers(product) >= 50 && !flags.customer50Logged) {
       flags.customer50Logged = true;
       addLog("success", definition.name + "の顧客が50社に到達しました。毎朝の定型文に市場性が出ています。", product.id);
     }
-    if (product.customers >= 100 && !flags.customer100Logged) {
+    if (getProductCustomers(product) >= 100 && !flags.customer100Logged) {
       flags.customer100Logged = true;
       addLog("success", definition.name + "の顧客が100社に到達しました。AI社長が導入実績を連呼しています。", product.id);
     }
@@ -688,7 +689,7 @@
     if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
     const sellingProduct = PRODUCTS.map(function (definition) { return getProduct(definition.id); }).find(function (product) { return product.status === "selling"; });
     if (sellingProduct && state.assignments.sales) parts.push("顧客獲得判定中");
-    if (sellingProduct && sellingProduct.customers > 0) parts.push("MRR継続収益 " + formatCurrencyPrecise(getProductRevenuePerSecond(sellingProduct, getProductDefinition(sellingProduct.id))) + "/秒");
+    if (sellingProduct && getProductCustomers(sellingProduct) > 0) parts.push("MRR継続収益 " + formatCurrencyPrecise(getProductRevenuePerSecond(sellingProduct, getProductDefinition(sellingProduct.id))) + "/秒");
     if (rates.bugs < 0) parts.push("バグ " + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire < 0) parts.push("炎上 " + rates.fire.toFixed(1) + "/秒");
     element.textContent = parts.join(" / ") || "AI社員は静かに待機中です。";
@@ -718,7 +719,7 @@
       '<span>品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
       '<span>製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
       '<span>認知度 <strong>' + Math.round(product.awareness) + '</strong></span>' +
-      '<span>顧客数 <strong>' + formatCustomers(product.customers) + '</strong></span>' +
+      '<span>顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
       '<span>MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
       '<span class="wide">製品売上/秒 <strong>' + formatCurrencyPrecise(revenue) + ' / 秒</strong></span>' +
       '</div>' +
@@ -895,7 +896,7 @@
       "炎上度: " + Math.round(state.fire) + "/100",
       "製品: " + getProductDefinition(PRODUCTS[0].id).name,
       "製品状態: " + getProductStatusLabel(getProduct(PRODUCTS[0].id).status),
-      "製品顧客数: " + formatCustomers(getProduct(PRODUCTS[0].id).customers),
+      "製品顧客数: " + formatCustomers(getProductCustomers(getProduct(PRODUCTS[0].id))),
       "MRR: " + formatCurrency(getProductMrr(getProduct(PRODUCTS[0].id), getProductDefinition(PRODUCTS[0].id))) + "/月",
       "製品品質: " + Math.round(getProduct(PRODUCTS[0].id).quality),
       "製品バグ: " + getProduct(PRODUCTS[0].id).bugs.toFixed(1),
@@ -1064,11 +1065,12 @@
   function getProduct(productId) { return state.products[productId] || createInitialProducts()[productId] || createInitialProducts()[PRODUCTS[0].id]; }
   function getProductDefinition(productId) { return PRODUCTS.find(function (product) { return product.id === productId; }) || PRODUCTS[0]; }
   function getProductFlags(productId) { if (!state.productFlags[productId]) state.productFlags[productId] = createInitialProductFlags()[productId]; return state.productFlags[productId]; }
-  function getProductMrr(product, definition) { return definition.monthlyPrice * Math.max(0, Math.floor(safeNumber(product.customers, 0))); }
-  function recalculateProductMrr(product, definition) { product.customers = Math.max(0, Math.floor(safeNumber(product.customers, 0))); product.mrr = getProductMrr(product, definition); }
+  function getProductMrr(product, definition) { return definition.monthlyPrice * getProductCustomers(product); }
+  function recalculateProductMrr(product, definition) { product.customers = getProductCustomers(product); product.mrr = getProductMrr(product, definition); }
   function getProductRevenuePerSecond(product, definition) { return getProductMrr(product, definition || getProductDefinition(product.id)) / 300; }
+  function getProductCustomers(product) { return Math.max(0, Math.floor(Number(product.customers) || 0)); }
   function getProductRevenuePerSecondTotal() { return PRODUCTS.reduce(function (sum, definition) { return sum + getProductRevenuePerSecond(getProduct(definition.id), definition); }, 0); }
-  function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return product.customers > 0 || getProductMrr(product, definition) > 0; }); }
+  function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0; }); }
   function getProductStatusLabel(status) { return { idea: "未着手", developing: "開発中", ready: "完成", selling: "販売中" }[status] || "未着手"; }
   function getWorkerLabel(workerId) { return WORKERS[workerId] ? WORKERS[workerId].label : workerId; }
   function getTaskHelpText(taskId) {
@@ -1100,7 +1102,7 @@
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
   function formatCurrencyPrecise(value) { const number = Math.max(0, safeNumber(value, 0)); return "¥" + (number > 0 && number < 10 ? number.toFixed(1) : formatNumber(number)); }
-  function formatCustomers(value) { return formatNumber(Math.floor(safeNumber(value, 0))) + "社"; }
+  function formatCustomers(value) { return formatNumber(getProductCustomers({ customers: value })) + "社"; }
   function formatSignedCurrencyRate(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatCurrency(Math.abs(number)); }
   function signedNumber(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatNumber(Math.abs(number)) + " / 10秒"; }
   function signedCurrency(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + "¥" + formatNumber(Math.abs(number)) + " / 10秒"; }
@@ -1128,7 +1130,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-2").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-3").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

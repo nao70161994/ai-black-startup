@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.2"' in index
-    assert 'style.css?v=20260524-2' in index
-    assert 'main.js?v=20260524-2' in index
-    assert 'manifest.webmanifest?v=20260524-2' in index
-    assert 'icon.svg?v=20260524-2' in index
-    assert 'ogp.svg?v=20260524-2' in index
+    assert 'content="2026.05.24.3"' in index
+    assert 'style.css?v=20260524-3' in index
+    assert 'main.js?v=20260524-3' in index
+    assert 'manifest.webmanifest?v=20260524-3' in index
+    assert 'icon.svg?v=20260524-3' in index
+    assert 'ogp.svg?v=20260524-3' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.2"' in main
-    assert 'const APP_VERSION = "2026.05.24.2"' in sw
-    assert 'sw.js?v=20260524-2' in main
+    assert 'const APP_VERSION = "2026.05.24.3"' in main
+    assert 'const APP_VERSION = "2026.05.24.3"' in sw
+    assert 'sw.js?v=20260524-3' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-2"
+    assert manifest["start_url"] == "./index.html?v=20260524-3"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-2" in sw
-    assert "icon.svg?v=20260524-2" in sw
-    assert "ogp.svg?v=20260524-2" in sw
+    assert "manifest.webmanifest?v=20260524-3" in sw
+    assert "icon.svg?v=20260524-3" in sw
+    assert "ogp.svg?v=20260524-3" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -117,7 +117,7 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["productFlags"]["dailyReportAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["firstCustomerGranted"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
-    assert output["save"]["appVersion"] == "2026.05.24.2"
+    assert output["save"]["appVersion"] == "2026.05.24.3"
 
 
 def test_security06_visible_at_company_level_5():
@@ -151,7 +151,7 @@ def test_product_pipeline_minimum_definition_present():
     assert 'demand: 0.8' in main
     assert 'risk: 0.6' in main
     assert 'initialQuality: 60' in main
-    assert 'definition.monthlyPrice * Math.max(0, Math.floor' in main
+    assert 'return definition.monthlyPrice * getProductCustomers(product)' in main
     assert 'getProductRevenuePerSecond(product, definition)' in main
     assert 'lifetimeRevenue' in main
     assert 'salesPityCounter' in main
@@ -160,7 +160,7 @@ def test_product_pipeline_minimum_definition_present():
     assert 'PRODUCTS.forEach(function (definition)' in main
     assert 'function applySingleProductPipeline(product, definition)' in main
     assert 'function addProductCustomer(product, definition, flags, firstGuaranteed)' in main
-    assert 'definition.monthlyPrice * Math.max(0, Math.floor' in main
+    assert 'return definition.monthlyPrice * getProductCustomers(product)' in main
     assert 'return getProductMrr(product, definition || getProductDefinition(product.id)) / 300' in main
 
 
@@ -227,7 +227,7 @@ def test_revenue_product_keeps_tick_condition_present():
     main = (ROOT / "main.js").read_text()
 
     assert "function hasRevenueProduct()" in main
-    assert "product.customers > 0 || getProductMrr(product, definition) > 0" in main
+    assert "getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0" in main
     assert "!hasRevenueProduct()" in main
     assert "function applyProductRevenue()" in main
     assert "product.lifetimeRevenue" in main
@@ -286,7 +286,7 @@ def test_customer_display_and_share_use_integer_company_units():
     main = (ROOT / "main.js").read_text()
 
     assert "function formatCustomers(value)" in main
-    assert 'formatNumber(Math.floor(safeNumber(value, 0))) + "社"' in main
+    assert 'formatNumber(getProductCustomers({ customers: value })) + "社"' in main
     assert '"製品顧客数: " + formatCustomers' in main
     assert "formatCurrencyPrecise(revenue)" in main
 
@@ -295,7 +295,7 @@ def test_first_customer_guarantee_and_milestone_flags_present():
     main = (ROOT / "main.js").read_text()
 
     assert "product.sellingSeconds >= 3" in main
-    assert "customers === 0" in main
+    assert "getProductCustomers(product) === 0" in main
     assert "flags.firstCustomerGranted" in main
     assert "customer10Logged" in main
     assert "customer50Logged" in main
@@ -340,8 +340,10 @@ def test_saved_mrr_is_derived_from_integer_customers():
 def test_product_mrr_and_revenue_are_derived_values():
     main = (ROOT / "main.js").read_text()
 
+    assert "function getProductCustomers(product)" in main
+    assert "return Math.max(0, Math.floor(Number(product.customers) || 0))" in main
     assert "function getProductMrr(product, definition)" in main
-    assert "definition.monthlyPrice * Math.max(0, Math.floor" in main
+    assert "return definition.monthlyPrice * getProductCustomers(product)" in main
     assert "function getProductRevenuePerSecond(product, definition)" in main
     assert "return getProductMrr(product, definition || getProductDefinition(product.id)) / 300" in main
     assert "formatCurrency(getProductMrr(product, definition))" in main
@@ -357,3 +359,24 @@ def test_sales_target_ui_is_explicit():
     assert "が" in main and "を販売中" in main
     assert "未割り振り。既存顧客のMRRのみ継続" in main
     assert "タスクは現在の製品にだけ作用します" in main
+
+
+def test_product_mrr_is_not_used_directly_for_revenue_or_share():
+    main = (ROOT / "main.js").read_text()
+
+    assert "safeNumber(product.mrr" not in main
+    assert "formatCurrency(product.mrr" not in main
+    assert '"MRR: " + formatCurrency(getProductMrr' in main
+    assert "return getProductMrr(product, definition || getProductDefinition(product.id)) / 300" in main
+    assert "getProductMrr(product, definition) >= 10000" in main
+
+
+def test_cache_busting_updated_for_mrr_discrete_fix():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+    sw = (ROOT / "sw.js").read_text()
+
+    assert 'content="2026.05.24.3"' in index
+    assert 'main.js?v=20260524-3' in index
+    assert 'sw.js?v=20260524-3' in main
+    assert 'const APP_VERSION = "2026.05.24.3"' in sw

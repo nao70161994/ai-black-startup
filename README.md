@@ -135,7 +135,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-2
+http://localhost:8000/?v=20260524-3
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。
@@ -231,28 +231,28 @@ ai_black_startup_save_v1
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.2` です。
+現在のアプリバージョンは `2026.05.24.3` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-2">
-<script src="main.js?v=20260524-2"></script>
+<link rel="stylesheet" href="style.css?v=20260524-3">
+<script src="main.js?v=20260524-3"></script>
 ```
 
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.2
+ai-black-startup-2026.05.24.3
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-2` を付けて開く
+- URLに `?v=20260524-3` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
