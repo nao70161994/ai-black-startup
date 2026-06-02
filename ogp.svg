@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">AI社長のブラック起業</title>
+  <desc id="desc">明るいポップな近未来UI風の共有画像。AI社長ロボの顔とゲームタイトルを表示しています。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#effbff"/>
+      <stop offset="0.45" stop-color="#bff5ff"/>
+      <stop offset="1" stop-color="#f8f1ff"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e7fbff"/>
+    </linearGradient>
+    <linearGradient id="robot" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d4fbff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#1085a8" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <path d="M0 484 C145 424 238 545 385 480 C520 420 647 392 790 450 C928 506 1025 480 1200 390 L1200 630 L0 630 Z" fill="#d8ff5f" opacity="0.82"/>
+  <path d="M0 535 C170 470 285 595 438 525 C604 449 731 518 868 543 C1015 570 1110 520 1200 486 L1200 630 L0 630 Z" fill="#ff7bc8" opacity="0.58"/>
+
+  <g opacity="0.45" stroke="#19bde8" stroke-width="3">
+    <path d="M76 92 H268 M76 132 H188 M1014 104 H1144 M958 148 H1102 M90 548 H244 M978 560 H1130"/>
+    <circle cx="290" cy="92" r="8" fill="#19bde8"/>
+    <circle cx="956" cy="104" r="8" fill="#19bde8"/>
+    <circle cx="266" cy="548" r="8" fill="#19bde8"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="78" width="1056" height="474" rx="34" fill="url(#panel)" stroke="#ffffff" stroke-width="8"/>
+    <rect x="102" y="108" width="996" height="414" rx="26" fill="#ffffff" opacity="0.62"/>
+  </g>
+
+  <g transform="translate(780 156)" filter="url(#shadow)">
+    <rect x="38" y="92" width="250" height="190" rx="42" fill="url(#robot)" stroke="#0aaed6" stroke-width="8"/>
+    <rect x="88" y="30" width="150" height="92" rx="46" fill="#d8ff5f" stroke="#0aaed6" stroke-width="8"/>
+    <path d="M163 30 V0" stroke="#0aaed6" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="163" cy="-8" r="16" fill="#ff69bb" stroke="#0aaed6" stroke-width="8"/>
+    <rect x="84" y="144" width="58" height="58" rx="18" fill="#19bde8"/>
+    <rect x="184" y="144" width="58" height="58" rx="18" fill="#19bde8"/>
+    <path d="M112 235 C145 258 185 258 218 235" fill="none" stroke="#ff69bb" stroke-width="12" stroke-linecap="round"/>
+    <path d="M38 182 H0 M288 182 H326" stroke="#0aaed6" stroke-width="12" stroke-linecap="round"/>
+    <rect x="92" y="288" width="142" height="52" rx="24" fill="#ffec4d" stroke="#0aaed6" stroke-width="8"/>
+  </g>
+
+  <g transform="translate(124 150)">
+    <rect x="0" y="0" width="290" height="46" rx="23" fill="#111827"/>
+    <text x="24" y="31" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#d8ff5f">ブラッククラウド株式会社</text>
+
+    <text x="0" y="126" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="84" font-weight="900" fill="#111827">AI社長の</text>
+    <text x="0" y="218" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="92" font-weight="900" fill="#0aaed6">ブラック起業</text>
+
+    <rect x="0" y="262" width="610" height="64" rx="32" fill="#ff69bb"/>
+    <text x="28" y="304" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="800" fill="#ffffff">社長も社員もAI。誰も止めないブラック起業。</text>
+  </g>
+
+  <g transform="translate(126 500)">
+    <rect x="0" y="0" width="148" height="44" rx="22" fill="#d8ff5f"/>
+    <text x="24" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#111827">売上 ↑</text>
+    <rect x="166" y="0" width="148" height="44" rx="22" fill="#ffec4d"/>
+    <text x="190" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#111827">バグ ↑</text>
+    <rect x="332" y="0" width="148" height="44" rx="22" fill="#ff69bb"/>
+    <text x="356" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#ffffff">炎上 ↑</text>
+  </g>
+</svg>
