@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI社長のブラック起業</title>
   <meta name="description" content="社長も社員もAI。売上もバグも炎上も伸びていく、明るいブラックコメディ放置経営ゲーム。">
-  <meta name="app-version" content="2026.05.24.1">
+  <meta name="app-version" content="2026.05.24.2">
   <meta name="theme-color" content="#19bde8">
   <meta property="og:title" content="AI社長のブラック起業">
   <meta property="og:description" content="社長も社員もAI。売上もバグも炎上も伸びていく、明るいブラックコメディ放置経営ゲーム。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nao70161994.github.io/ai-black-startup/">
-  <meta property="og:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-1">
+  <meta property="og:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-2">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AI社長のブラック起業">
   <meta name="twitter:description" content="社長も社員もAI。売上もバグも炎上も伸びていく、明るいブラックコメディ放置経営ゲーム。">
-  <meta name="twitter:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-1">
+  <meta name="twitter:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-2">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="manifest" href="manifest.webmanifest?v=20260524-1">
-  <link rel="icon" href="icon.svg?v=20260524-1" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20260524-1">
+  <link rel="manifest" href="manifest.webmanifest?v=20260524-2">
+  <link rel="icon" href="icon.svg?v=20260524-2" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=20260524-2">
 </head>
 <body>
   <div class="app-shell">
@@ -34,8 +34,8 @@
     <div class="level-toast" id="levelToast" hidden></div>
     <section class="onboarding-panel" id="onboardingPanel" aria-label="初回案内">
       <div>
-        <strong>まずDev-01かSales-02を雇用してください</strong>
-        <p>初回のみ、創業クレジットでLv1社員を1体だけ無料雇用できます。雇用すると1秒ごとに売上が動き始めます。</p>
+        <strong>まずAI日報メーカーを開発しましょう</strong>
+        <p>AI社長を開発に割り振れば、専門AIがいなくても開発できます。Dev-01は開発を速くし、Sales-02は完成後の販売を伸ばします。</p>
       </div>
       <button id="onboardingClose" type="button" aria-label="案内を閉じる">OK</button>
     </section>
@@ -49,6 +49,8 @@
         <article class="status-card next-level-card" id="nextLevelCard"><span>次Lv</span><strong id="nextLevel">¥5.0K</strong><small id="nextUnlock"></small></article>
         <article class="status-card boost"><span id="startupBoostLabel">稼働状態</span><strong id="startupBoost">通常稼働</strong></article>
         <article class="status-card"><span>累計</span><strong id="totalMoney">¥0</strong></article>
+        <article class="status-card"><span>基礎受託/秒</span><strong id="baseIncomeRate">+¥0 / 秒</strong></article>
+        <article class="status-card"><span>製品/秒</span><strong id="productIncomeRate">+¥0 / 秒</strong></article>
       </section>
 
       <section class="activity-panel" id="activityPanel">
@@ -59,6 +61,18 @@
       <section class="latest-log-panel" id="latestLogPanel" aria-live="polite">
         <div class="latest-log-label"><span id="latestLogType">LOG</span><small>最新の業務報告</small></div>
         <p id="latestLogText">経営最適化AIが起動しました。</p>
+      </section>
+
+      <section class="section-block product-panel" id="productPanel" aria-label="現在の製品"></section>
+
+      <section class="section-block assignment-panel" id="assignmentPanel" aria-label="タスク割り振り"></section>
+
+      <section class="mission-panel product-objective-panel" id="productObjectivePanel" aria-label="製品目標">
+        <div class="mission-head">
+          <strong>製品目標</strong>
+          <span>AI日報メーカー</span>
+        </div>
+        <div class="mission-list" id="productObjectiveList"></div>
       </section>
 
       <section class="section-block log-section">
@@ -98,6 +112,6 @@
       </section>
     </main>
   </div>
-  <script src="main.js?v=20260524-1"></script>
+  <script src="main.js?v=20260524-2"></script>
 </body>
 </html>

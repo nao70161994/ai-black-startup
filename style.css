@@ -274,3 +274,33 @@ button.share {
 @media (max-width: 360px) {
   .actions { grid-template-columns: 1fr; }
 }
+
+
+.product-panel, .assignment-panel { border-color: rgba(25, 189, 232, 0.3); background: linear-gradient(135deg, #ffffff, #f2fcff); }
+.product-card { display: grid; gap: 8px; padding: 9px; border: 1px solid rgba(25, 189, 232, 0.2); border-radius: 9px; background: #ffffff; }
+.product-top { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+.product-top strong { display: block; color: var(--ink); font-size: 16px; }
+.product-top span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.product-progress { height: 10px; overflow: hidden; border-radius: 999px; background: #eaf8ff; border: 1px solid rgba(25, 189, 232, 0.18); }
+.product-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.product-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.product-metrics span { padding: 6px; border-radius: 7px; color: var(--muted); background: #f6fbfd; font-size: 11px; line-height: 1.3; }
+.product-metrics strong { display: block; margin-top: 2px; color: var(--ink); font-size: 13px; }
+.product-metrics .wide { grid-column: 1 / -1; background: #f2ffe9; }
+.product-selling { border-color: rgba(72, 214, 109, 0.44); background: linear-gradient(135deg, #ffffff, #f2ffe9); }
+.product-ready { border-color: rgba(255, 183, 43, 0.5); background: linear-gradient(135deg, #ffffff, #fff8df); }
+.assignment-panel { display: grid; gap: 7px; }
+.assignment-row { display: grid; gap: 7px; padding: 8px; border: 1px solid rgba(25, 189, 232, 0.18); border-radius: 9px; background: #ffffff; }
+.assignment-row strong { color: var(--ink); font-size: 13px; }
+.assignment-row span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.assignment-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.assign-button { min-height: 38px; padding: 0 7px; border-radius: 8px; font-size: 11px; line-height: 1.15; }
+.assign-button.active { border-color: rgba(72, 214, 109, 0.65); background: linear-gradient(180deg, #72ea8d, var(--green)); }
+.assign-button.release { color: var(--cyan-dark); background: #eefaff; box-shadow: none; }
+@media (max-width: 380px) {
+  .product-metrics { grid-template-columns: 1fr; }
+  .assignment-actions { grid-template-columns: 1fr 1fr; }
+}
+
+.assignment-help { margin-top: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.product-objective-panel { border-color: rgba(72, 214, 109, 0.3); background: linear-gradient(135deg, #ffffff, #f6ffef); }

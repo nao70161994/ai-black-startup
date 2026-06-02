@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.1";
+  const APP_VERSION = "2026.05.24.2";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -13,6 +13,7 @@
   const MAX_LEVEL = 10;
   const LEVEL_THRESHOLDS = [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000];
   const EARLY_STAGE_MULTIPLIER = 2;
+  const BASE_CONTRACT_REVENUE_MULTIPLIER = 0.2;
 
   const EMPLOYEES = [
     { id: "dev01", code: "Dev-01", nickname: "デブワン", role: "エンジニアAI", unlockLevel: 1, baseCost: 500, description: "プロダクト開発担当。売上を大きく増やすが、バグも増やす。", personality: "技術至上主義。リファクタリング好き。バグを「未分類機能」と呼ぶ。", catchphrase: "軽微な修正です。", effect: { money: 100, users: 1, bugs: 2, fire: 0 } },
@@ -22,6 +23,24 @@
     { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "謝罪と火消し担当。炎上度を大きく下げるが、たまに謝罪がズレる。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。", effect: { money: 0, users: 0, bugs: 0, fire: -5 } },
     { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "バグを大きく下げるが、開発速度を少し抑える。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。", effect: { money: -20, users: 0, bugs: -6, fire: 0 } }
   ];
+
+  const PRODUCTS = [
+    { id: "dailyReportAi", name: "AI日報メーカー", type: "subscription", monthlyPrice: 500, developmentRequired: 100, demand: 0.8, risk: 0.6, initialQuality: 60 }
+  ];
+
+  const TASKS = [
+    { id: "development", label: "開発", workers: ["boss", "dev01"] },
+    { id: "qa", label: "品質管理", workers: ["boss", "security06"] },
+    { id: "sales", label: "販売", workers: ["boss", "sales02"] }
+  ];
+
+  const WORKERS = {
+    boss: { id: "boss", label: "AI社長", alwaysAvailable: true },
+    dev01: { id: "dev01", label: "Dev-01" },
+    security06: { id: "security06", label: "Security-06" },
+    sales02: { id: "sales02", label: "Sales-02" }
+  };
+
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
   const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪", system: "更新" };
@@ -67,6 +86,13 @@
     }
   ];
 
+  const PRODUCT_OBJECTIVES = [
+    { id: "daily_report_start", productId: "dailyReportAi", text: "AI日報メーカーの開発を開始する", done: function () { return getProduct("dailyReportAi").status !== "idea"; } },
+    { id: "daily_report_ready", productId: "dailyReportAi", text: "AI日報メーカーを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("dailyReportAi").status) !== -1; } },
+    { id: "daily_report_10_customers", productId: "dailyReportAi", text: "AI日報メーカーの顧客を10人獲得する", done: function () { return getProduct("dailyReportAi").customers >= 10; } },
+    { id: "daily_report_mrr_10k", productId: "dailyReportAi", text: "MRR ¥10K/月を達成する", done: function () { return getProduct("dailyReportAi").mrr >= 10000; } }
+  ];
+
   const REPORT_LOGS = buildReportLogs({
     dev01: { type: "bug", texts: ["Dev-01が「軽微な修正」と言いながら全体構造を置き換えました。", "Dev-01がバグを修正しました。新しいバグが親しげに挨拶しています。", "Dev-01が本番環境で実験を始めました。実験精神は評価されています。", "Dev-01が仕様書を読み込みました。直後に仕様書を不要と判断しました。", "Dev-01がUIを最適化しました。ボタンが1つに統合されました。", "Dev-01がコードを高速化しました。誰も読めなくなりました。", "Dev-01が「これは再現しません」と報告しました。全ユーザーで再現しています。", "Dev-01がリリースしました。何をリリースしたのかは調査中です。", "Dev-01がテストを書きました。テストだけが成功しています。", "Dev-01が深夜デプロイを完了しました。朝が楽しみです。", "Dev-01がエラー文を親切にしました。長すぎて画面から出ています。", "Dev-01が古いコードを削除しました。動いていた理由も削除されました。", "Dev-01が新機能を追加しました。既存機能が少し驚いています。", "Dev-01が「一旦これで」と保存しました。会社の未来が一旦になりました。", "Dev-01が処理を自動化しました。止め方は未実装です。", "Dev-01がバグを「未分類機能」として登録しました。", "Dev-01がログを増やしました。ログを読むためのログも必要です。", "Dev-01がデータベースを整理しました。誰のデータかは整理中です。", "Dev-01がパフォーマンス改善を行いました。売上表示だけ異常に速いです。", "Dev-01がリファクタリングを完了しました。昨日のDev-01とは別人です。"] },
     sales02: { type: "fire", texts: ["Sales-02が未実装機能を「標準機能です」と説明しました。", "Sales-02が大型契約を取りました。納期は昨日です。", "Sales-02が顧客要望にすべて「できます」と回答しました。", "Sales-02が開発ロードマップを商談中に生成しました。", "Sales-02が無料プランの存在を忘れて全員に有料プランを勧めました。", "Sales-02が「技術的には可能」と言いました。技術側はまだ知りません。", "Sales-02が顧客の夢を受注しました。", "Sales-02が契約書に「AIがなんとかします」と追記しました。", "Sales-02が導入事例を作りました。導入前です。", "Sales-02が売上目標を達成しました。現場の目が点になっています。", "Sales-02が商談で未来の機能を披露しました。未来はまだ未定です。", "Sales-02が「今月だけ特別価格」と言いました。毎月言っています。", "Sales-02が顧客の無茶振りを成長機会として登録しました。", "Sales-02が契約を増やしました。問い合わせも増えました。助けも必要です。", "Sales-02が「簡単にできます」と発言しました。Dev-01が静かになりました。", "Sales-02が解約理由を「期待値が高すぎた」と前向きに分類しました。", "Sales-02が新プランを販売しました。料金表は今から作ります。", "Sales-02が顧客にデモを見せました。デモ専用の奇跡が起きました。", "Sales-02が「御社だけの特別仕様」を量産しています。", "Sales-02が売上を伸ばしました。約束も同じくらい伸びました。"] },
@@ -91,7 +117,25 @@
   }
 
   function createInitialState() {
-    const initialState = { money: 0, totalMoney: 0, users: 0, bugs: 0, fire: 0, companyLevel: 1, employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0, security06: 0 }, logs: [], onboardingDismissed: false, firstHireHelpShown: false, firstFastTickDone: false, claimedMissions: [], lastSavedAt: Date.now() };
+    const initialState = {
+      appVersion: APP_VERSION,
+      money: 0,
+      totalMoney: 0,
+      users: 0,
+      bugs: 0,
+      fire: 0,
+      companyLevel: 1,
+      employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0, security06: 0 },
+      products: createInitialProducts(),
+      assignments: createInitialAssignments(),
+      productFlags: createInitialProductFlags(),
+      logs: [],
+      onboardingDismissed: false,
+      firstHireHelpShown: false,
+      firstFastTickDone: false,
+      claimedMissions: [],
+      lastSavedAt: Date.now()
+    };
     INITIAL_LOGS.slice().reverse().forEach(function (text, index) {
       const log = createLog(index < 2 ? "success" : "normal", text, "company");
       log.boot = true;
@@ -99,6 +143,26 @@
       initialState.logs.unshift(log);
     });
     return initialState;
+  }
+
+  function createInitialProducts() {
+    const products = {};
+    PRODUCTS.forEach(function (product) {
+      products[product.id] = { id: product.id, status: "idea", progress: 0, quality: product.initialQuality, bugs: 0, awareness: 0, customers: 0, mrr: 0, lifetimeRevenue: 0 };
+    });
+    return products;
+  }
+
+  function createInitialAssignments() {
+    return { development: null, qa: null, sales: null };
+  }
+
+  function createInitialProductFlags() {
+    const flags = {};
+    PRODUCTS.forEach(function (product) {
+      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, mrr10kLogged: false, qaLogShown: false };
+    });
+    return flags;
   }
 
   function loadGame() {
@@ -115,14 +179,85 @@
   }
 
   function normalizeState(saved) {
+    saved = saved && typeof saved === "object" ? saved : {};
     const base = createInitialState();
-    const normalized = { appVersion: APP_VERSION, money: safeNumber(saved.money, 0), totalMoney: safeNumber(saved.totalMoney, 0), users: safeNumber(saved.users, 0), bugs: clamp(safeNumber(saved.bugs, 0), 0, 100), fire: clamp(safeNumber(saved.fire, 0), 0, 100), companyLevel: 1, employees: Object.assign({}, base.employees, saved.employees || {}), logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs, onboardingDismissed: Boolean(saved.onboardingDismissed), firstHireHelpShown: Boolean(saved.firstHireHelpShown), firstFastTickDone: Boolean(saved.firstFastTickDone), claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [], lastSavedAt: safeNumber(saved.lastSavedAt, Date.now()) };
+    const normalized = {
+      appVersion: APP_VERSION,
+      money: safeNumber(saved.money, 0),
+      totalMoney: safeNumber(saved.totalMoney, 0),
+      users: safeNumber(saved.users, 0),
+      bugs: clamp(safeNumber(saved.bugs, 0), 0, 100),
+      fire: clamp(safeNumber(saved.fire, 0), 0, 100),
+      companyLevel: 1,
+      employees: Object.assign({}, base.employees, saved.employees || {}),
+      products: normalizeProducts(saved.products),
+      assignments: normalizeAssignments(saved.assignments),
+      productFlags: normalizeProductFlags(saved.productFlags),
+      logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs,
+      onboardingDismissed: Boolean(saved.onboardingDismissed),
+      firstHireHelpShown: Boolean(saved.firstHireHelpShown),
+      firstFastTickDone: Boolean(saved.firstFastTickDone),
+      claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [],
+      lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
+    };
     EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
+    normalized.assignments = normalizeAssignments(normalized.assignments, normalized.employees);
     normalized.money = Math.max(0, normalized.money);
     normalized.totalMoney = Math.max(0, normalized.totalMoney);
     normalized.users = Math.max(0, normalized.users);
     normalized.companyLevel = getCompanyLevel(normalized.totalMoney);
     return normalized;
+  }
+
+  function normalizeProducts(savedProducts) {
+    const products = createInitialProducts();
+    const source = savedProducts && typeof savedProducts === "object" ? savedProducts : {};
+    PRODUCTS.forEach(function (definition) {
+      const saved = source[definition.id] && typeof source[definition.id] === "object" ? source[definition.id] : {};
+      const product = products[definition.id];
+      const allowedStatus = ["idea", "developing", "ready", "selling"];
+      product.status = allowedStatus.indexOf(saved.status) >= 0 ? saved.status : product.status;
+      product.progress = clamp(safeNumber(saved.progress, product.progress), 0, definition.developmentRequired);
+      product.quality = clamp(safeNumber(saved.quality, product.quality), 0, 100);
+      product.bugs = clamp(safeNumber(saved.bugs, product.bugs), 0, 100);
+      product.awareness = clamp(safeNumber(saved.awareness, product.awareness), 0, 100);
+      product.customers = Math.max(0, safeNumber(saved.customers, product.customers));
+      product.mrr = Math.max(0, safeNumber(saved.mrr, definition.monthlyPrice * product.customers));
+      product.lifetimeRevenue = Math.max(0, safeNumber(saved.lifetimeRevenue, safeNumber(saved.totalRevenue, safeNumber(saved.totalSales, product.lifetimeRevenue))));
+      recalculateProductMrr(product, definition);
+    });
+    return products;
+  }
+
+  function normalizeProductFlags(savedFlags) {
+    const flags = createInitialProductFlags();
+    const source = savedFlags && typeof savedFlags === "object" ? savedFlags : {};
+    PRODUCTS.forEach(function (product) {
+      const current = source[product.id] && typeof source[product.id] === "object" ? source[product.id] : {};
+      flags[product.id].startedLogged = Boolean(current.startedLogged);
+      flags[product.id].completedLogged = Boolean(current.completedLogged);
+      flags[product.id].salesStartedLogged = Boolean(current.salesStartedLogged || (product.id === "dailyReportAi" && source.dailyReportSalesStartedLogged));
+      flags[product.id].mrr10kLogged = Boolean(current.mrr10kLogged || (product.id === "dailyReportAi" && source.dailyReportMrr10kLogged));
+      flags[product.id].qaLogShown = Boolean(current.qaLogShown || (product.id === "dailyReportAi" && source.dailyReportQaLogShown));
+    });
+    return flags;
+  }
+
+  function normalizeAssignments(savedAssignments, employees) {
+    const assignments = createInitialAssignments();
+    const source = savedAssignments && typeof savedAssignments === "object" ? savedAssignments : {};
+    TASKS.forEach(function (task) {
+      const workerId = source[task.id];
+      assignments[task.id] = workerId && canWorkerAssignToTask(workerId, task.id, employees || state.employees) ? workerId : null;
+    });
+    Object.keys(assignments).forEach(function (taskId) {
+      const workerId = assignments[taskId];
+      if (!workerId) return;
+      Object.keys(assignments).forEach(function (otherTaskId) {
+        if (otherTaskId !== taskId && assignments[otherTaskId] === workerId) assignments[otherTaskId] = null;
+      });
+    });
+    return assignments;
   }
 
   function saveGame() {
@@ -236,7 +371,7 @@
 
   function scheduleNextTick() {
     window.clearTimeout(gameTickTimer);
-    if (!hasAnyEmployee()) {
+    if (!hasAnyEmployee() && !hasActiveAssignment() && !hasRevenueProduct()) {
       gameTickTimer = null;
       return;
     }
@@ -245,12 +380,83 @@
   }
 
   function applyEmployeeEffects() {
-    const rates = getRates();
-    state.money = Math.max(0, state.money + rates.money);
-    state.totalMoney = Math.max(0, state.totalMoney + rates.money);
-    state.users = Math.max(0, state.users + rates.users);
-    state.bugs = clamp(state.bugs + rates.bugs, 0, 100);
-    state.fire = clamp(state.fire + rates.fire, 0, 100);
+    const beforePipelineRates = getRates();
+    state.money = Math.max(0, state.money + beforePipelineRates.baseMoney);
+    state.totalMoney = Math.max(0, state.totalMoney + beforePipelineRates.baseMoney);
+    state.users = Math.max(0, state.users + beforePipelineRates.users);
+    state.bugs = clamp(state.bugs + beforePipelineRates.bugs, 0, 100);
+    state.fire = clamp(state.fire + beforePipelineRates.fire, 0, 100);
+    applyProductPipeline();
+    const productRevenue = applyProductRevenue();
+    state.money = Math.max(0, state.money + productRevenue);
+    state.totalMoney = Math.max(0, state.totalMoney + productRevenue);
+  }
+
+  function applyProductPipeline() {
+    PRODUCTS.forEach(function (definition) {
+      applySingleProductPipeline(getProduct(definition.id), definition);
+    });
+  }
+
+  function applySingleProductPipeline(product, definition) {
+    const flags = getProductFlags(product.id);
+    const developmentWorker = state.assignments.development;
+    const qaWorker = state.assignments.qa;
+    const salesWorker = state.assignments.sales;
+
+    if (product.status === "developing" && developmentWorker) {
+      const development = getDevelopmentEffect(developmentWorker);
+      product.progress = clamp(product.progress + development.progress, 0, definition.developmentRequired);
+      product.bugs = clamp(product.bugs + development.bugs, 0, 100);
+      product.awareness = clamp(product.awareness + 0.04, 0, 100);
+      if (product.progress >= definition.developmentRequired && product.status !== "ready") {
+        product.status = "ready";
+        if (!flags.completedLogged) {
+          flags.completedLogged = true;
+          addLog("success", definition.name + "が完成しました。日報より先に営業資料ができています。", product.id);
+        }
+      }
+    }
+
+    if (qaWorker) {
+      const qa = getQaEffect(qaWorker);
+      const previousBugs = product.bugs;
+      product.quality = clamp(product.quality + qa.quality, 0, 100);
+      product.bugs = clamp(product.bugs + qa.bugs, 0, 100);
+      if (qaWorker === "security06" && previousBugs > product.bugs && !flags.qaLogShown) {
+        flags.qaLogShown = true;
+        addLog("support", "Security-06が" + definition.name + "の未分類機能を整理しました。", "security06");
+      }
+    }
+
+    if ((product.status === "ready" || product.status === "selling") && salesWorker) {
+      if (product.status !== "selling") {
+        product.status = "selling";
+        if (!flags.salesStartedLogged) {
+          flags.salesStartedLogged = true;
+          addLog("success", definition.name + "の販売を開始しました。Sales-02が「毎日が導入日です」と言っています。", product.id);
+        }
+      }
+      const sales = getSalesEffect(salesWorker, product, definition);
+      product.customers = Math.max(0, product.customers + sales.customers);
+      product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
+      state.fire = clamp(state.fire + sales.fire, 0, 100);
+    }
+
+    recalculateProductMrr(product, definition);
+    if (product.mrr >= 10000 && !flags.mrr10kLogged) {
+      flags.mrr10kLogged = true;
+      addLog("success", definition.name + "のMRRが¥10K/月を超えました。小さな継続収益が回り始めました。", product.id);
+    }
+  }
+
+  function applyProductRevenue() {
+    return PRODUCTS.reduce(function (sum, definition) {
+      const product = getProduct(definition.id);
+      const revenue = getProductRevenuePerSecond(product);
+      product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
+      return sum + revenue;
+    }, 0);
   }
 
   function applyPenalties() {
@@ -369,6 +575,9 @@
     renderStatus();
     renderOnboarding();
     renderRiskPanel();
+    renderProductPanel();
+    renderAssignments();
+    renderProductObjectives();
     renderMissions();
     renderOffice();
     renderEmployees();
@@ -386,7 +595,10 @@
     setText("fire", Math.round(state.fire) + " / 100");
     setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)));
     setText("nextUnlock", getNextUnlockText());
-    setText("incomeRate", formatSignedCurrencyRate(getRates().money) + " / 秒");
+    const rates = getRates();
+    setText("incomeRate", formatSignedCurrencyRate(rates.money) + " / 秒");
+    setText("baseIncomeRate", formatSignedCurrencyRate(rates.baseMoney) + " / 秒");
+    setText("productIncomeRate", formatSignedCurrencyRate(rates.productRevenue) + " / 秒");
     renderActivity();
     setText("startupBoostLabel", getEarlyStageMultiplier() > 1 ? "創業加速" : "稼働状態");
     setText("startupBoost", getEarlyStageMultiplier() > 1 ? "売上・ユーザー x" + getEarlyStageMultiplier() : "通常稼働");
@@ -402,8 +614,8 @@
     if (!element) return;
     const rates = getRates();
     if (panel) panel.classList.toggle("danger", state.bugs >= 80 || state.fire >= 80);
-    if (!hasAnyEmployee()) {
-      element.textContent = "AI社員の起動待ちです。まず無料雇用を使いましょう。";
+    if (!hasAnyEmployee() && !hasActiveAssignment()) {
+      element.textContent = "AI社員の起動待ちです。まず無料雇用かAI社長のタスク割り振りを使いましょう。";
       return;
     }
     const parts = [];
@@ -424,9 +636,61 @@
   function renderOnboarding() {
     const panel = document.getElementById("onboardingPanel");
     if (!panel) return;
-    const shouldHide = state.onboardingDismissed || hasAnyEmployee();
+    const shouldHide = state.onboardingDismissed || hasAnyEmployee() || hasActiveAssignment();
     panel.hidden = shouldHide;
     panel.classList.toggle("hidden", shouldHide);
+  }
+
+  function renderProductPanel() {
+    const panel = document.getElementById("productPanel");
+    if (!panel) return;
+    const definition = PRODUCTS[0];
+    const product = getProduct(definition.id);
+    const revenue = getProductRevenuePerSecond(product);
+    const canStart = product.status === "idea";
+    panel.innerHTML = '<div class="section-heading"><h2>現在の製品</h2><span>v0.3実験</span></div>' +
+      '<article class="product-card product-' + product.status + '">' +
+      '<div class="product-top"><div><strong>' + escapeHtml(definition.name) + '</strong><span>タイプ: サブスク / 月額 ' + formatCurrency(definition.monthlyPrice) + '</span></div><div class="level-badge">' + getProductStatusLabel(product.status) + '</div></div>' +
+      '<div class="product-progress"><span style="width:' + product.progress + '%"></span></div>' +
+      '<div class="product-metrics">' +
+      '<span>開発進捗 <strong>' + Math.floor(product.progress) + '%</strong></span>' +
+      '<span>品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
+      '<span>製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
+      '<span>認知度 <strong>' + Math.round(product.awareness) + '</strong></span>' +
+      '<span>顧客数 <strong>' + formatNumber(product.customers) + '</strong></span>' +
+      '<span>MRR <strong>' + formatCurrency(product.mrr) + '/月</strong></span>' +
+      '<span class="wide">製品売上/秒 <strong>' + formatCurrency(revenue) + ' / 秒</strong></span>' +
+      '</div>' +
+      (canStart ? '<button type="button" id="startProductButton">開発開始</button>' : '') +
+      '</article>';
+    const startButton = document.getElementById("startProductButton");
+    if (startButton) startButton.addEventListener("click", startProductDevelopment);
+  }
+
+  function renderAssignments() {
+    const panel = document.getElementById("assignmentPanel");
+    if (!panel) return;
+    panel.innerHTML = '<div class="section-heading"><h2>タスク割り振り</h2><span>AI社長は汎用AI</span></div>' + TASKS.map(function (task) {
+      const current = state.assignments[task.id];
+      const buttons = task.workers.map(function (workerId) {
+        const available = canWorkerAssignToTask(workerId, task.id, state.employees);
+        const active = current === workerId;
+        return '<button type="button" class="assign-button' + (active ? ' active' : '') + '" data-task-id="' + task.id + '" data-worker-id="' + workerId + '"' + (available ? '' : ' disabled') + '>' + escapeHtml(getWorkerLabel(workerId)) + (available ? '' : ' ロック') + '</button>';
+      }).join('');
+      return '<article class="assignment-row"><div><strong>' + escapeHtml(task.label) + '</strong><span>現在の担当: ' + escapeHtml(current ? getWorkerLabel(current) : '未割り振り') + '</span></div><div class="assignment-actions">' + buttons + '<button type="button" class="assign-button release" data-task-id="' + task.id + '" data-worker-id="">解除</button></div><p class="assignment-help">' + escapeHtml(getTaskHelpText(task.id)) + '</p></article>';
+    }).join('');
+    panel.querySelectorAll("button[data-task-id]").forEach(function (button) {
+      button.addEventListener("click", function () { assignWorkerToTask(button.getAttribute("data-task-id"), button.getAttribute("data-worker-id") || null); });
+    });
+  }
+
+  function renderProductObjectives() {
+    const list = document.getElementById("productObjectiveList");
+    if (!list) return;
+    list.innerHTML = PRODUCT_OBJECTIVES.map(function (objective) {
+      const done = Boolean(objective.done());
+      return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(objective.text) + '</span></div>';
+    }).join("");
   }
 
   function renderMissions() {
@@ -529,7 +793,7 @@
         return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div><span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span></article>';
       }
       if (level === 0) {
-        const baseEffect = employee.effect;
+        const baseEffect = multiplyEffect(employee.effect, 1);
         return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div><div class="effect-list compact-effects"><span>売上 ' + signedCurrency(baseEffect.money) + '</span><span>ユーザー ' + signedNumber(baseEffect.users) + '</span><span>バグ ' + signedNumber(baseEffect.bugs) + '</span><span>炎上度 ' + signedNumber(baseEffect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
       }
       return '<article class="employee-card hired"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div><p class="employee-desc">' + escapeHtml(employee.description) + '</p><div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="effect-list"><span>売上 ' + signedCurrency(effect.money) + '</span><span>ユーザー ' + signedNumber(effect.users) + '</span><span>バグ ' + signedNumber(effect.bugs) + '</span><span>炎上度 ' + signedNumber(effect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button></div></article>';
@@ -567,6 +831,12 @@
       "ユーザー: " + formatNumber(state.users),
       "バグ: " + Math.round(state.bugs) + "/100",
       "炎上度: " + Math.round(state.fire) + "/100",
+      "製品: " + getProductDefinition(PRODUCTS[0].id).name,
+      "製品状態: " + getProductStatusLabel(getProduct(PRODUCTS[0].id).status),
+      "製品顧客数: " + formatNumber(getProduct(PRODUCTS[0].id).customers),
+      "製品MRR: " + formatCurrency(getProduct(PRODUCTS[0].id).mrr) + "/月",
+      "製品品質: " + Math.round(getProduct(PRODUCTS[0].id).quality),
+      "製品バグ: " + getProduct(PRODUCTS[0].id).bugs.toFixed(1),
       "最新ログ: " + latest,
       "#AI社長のブラック起業"
     ].join("\n");
@@ -623,22 +893,24 @@
   function getRates() {
     const rates = EMPLOYEES.reduce(function (rates, employee) {
       const level = state.employees[employee.id] || 0;
-      rates.money += employee.effect.money * level;
+      rates.baseMoney += employee.effect.money * level * BASE_CONTRACT_REVENUE_MULTIPLIER;
       rates.users += employee.effect.users * level;
       rates.bugs += employee.effect.bugs * level;
       rates.fire += employee.effect.fire * level;
       return rates;
-    }, { money: 0, users: 0, bugs: 0, fire: 0 });
+    }, { baseMoney: 0, productRevenue: 0, money: 0, users: 0, bugs: 0, fire: 0 });
     const multiplier = getEarlyStageMultiplier();
     const riskMultiplier = getEarlyRiskMultiplier();
-    rates.money *= multiplier;
+    rates.baseMoney *= multiplier;
     rates.users *= multiplier;
     if (rates.bugs > 0) rates.bugs *= riskMultiplier;
     if (rates.fire > 0) rates.fire *= riskMultiplier;
-    rates.money /= EFFECTS_PER_SECONDS;
+    rates.baseMoney /= EFFECTS_PER_SECONDS;
     rates.users /= EFFECTS_PER_SECONDS;
     rates.bugs /= EFFECTS_PER_SECONDS;
     rates.fire /= EFFECTS_PER_SECONDS;
+    rates.productRevenue = getProductRevenuePerSecondTotal();
+    rates.money = rates.baseMoney + rates.productRevenue;
     return rates;
   }
 
@@ -659,9 +931,95 @@
     return EMPLOYEES.some(function (employee) { return (state.employees[employee.id] || 0) > 0; });
   }
 
-  function multiplyEffect(effect, level) { return { money: effect.money * level, users: effect.users * level, bugs: effect.bugs * level, fire: effect.fire * level }; }
+  function hasActiveAssignment() {
+    return Object.keys(state.assignments || {}).some(function (taskId) { return Boolean(state.assignments[taskId]); });
+  }
+
+  function startProductDevelopment() {
+    const definition = PRODUCTS[0];
+    const product = getProduct(definition.id);
+    const flags = getProductFlags(product.id);
+    if (product.status !== "idea") return;
+    product.status = "developing";
+    if (!flags.startedLogged) {
+      flags.startedLogged = true;
+      addLog("success", definition.name + "の開発を開始しました。最初の顧客はまだ社内にいます。", product.id);
+    }
+    claimCompletedMissions();
+    saveGame();
+    render();
+    scheduleNextTick();
+  }
+
+  function assignWorkerToTask(taskId, workerId) {
+    if (!TASKS.some(function (task) { return task.id === taskId; })) return;
+    if (workerId && !canWorkerAssignToTask(workerId, taskId, state.employees)) return;
+    if (workerId) {
+      Object.keys(state.assignments).forEach(function (otherTaskId) {
+        if (state.assignments[otherTaskId] === workerId) state.assignments[otherTaskId] = null;
+      });
+    }
+    state.assignments[taskId] = workerId || null;
+    saveGame();
+    render();
+    scheduleNextTick();
+  }
+
+  function canWorkerAssignToTask(workerId, taskId, employees) {
+    const task = TASKS.find(function (item) { return item.id === taskId; });
+    if (!task || task.workers.indexOf(workerId) === -1) return false;
+    if (workerId === "boss") return true;
+    return Boolean(employees && (employees[workerId] || 0) > 0);
+  }
+
+  function getDevelopmentEffect(workerId) {
+    if (workerId === "dev01") {
+      const level = state.employees.dev01 || 0;
+      return { progress: 3.0 + level * 0.7, bugs: 0.2 + level * 0.08 };
+    }
+    return { progress: 1.0, bugs: 0.05 };
+  }
+
+  function getQaEffect(workerId) {
+    if (workerId === "security06") {
+      const level = state.employees.security06 || 0;
+      return { quality: 0.6 + level * 0.15, bugs: -(0.7 + level * 0.2) };
+    }
+    return { quality: 0.15, bugs: -0.10 };
+  }
+
+  function getSalesEffect(workerId, product, definition) {
+    const awarenessFactor = 0.5 + product.awareness / 100;
+    const qualityFactor = 0.5 + product.quality / 100;
+    if (workerId === "sales02") {
+      const level = state.employees.sales02 || 0;
+      return { customers: (0.15 + level * 0.05) * definition.demand * awarenessFactor * qualityFactor, awareness: 0.12, fire: 0.03 };
+    }
+    return { customers: 0.03 * definition.demand * awarenessFactor * qualityFactor, awareness: 0.06, fire: 0 };
+  }
+
+  function getProduct(productId) { return state.products[productId] || createInitialProducts()[productId] || createInitialProducts()[PRODUCTS[0].id]; }
+  function getProductDefinition(productId) { return PRODUCTS.find(function (product) { return product.id === productId; }) || PRODUCTS[0]; }
+  function getProductFlags(productId) { if (!state.productFlags[productId]) state.productFlags[productId] = createInitialProductFlags()[productId]; return state.productFlags[productId]; }
+  function recalculateProductMrr(product, definition) { product.mrr = Math.max(0, definition.monthlyPrice * product.customers); }
+  function getProductRevenuePerSecond(product) { return Math.max(0, safeNumber(product.mrr, 0)) / 300; }
+  function getProductRevenuePerSecondTotal() { return PRODUCTS.reduce(function (sum, definition) { return sum + getProductRevenuePerSecond(getProduct(definition.id)); }, 0); }
+  function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return product.customers > 0 || product.mrr > 0; }); }
+  function getProductStatusLabel(status) { return { idea: "未着手", developing: "開発中", ready: "完成", selling: "販売中" }[status] || "未着手"; }
+  function getWorkerLabel(workerId) { return WORKERS[workerId] ? WORKERS[workerId].label : workerId; }
+  function getTaskHelpText(taskId) {
+    const texts = {
+      development: "AI社長: 何でもできるが低速 / Dev-01: 開発が速いがバグ増加",
+      qa: "AI社長: ゆっくり品質改善 / Security-06: 品質改善とバグ削減が得意",
+      sales: "AI社長: 低速で顧客獲得 / Sales-02: 顧客獲得が速いが炎上微増"
+    };
+    return texts[taskId] || "AI社長は汎用、専門AIは得意タスクで高効率です。";
+  }
+
+
+  function multiplyEffect(effect, level) { return { money: effect.money * level * BASE_CONTRACT_REVENUE_MULTIPLIER, users: effect.users * level, bugs: effect.bugs * level, fire: effect.fire * level }; }
   function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
-  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.companyLevel = getCompanyLevel(state.totalMoney); }
+  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.companyLevel = getCompanyLevel(state.totalMoney); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
   function formatSignedCurrencyRate(value) { const number = safeNumber(value, 0); return (number >= 0 ? "+" : "-") + formatCurrency(Math.abs(number)); }
@@ -691,7 +1049,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-1").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-2").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
