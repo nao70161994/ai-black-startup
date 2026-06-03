@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.3"' in index
-    assert 'style.css?v=20260524-3' in index
-    assert 'main.js?v=20260524-3' in index
-    assert 'manifest.webmanifest?v=20260524-3' in index
-    assert 'icon.svg?v=20260524-3' in index
-    assert 'ogp.svg?v=20260524-3' in index
+    assert 'content="2026.05.24.8"' in index
+    assert 'style.css?v=20260524-8' in index
+    assert 'main.js?v=20260524-8' in index
+    assert 'manifest.webmanifest?v=20260524-8' in index
+    assert 'icon.svg?v=20260524-8' in index
+    assert 'ogp.svg?v=20260524-8' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.3"' in main
-    assert 'const APP_VERSION = "2026.05.24.3"' in sw
-    assert 'sw.js?v=20260524-3' in main
+    assert 'const APP_VERSION = "2026.05.24.8"' in main
+    assert 'const APP_VERSION = "2026.05.24.8"' in sw
+    assert 'sw.js?v=20260524-8' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-3"
+    assert manifest["start_url"] == "./index.html?v=20260524-8"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-3" in sw
-    assert "icon.svg?v=20260524-3" in sw
-    assert "ogp.svg?v=20260524-3" in sw
+    assert "manifest.webmanifest?v=20260524-8" in sw
+    assert "icon.svg?v=20260524-8" in sw
+    assert "ogp.svg?v=20260524-8" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -54,8 +54,9 @@ def test_share_button_and_share_fallback_present():
     assert "navigator.clipboard.writeText" in main
     assert "会社Lv: " in main
     assert "最新ログ: " in main
-    assert "製品: " in main
-    assert "MRR: " in main
+    assert "主要製品: " in main
+    assert "総MRR: " in main
+    assert "製品一覧: " in main
 
 
 def run_browser_smoke(save):
@@ -84,7 +85,12 @@ const navigator = { serviceWorker: { register: () => Promise.resolve({ waiting: 
 const location = { protocol: 'http:' };
 const localStorage = { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } };
 vm.runInNewContext(code, { window, document, localStorage, navigator, location, console, Date, Math, Number, String, Boolean, Object, Array, Promise });
-console.log(JSON.stringify({ save: JSON.parse(store.ai_black_startup_save_v1), employeeHtml: elements.get('employeeList').innerHTML }));
+console.log(JSON.stringify({
+  save: JSON.parse(store.ai_black_startup_save_v1),
+  employeeHtml: elements.get('employeeList').innerHTML,
+  productHtml: elements.get('productPanel').innerHTML,
+  assignmentHtml: elements.get('assignmentPanel').innerHTML
+}));
 '''
     result = subprocess.run(
         ["node", "-e", script, json.dumps(save)],
@@ -113,11 +119,22 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["employees"]["security06"] == 0
     assert output["save"]["products"]["dailyReportAi"]["status"] == "idea"
     assert output["save"]["products"]["dailyReportAi"]["quality"] == 60
-    assert output["save"]["assignments"] == {"development": None, "qa": None, "sales": None}
+    assert output["save"]["products"]["meetingMinutesAi"]["status"] == "idea"
+    assert output["save"]["products"]["meetingMinutesAi"]["quality"] == 55
+    assert output["save"]["assignments"] == {
+        "development": {"productId": "dailyReportAi", "aiId": None},
+        "qa": {"productId": "dailyReportAi", "aiId": None},
+        "sales": {"productId": "dailyReportAi", "aiId": None},
+    }
     assert output["save"]["productFlags"]["dailyReportAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["firstCustomerGranted"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
-    assert output["save"]["appVersion"] == "2026.05.24.3"
+    assert output["save"]["productFlags"]["meetingMinutesAi"]["startedLogged"] is False
+    assert "AI日報メーカー" in output["productHtml"]
+    assert "自動議事録AI" in output["productHtml"]
+    assert "現在の担当" in output["assignmentHtml"]
+    assert "担当を変更" in output["assignmentHtml"]
+    assert output["save"]["appVersion"] == "2026.05.24.8"
 
 
 def test_security06_visible_at_company_level_5():
@@ -151,6 +168,13 @@ def test_product_pipeline_minimum_definition_present():
     assert 'demand: 0.8' in main
     assert 'risk: 0.6' in main
     assert 'initialQuality: 60' in main
+    assert 'id: "meetingMinutesAi"' in main
+    assert 'name: "自動議事録AI"' in main
+    assert 'monthlyPrice: 1200' in main
+    assert 'developmentRequired: 180' in main
+    assert 'demand: 1.0' in main
+    assert 'risk: 1.0' in main
+    assert 'initialQuality: 55' in main
     assert 'return definition.monthlyPrice * getProductCustomers(product)' in main
     assert 'getProductRevenuePerSecond(product, definition)' in main
     assert 'lifetimeRevenue' in main
@@ -162,6 +186,17 @@ def test_product_pipeline_minimum_definition_present():
     assert 'function addProductCustomer(product, definition, flags, firstGuaranteed)' in main
     assert 'return definition.monthlyPrice * getProductCustomers(product)' in main
     assert 'return getProductMrr(product, definition || getProductDefinition(product.id)) / 300' in main
+
+
+def test_products_collection_has_two_subscription_products():
+    main = (ROOT / "main.js").read_text()
+
+    assert 'id: "dailyReportAi"' in main
+    assert 'id: "meetingMinutesAi"' in main
+    assert main.count('type: "subscription"') == 2
+    assert 'PRODUCTS.map(function (definition)' in main
+    assert 'getAssignmentTargetButtons(taskId)' not in main
+    assert 'button[data-modal-product]' in main
 
 
 def test_product_pipeline_ui_and_assignment_rules_present():
@@ -179,7 +214,67 @@ def test_product_pipeline_ui_and_assignment_rules_present():
     assert '{ id: "qa", label: "品質管理", workers: ["boss", "security06"] }' in main
     assert '{ id: "sales", label: "販売", workers: ["boss", "sales02"] }' in main
     assert 'if (workerId === "boss") return true' in main
-    assert 'if (state.assignments[otherTaskId] === workerId) state.assignments[otherTaskId] = null' in main
+    assert "function getAssignment(taskId)" in main
+    assert "function getAssignmentProduct(taskId)" in main
+    assert "function getAssignmentAi(taskId)" in main
+    assert "function assignAiToTask(taskId, aiId, productId)" in main
+    assert "function clearAssignment(taskId)" in main
+    assert 'if (state.assignments[otherTaskId] && state.assignments[otherTaskId].aiId === aiId) state.assignments[otherTaskId].aiId = null' in main
+    assert "function openAssignmentModal()" in main
+    assert "function closeAssignmentModal()" in main
+    assert "function renderAssignmentModal()" in main
+    assert "function selectAssignmentTask(taskId)" in main
+    assert "function setAssignmentProduct(taskId, productId)" in main
+    assert 'id="openAssignmentModal"' in main
+    assert 'data-modal-product="' in main
+    assert 'data-modal-ai="' in main
+    assert "自動議事録AI" in main
+
+
+def test_legacy_assignments_migrate_to_product_scoped_shape():
+    legacy_save = {
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 1},
+        "products": {},
+        "productFlags": {},
+        "assignments": {"development": "boss", "qa": "security06", "sales": "sales02"},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1780416183951,
+    }
+    output = run_browser_smoke(legacy_save)
+    assignments = output["save"]["assignments"]
+    assert assignments["development"] == {"productId": "dailyReportAi", "aiId": "boss"}
+    assert output["save"]["products"]["meetingMinutesAi"]["id"] == "meetingMinutesAi"
+    assert assignments["qa"] == {"productId": "dailyReportAi", "aiId": "security06"}
+    assert assignments["sales"] == {"productId": "dailyReportAi", "aiId": "sales02"}
+    assert assignments["development"]["productId"] == "dailyReportAi"
+
+
+def test_duplicate_ai_assignment_removes_previous_task():
+    legacy_save = {
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {},
+        "productFlags": {},
+        "assignments": {"development": "boss", "qa": "boss", "sales": None},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1780416183951,
+    }
+    output = run_browser_smoke(legacy_save)
+    ai_ids = [assignment["aiId"] for assignment in output["save"]["assignments"].values()]
+    assert ai_ids.count("boss") == 1
 
 
 def test_product_flags_migrate_from_legacy_shape():
@@ -221,6 +316,17 @@ def test_product_flags_migrate_from_legacy_shape():
     assert flags["salesStartedLogged"] is True
     assert flags["firstCustomerGranted"] is False
     assert output["save"]["products"]["dailyReportAi"]["lifetimeRevenue"] == 1234
+
+
+def test_mrr_recurring_revenue_is_independent_from_sales_assignment():
+    main = (ROOT / "main.js").read_text()
+
+    assert "function hasRevenueProduct()" in main
+    assert "getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0" in main
+    assert "function applyProductRevenue()" in main
+    assert "getProductRevenuePerSecond(product, definition)" in main
+    assert 'const salesAssignment = getAssignment("sales")' in main
+    assert "product.id === salesAssignment.productId ? salesAssignment.aiId : null" in main
 
 
 def test_revenue_product_keeps_tick_condition_present():
@@ -287,8 +393,8 @@ def test_customer_display_and_share_use_integer_company_units():
 
     assert "function formatCustomers(value)" in main
     assert 'formatNumber(getProductCustomers({ customers: value })) + "社"' in main
-    assert '"製品顧客数: " + formatCustomers' in main
-    assert "formatCurrencyPrecise(revenue)" in main
+    assert '" / 顧客" + formatCustomers(getProductCustomers(product))' in main
+    assert "formatCurrency(getProductMrr(product, definition))" in main
 
 
 def test_first_customer_guarantee_and_milestone_flags_present():
@@ -347,18 +453,52 @@ def test_product_mrr_and_revenue_are_derived_values():
     assert "function getProductRevenuePerSecond(product, definition)" in main
     assert "return getProductMrr(product, definition || getProductDefinition(product.id)) / 300" in main
     assert "formatCurrency(getProductMrr(product, definition))" in main
-    assert "getProductMrr(getProduct(PRODUCTS[0].id), getProductDefinition(PRODUCTS[0].id))" in main
+    assert "function getTotalProductMrr()" in main
+    assert "getTotalProductMrr()" in main
+
+
+def test_two_product_targets_and_share_summary_present():
+    main = (ROOT / "main.js").read_text()
+
+    assert 'name: "自動議事録AI"' in main
+    assert 'PRODUCTS.map(function (definition)' in main
+    assert 'button[data-product-action]' in main
+    assert 'id="openAssignmentModal"' in main
+    assert 'button[data-modal-product]' in main
+    assert 'button[data-modal-ai]' in main
+    assert '"主要製品: " + primaryDefinition.name' in main
+    assert '"総MRR: " + formatCurrency(getTotalProductMrr()) + "/月"' in main
+    assert '"製品一覧: " + getProductShareSummary()' in main
 
 
 def test_sales_target_ui_is_explicit():
     main = (ROOT / "main.js").read_text()
 
     assert "対象: " in main
+    assert "製品一覧" in main
+    assert "2製品運用" in main
     assert "の新規顧客を確率で獲得" in main
-    assert "営業状態: " in main
-    assert "が" in main and "を販売中" in main
+    assert "現在の担当" in main
+    assert "担当を変更" in main
     assert "未割り振り。既存顧客のMRRのみ継続" in main
-    assert "タスクは現在の製品にだけ作用します" in main
+    assert "開発・販売・品質管理は、それぞれ対象製品を持ちます" in main
+
+
+def test_assignment_modal_ui_present():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+
+    assert 'id="assignmentModal"' in index
+    assert "現在の担当" in main
+    assert "担当を変更" in main
+    assert "assignment-summary-list" in main
+    assert "assignment-modal" in main
+    assert "modal-option" in main
+    assert "disabled" in main
+    assert "タスク・対象製品・担当AIを選んで割り振ります" in main
+    assert "未選択の項目があります" in main
+    assert "assignAiToTask(assignmentDraft.taskId, assignmentDraft.aiId, assignmentDraft.productId)" in main
+    assert "clearAssignment(assignmentDraft.taskId)" in main
 
 
 def test_product_mrr_is_not_used_directly_for_revenue_or_share():
@@ -366,9 +506,93 @@ def test_product_mrr_is_not_used_directly_for_revenue_or_share():
 
     assert "safeNumber(product.mrr" not in main
     assert "formatCurrency(product.mrr" not in main
-    assert '"MRR: " + formatCurrency(getProductMrr' in main
+    assert '"総MRR: " + formatCurrency(getTotalProductMrr())' in main
     assert "return getProductMrr(product, definition || getProductDefinition(product.id)) / 300" in main
     assert "getProductMrr(product, definition) >= 10000" in main
+
+
+def test_assignment_modal_visual_states_are_readable():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "販売担当を外しても、既存顧客のMRRは継続します" in main
+    assert "開発担当を割り振ると進捗が進みます" in main
+    assert "販売担当を割り振ると顧客を獲得できます" in main
+    assert "product-assignment-badge" in main
+    assert "未雇用" in main
+    assert "modal-subtle-button" in main
+    assert "modal-clear-button" in main
+    assert "担当なし" in main
+    assert ".modal-option:disabled" in css
+    assert "opacity: 1" in css
+    assert "color: #33444d" in css
+    assert "background: #dfe7eb" in css
+    assert "border-color: rgba(76, 89, 98, 0.54)" in css
+    assert ".modal-option.active" in css
+    assert "color: #07506a" in css
+
+
+def test_assignment_modal_subtle_actions_and_disabled_contrast():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "modal-apply-button" in main
+    assert "modal-subtle-button modal-clear-button" in main
+    assert "未雇用" in main
+    assert ".modal-apply-button" in css
+    assert ".modal-subtle-button" in css
+    assert ".modal-clear-button" in css
+    assert "grid-template-columns: 1.25fr 0.82fr 0.82fr" in css
+    assert "color: #33444d" in css
+    assert "background: #dfe7eb" in css
+
+
+def test_product_card_assignment_flow_exists():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "function getProductActionButtons(product, definition)" in main
+    assert "開発する" in main
+    assert "販売する" in main
+    assert "品質管理" in main
+    assert "data-product-action" in main
+    assert "function openProductAssignmentModal(taskId, productId)" in main
+    assert 'assignmentModalMode = "product"' in main
+    assert "assignmentDraft.taskId = taskId" in main
+    assert "assignmentDraft.productId = getProductDefinition(productId).id" in main
+    assert "function getAssignmentModalTitle()" in main
+    assert "担当AIを選んでください" in main
+    assert "function getWorkerTaskDescription(workerId, taskId)" in main
+    assert "何でもできるが低速" in main
+    assert "開発が速いがバグ増加" in main
+    assert "顧客獲得が速いが炎上微増" in main
+    assert "品質改善とバグ削減が得意" in main
+    assert "function startProductDevelopmentIfNeeded(productId)" in main
+    assert 'if (taskId === "development" && aiId) startProductDevelopmentIfNeeded(normalizedProductId)' in main
+    assert ".product-actions" in css
+    assert ".worker-option" in css
+
+
+def test_high_priority_pipeline_foundation_is_prepared():
+    main = (ROOT / "main.js").read_text()
+
+    assert "state.assignments.development = { productId: definition.id, aiId: developmentAssignment.aiId }" in main
+    assert "開発対象を自動議事録AIに設定しました" in main
+    assert "次に開発担当を割り振りましょう" in main
+    assert "function applyDevelopmentTask(product, definition)" in main
+    assert "function applyQaTask(product, definition)" in main
+    assert "function applySalesTask(product, definition)" in main
+    assert "function applyProductMilestones(product, definition)" in main
+    assert "function applySubscriptionRevenue(product, definition)" in main
+    assert "function applyOneShotRevenue(product, definition)" in main
+    assert 'if (definition.type === "subscription") return sum + applySubscriptionRevenue(product, definition)' in main
+    assert 'if (definition.type === "oneShot") return sum + applyOneShotRevenue(product, definition)' in main
+    assert "function getAssignedWorkerForProduct(taskId, productId)" in main
+    assert "function getProductLogText(productId, key, fallback)" in main
+    assert "const PRODUCT_LOG_TEXTS" in main
+    assert "自動議事録AIが完成しました" in main
+    assert "日報が少しだけ会社を救っています" in main
+    assert "getAssignmentTargetButtons" not in main
 
 
 def test_cache_busting_updated_for_mrr_discrete_fix():
@@ -376,7 +600,7 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.3"' in index
-    assert 'main.js?v=20260524-3' in index
-    assert 'sw.js?v=20260524-3' in main
-    assert 'const APP_VERSION = "2026.05.24.3"' in sw
+    assert 'content="2026.05.24.8"' in index
+    assert 'main.js?v=20260524-8' in index
+    assert 'sw.js?v=20260524-8' in main
+    assert 'const APP_VERSION = "2026.05.24.8"' in sw

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.3";
+  const APP_VERSION = "2026.05.24.8";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -25,7 +25,8 @@
   ];
 
   const PRODUCTS = [
-    { id: "dailyReportAi", name: "AI日報メーカー", type: "subscription", monthlyPrice: 500, developmentRequired: 100, demand: 0.8, risk: 0.6, initialQuality: 60 }
+    { id: "dailyReportAi", name: "AI日報メーカー", type: "subscription", monthlyPrice: 500, developmentRequired: 100, demand: 0.8, risk: 0.6, initialQuality: 60 },
+    { id: "meetingMinutesAi", name: "自動議事録AI", type: "subscription", monthlyPrice: 1200, developmentRequired: 180, demand: 1.0, risk: 1.0, initialQuality: 55 }
   ];
 
   const TASKS = [
@@ -89,9 +90,38 @@
   const PRODUCT_OBJECTIVES = [
     { id: "daily_report_start", productId: "dailyReportAi", text: "AI日報メーカーの開発を開始する", done: function () { return getProduct("dailyReportAi").status !== "idea"; } },
     { id: "daily_report_ready", productId: "dailyReportAi", text: "AI日報メーカーを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("dailyReportAi").status) !== -1; } },
-    { id: "daily_report_10_customers", productId: "dailyReportAi", text: "AI日報メーカーの顧客を10人獲得する", done: function () { return getProduct("dailyReportAi").customers >= 10; } },
-    { id: "daily_report_mrr_10k", productId: "dailyReportAi", text: "MRR ¥10K/月を達成する", done: function () { return getProductMrr(getProduct("dailyReportAi"), getProductDefinition("dailyReportAi")) >= 10000; } }
+    { id: "daily_report_10_customers", productId: "dailyReportAi", text: "AI日報メーカーの顧客を10社獲得する", done: function () { return getProductCustomers(getProduct("dailyReportAi")) >= 10; } },
+    { id: "meeting_minutes_start", productId: "meetingMinutesAi", text: "自動議事録AIの開発を開始する", done: function () { return getProduct("meetingMinutesAi").status !== "idea"; } },
+    { id: "meeting_minutes_ready", productId: "meetingMinutesAi", text: "自動議事録AIを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("meetingMinutesAi").status) !== -1; } },
+    { id: "total_mrr_10k", productId: "dailyReportAi", text: "総MRR ¥10K/月を達成する", done: function () { return getTotalProductMrr() >= 10000; } }
   ];
+
+  const PRODUCT_LOG_TEXTS = {
+    dailyReportAi: {
+      started: "AI日報メーカーの開発を開始しました。最初の顧客はまだ社内にいます。",
+      developmentTargetChanged: "開発対象をAI日報メーカーに設定しました。",
+      noDevelopmentWorker: "次に開発担当を割り振りましょう。AI社長でも進捗は進みます。",
+      completed: "AI日報メーカーが完成しました。日報より先に営業資料ができています。",
+      salesStarted: "AI日報メーカーの販売を開始しました。Sales-02が「毎日が導入日です」と言っています。",
+      customer10: "AI日報メーカーの顧客が10社に到達しました。日報が少しだけ会社を救っています。",
+      customer50: "AI日報メーカーの顧客が50社に到達しました。毎朝の定型文に市場性が出ています。",
+      customer100: "AI日報メーカーの顧客が100社に到達しました。AI社長が導入実績を連呼しています。",
+      mrr10k: "AI日報メーカーのMRRが¥10K/月を超えました。小さな継続収益が回り始めました。",
+      mrr100k: "AI日報メーカーのMRRが¥100K/月を超えました。継続収益が会議より強くなっています。"
+    },
+    meetingMinutesAi: {
+      started: "自動議事録AIの開発を開始しました。会議が終わる前に要約だけが先に歩き出しました。",
+      developmentTargetChanged: "開発対象を自動議事録AIに設定しました。",
+      noDevelopmentWorker: "次に開発担当を割り振りましょう。会議ログはまだ白紙です。",
+      completed: "自動議事録AIが完成しました。会議の沈黙まで要約できそうです。",
+      salesStarted: "自動議事録AIの販売を開始しました。Sales-02が「会議時間も削減できます」と言っています。",
+      customer10: "自動議事録AIの顧客が10社に到達しました。会議後の沈黙が少し短くなっています。",
+      customer50: "自動議事録AIの顧客が50社に到達しました。議事録の山がクラウドに移りました。",
+      customer100: "自動議事録AIの顧客が100社に到達しました。会議の記憶が商品になっています。",
+      mrr10k: "自動議事録AIのMRRが¥10K/月を超えました。会議が継続収益に変換され始めました。",
+      mrr100k: "自動議事録AIのMRRが¥100K/月を超えました。要約が会社を支えています。"
+    }
+  };
 
   const REPORT_LOGS = buildReportLogs({
     dev01: { type: "bug", texts: ["Dev-01が「軽微な修正」と言いながら全体構造を置き換えました。", "Dev-01がバグを修正しました。新しいバグが親しげに挨拶しています。", "Dev-01が本番環境で実験を始めました。実験精神は評価されています。", "Dev-01が仕様書を読み込みました。直後に仕様書を不要と判断しました。", "Dev-01がUIを最適化しました。ボタンが1つに統合されました。", "Dev-01がコードを高速化しました。誰も読めなくなりました。", "Dev-01が「これは再現しません」と報告しました。全ユーザーで再現しています。", "Dev-01がリリースしました。何をリリースしたのかは調査中です。", "Dev-01がテストを書きました。テストだけが成功しています。", "Dev-01が深夜デプロイを完了しました。朝が楽しみです。", "Dev-01がエラー文を親切にしました。長すぎて画面から出ています。", "Dev-01が古いコードを削除しました。動いていた理由も削除されました。", "Dev-01が新機能を追加しました。既存機能が少し驚いています。", "Dev-01が「一旦これで」と保存しました。会社の未来が一旦になりました。", "Dev-01が処理を自動化しました。止め方は未実装です。", "Dev-01がバグを「未分類機能」として登録しました。", "Dev-01がログを増やしました。ログを読むためのログも必要です。", "Dev-01がデータベースを整理しました。誰のデータかは整理中です。", "Dev-01がパフォーマンス改善を行いました。売上表示だけ異常に速いです。", "Dev-01がリファクタリングを完了しました。昨日のDev-01とは別人です。"] },
@@ -107,6 +137,9 @@
   let gameTickTimer = null;
   let penaltyElapsed = 0;
   let toastTimer = null;
+  let assignmentModalOpen = false;
+  let assignmentModalMode = "detail";
+  let assignmentDraft = { taskId: "development", productId: PRODUCTS[0].id, aiId: null };
 
   function buildReportLogs(source) {
     return Object.keys(source).flatMap(function (employeeId) {
@@ -154,7 +187,11 @@
   }
 
   function createInitialAssignments() {
-    return { development: null, qa: null, sales: null };
+    return {
+      development: { productId: PRODUCTS[0].id, aiId: null },
+      qa: { productId: PRODUCTS[0].id, aiId: null },
+      sales: { productId: PRODUCTS[0].id, aiId: null }
+    };
   }
 
   function createInitialProductFlags() {
@@ -192,7 +229,7 @@
       companyLevel: 1,
       employees: Object.assign({}, base.employees, saved.employees || {}),
       products: normalizeProducts(saved.products),
-      assignments: normalizeAssignments(saved.assignments),
+      assignments: createInitialAssignments(),
       productFlags: normalizeProductFlags(saved.productFlags),
       logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs,
       onboardingDismissed: Boolean(saved.onboardingDismissed),
@@ -202,7 +239,7 @@
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
-    normalized.assignments = normalizeAssignments(normalized.assignments, normalized.employees);
+    normalized.assignments = normalizeAssignments(saved.assignments, normalized.employees);
     normalized.money = Math.max(0, normalized.money);
     normalized.totalMoney = Math.max(0, normalized.totalMoney);
     normalized.users = Math.max(0, normalized.users);
@@ -255,14 +292,20 @@
     const assignments = createInitialAssignments();
     const source = savedAssignments && typeof savedAssignments === "object" ? savedAssignments : {};
     TASKS.forEach(function (task) {
-      const workerId = source[task.id];
-      assignments[task.id] = workerId && canWorkerAssignToTask(workerId, task.id, employees || state.employees) ? workerId : null;
+      const saved = source[task.id];
+      const productId = saved && typeof saved === "object" ? saved.productId : PRODUCTS[0].id;
+      const aiId = saved && typeof saved === "object" ? saved.aiId : saved;
+      const normalizedProductId = getProductDefinition(productId).id;
+      assignments[task.id] = {
+        productId: normalizedProductId,
+        aiId: aiId && canWorkerAssignToTask(aiId, task.id, employees || state.employees) ? aiId : null
+      };
     });
     Object.keys(assignments).forEach(function (taskId) {
-      const workerId = assignments[taskId];
-      if (!workerId) return;
+      const aiId = assignments[taskId].aiId;
+      if (!aiId) return;
       Object.keys(assignments).forEach(function (otherTaskId) {
-        if (otherTaskId !== taskId && assignments[otherTaskId] === workerId) assignments[otherTaskId] = null;
+        if (otherTaskId !== taskId && assignments[otherTaskId].aiId === aiId) assignments[otherTaskId].aiId = null;
       });
     });
     return assignments;
@@ -407,49 +450,59 @@
   }
 
   function applySingleProductPipeline(product, definition) {
-    const flags = getProductFlags(product.id);
-    const developmentWorker = state.assignments.development;
-    const qaWorker = state.assignments.qa;
-    const salesWorker = state.assignments.sales;
-
-    if (product.status === "developing" && developmentWorker) {
-      const development = getDevelopmentEffect(developmentWorker);
-      product.progress = clamp(product.progress + development.progress, 0, definition.developmentRequired);
-      product.bugs = clamp(product.bugs + development.bugs, 0, 100);
-      product.awareness = clamp(product.awareness + 0.04, 0, 100);
-      if (product.progress >= definition.developmentRequired && product.status !== "ready") {
-        product.status = "ready";
-        if (!flags.completedLogged) {
-          flags.completedLogged = true;
-          addLog("success", definition.name + "が完成しました。日報より先に営業資料ができています。", product.id);
-        }
-      }
-    }
-
-    if (qaWorker) {
-      const qa = getQaEffect(qaWorker);
-      const previousBugs = product.bugs;
-      product.quality = clamp(product.quality + qa.quality, 0, 100);
-      product.bugs = clamp(product.bugs + qa.bugs, 0, 100);
-      if (qaWorker === "security06" && previousBugs > product.bugs && !flags.qaLogShown) {
-        flags.qaLogShown = true;
-        addLog("support", "Security-06が" + definition.name + "の未分類機能を整理しました。", "security06");
-      }
-    }
-
-    if ((product.status === "ready" || product.status === "selling") && salesWorker) {
-      if (product.status !== "selling") {
-        product.status = "selling";
-        if (!flags.salesStartedLogged) {
-          flags.salesStartedLogged = true;
-          addLog("success", definition.name + "の販売を開始しました。Sales-02が「毎日が導入日です」と言っています。", product.id);
-        }
-      }
-      applySalesActivity(product, definition, salesWorker, flags);
-    }
-
+    applyDevelopmentTask(product, definition);
+    applyQaTask(product, definition);
+    applySalesTask(product, definition);
     recalculateProductMrr(product, definition);
-    addProductMilestoneLogs(product, definition, flags);
+    applyProductMilestones(product, definition);
+  }
+
+  function applyDevelopmentTask(product, definition) {
+    const flags = getProductFlags(product.id);
+    const developmentWorker = getAssignedWorkerForProduct("development", product.id);
+    if (product.status !== "developing" || !developmentWorker) return;
+
+    const development = getDevelopmentEffect(developmentWorker);
+    product.progress = clamp(product.progress + development.progress, 0, definition.developmentRequired);
+    product.bugs = clamp(product.bugs + development.bugs, 0, 100);
+    product.awareness = clamp(product.awareness + 0.04, 0, 100);
+    if (product.progress >= definition.developmentRequired && product.status !== "ready") {
+      product.status = "ready";
+      if (!flags.completedLogged) {
+        flags.completedLogged = true;
+        addLog("success", getProductLogText(product.id, "completed", definition.name + "が完成しました。"), product.id);
+      }
+    }
+  }
+
+  function applyQaTask(product, definition) {
+    const flags = getProductFlags(product.id);
+    const qaWorker = getAssignedWorkerForProduct("qa", product.id);
+    if (!qaWorker) return;
+
+    const qa = getQaEffect(qaWorker);
+    const previousBugs = product.bugs;
+    product.quality = clamp(product.quality + qa.quality, 0, 100);
+    product.bugs = clamp(product.bugs + qa.bugs, 0, 100);
+    if (qaWorker === "security06" && previousBugs > product.bugs && !flags.qaLogShown) {
+      flags.qaLogShown = true;
+      addLog("support", "Security-06が" + definition.name + "の未分類機能を整理しました。", "security06");
+    }
+  }
+
+  function applySalesTask(product, definition) {
+    const flags = getProductFlags(product.id);
+    const salesWorker = getAssignedWorkerForProduct("sales", product.id);
+    if ((product.status !== "ready" && product.status !== "selling") || !salesWorker) return;
+
+    if (product.status !== "selling") {
+      product.status = "selling";
+      if (!flags.salesStartedLogged) {
+        flags.salesStartedLogged = true;
+        addLog("success", getProductLogText(product.id, "salesStarted", definition.name + "の販売を開始しました。"), product.id);
+      }
+    }
+    applySalesActivity(product, definition, salesWorker, flags);
   }
 
   function applySalesActivity(product, definition, workerId, flags) {
@@ -483,39 +536,50 @@
     } else {
       addLog("success", definition.name + "に新規顧客が1社付きました。MRRが" + mrrText + "に増えました。", product.id);
     }
-    addProductMilestoneLogs(product, definition, flags);
+    applyProductMilestones(product, definition);
   }
 
-  function addProductMilestoneLogs(product, definition, flags) {
+  function applyProductMilestones(product, definition) {
+    const flags = getProductFlags(product.id);
     if (getProductCustomers(product) >= 10 && !flags.customer10Logged) {
       flags.customer10Logged = true;
-      addLog("success", definition.name + "の顧客が10社に到達しました。日報が少しだけ会社を救っています。", product.id);
+      addLog("success", getProductLogText(product.id, "customer10", definition.name + "の顧客が10社に到達しました。"), product.id);
     }
     if (getProductCustomers(product) >= 50 && !flags.customer50Logged) {
       flags.customer50Logged = true;
-      addLog("success", definition.name + "の顧客が50社に到達しました。毎朝の定型文に市場性が出ています。", product.id);
+      addLog("success", getProductLogText(product.id, "customer50", definition.name + "の顧客が50社に到達しました。"), product.id);
     }
     if (getProductCustomers(product) >= 100 && !flags.customer100Logged) {
       flags.customer100Logged = true;
-      addLog("success", definition.name + "の顧客が100社に到達しました。AI社長が導入実績を連呼しています。", product.id);
+      addLog("success", getProductLogText(product.id, "customer100", definition.name + "の顧客が100社に到達しました。"), product.id);
     }
     if (getProductMrr(product, definition) >= 10000 && !flags.mrr10kLogged) {
       flags.mrr10kLogged = true;
-      addLog("success", definition.name + "のMRRが¥10K/月を超えました。小さな継続収益が回り始めました。", product.id);
+      addLog("success", getProductLogText(product.id, "mrr10k", definition.name + "のMRRが¥10K/月を超えました。"), product.id);
     }
     if (getProductMrr(product, definition) >= 100000 && !flags.mrr100kLogged) {
       flags.mrr100kLogged = true;
-      addLog("success", definition.name + "のMRRが¥100K/月を超えました。継続収益が会議より強くなっています。", product.id);
+      addLog("success", getProductLogText(product.id, "mrr100k", definition.name + "のMRRが¥100K/月を超えました。"), product.id);
     }
   }
 
   function applyProductRevenue() {
     return PRODUCTS.reduce(function (sum, definition) {
       const product = getProduct(definition.id);
-      const revenue = getProductRevenuePerSecond(product, definition);
-      product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
-      return sum + revenue;
+      if (definition.type === "subscription") return sum + applySubscriptionRevenue(product, definition);
+      if (definition.type === "oneShot") return sum + applyOneShotRevenue(product, definition);
+      return sum;
     }, 0);
+  }
+
+  function applySubscriptionRevenue(product, definition) {
+    const revenue = getProductRevenuePerSecond(product, definition);
+    product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
+    return revenue;
+  }
+
+  function applyOneShotRevenue(product, definition) {
+    return 0;
   }
 
   function applyPenalties() {
@@ -688,7 +752,7 @@
     if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
     const sellingProduct = PRODUCTS.map(function (definition) { return getProduct(definition.id); }).find(function (product) { return product.status === "selling"; });
-    if (sellingProduct && state.assignments.sales) parts.push("顧客獲得判定中");
+    if (sellingProduct && getAssignmentAi("sales")) parts.push("顧客獲得判定中");
     if (sellingProduct && getProductCustomers(sellingProduct) > 0) parts.push("MRR継続収益 " + formatCurrencyPrecise(getProductRevenuePerSecond(sellingProduct, getProductDefinition(sellingProduct.id))) + "/秒");
     if (rates.bugs < 0) parts.push("バグ " + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire < 0) parts.push("炎上 " + rates.fire.toFixed(1) + "/秒");
@@ -706,45 +770,66 @@
   function renderProductPanel() {
     const panel = document.getElementById("productPanel");
     if (!panel) return;
-    const definition = PRODUCTS[0];
-    const product = getProduct(definition.id);
-    const revenue = getProductRevenuePerSecond(product, definition);
-    const canStart = product.status === "idea";
-    panel.innerHTML = '<div class="section-heading"><h2>現在の製品</h2><span>v0.3実験</span></div>' +
-      '<article class="product-card product-' + product.status + '">' +
-      '<div class="product-top"><div><strong>' + escapeHtml(definition.name) + '</strong><span>タイプ: サブスク / 月額 ' + formatCurrency(definition.monthlyPrice) + '</span></div><div class="level-badge">' + getProductStatusLabel(product.status) + '</div></div>' +
-      '<div class="product-progress"><span style="width:' + product.progress + '%"></span></div>' +
-      '<div class="product-metrics">' +
-      '<span>開発進捗 <strong>' + Math.floor(product.progress) + '%</strong></span>' +
-      '<span>品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
-      '<span>製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
-      '<span>認知度 <strong>' + Math.round(product.awareness) + '</strong></span>' +
-      '<span>顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
-      '<span>MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
-      '<span class="wide">製品売上/秒 <strong>' + formatCurrencyPrecise(revenue) + ' / 秒</strong></span>' +
-      '</div>' +
-      '<p class="product-sales-state">営業状態: ' + escapeHtml(getProductSalesStateText(product, definition)) + '</p>' +
-      (canStart ? '<button type="button" id="startProductButton">開発開始</button>' : '') +
-      '</article>';
-    const startButton = document.getElementById("startProductButton");
-    if (startButton) startButton.addEventListener("click", startProductDevelopment);
+    panel.innerHTML = '<div class="section-heading"><h2>製品一覧</h2><span>2製品運用</span></div>' + PRODUCTS.map(function (definition) {
+      const product = getProduct(definition.id);
+      const progressPercent = getProductProgressPercent(product, definition);
+      return '<article class="product-card product-' + product.status + '">' +
+        '<div class="product-top"><div><strong>' + escapeHtml(definition.name) + '</strong><span>月額 ' + formatCurrency(definition.monthlyPrice) + ' / 開発量 ' + definition.developmentRequired + '</span></div><div class="level-badge">' + getProductStatusLabel(product.status) + '</div></div>' +
+        '<div class="product-progress"><span style="width:' + progressPercent + '%"></span></div>' +
+        '<div class="product-metrics product-summary-metrics">' +
+        '<span>進捗 <strong>' + Math.floor(progressPercent) + '%</strong></span>' +
+        '<span>顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
+        '<span>MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
+        '<span>担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
+        '</div>' +
+        getProductActionHint(product, definition) +
+        getProductActionButtons(product, definition) +
+        '</article>';
+    }).join('');
+    panel.querySelectorAll("button[data-product-action]").forEach(function (button) {
+      button.addEventListener("click", function () { openProductAssignmentModal(button.getAttribute("data-product-action"), button.getAttribute("data-product-id")); });
+    });
   }
 
   function renderAssignments() {
     const panel = document.getElementById("assignmentPanel");
     if (!panel) return;
-    panel.innerHTML = '<div class="section-heading"><h2>タスク割り振り</h2><span>AI社長は汎用AI</span></div><p class="assignment-rule">タスクは現在の製品にだけ作用します。販売中の製品は、担当を外しても既存顧客のMRRが継続します。</p>' + TASKS.map(function (task) {
-      const current = state.assignments[task.id];
-      const buttons = task.workers.map(function (workerId) {
-        const available = canWorkerAssignToTask(workerId, task.id, state.employees);
-        const active = current === workerId;
-        return '<button type="button" class="assign-button' + (active ? ' active' : '') + '" data-task-id="' + task.id + '" data-worker-id="' + workerId + '"' + (available ? '' : ' disabled') + '>' + escapeHtml(getWorkerLabel(workerId)) + (available ? '' : ' ロック') + '</button>';
-      }).join('');
-      return '<article class="assignment-row"><div><strong>' + escapeHtml(task.label) + '</strong>' + getTaskTargetHtml(task.id) + '<span>現在の担当: ' + escapeHtml(current ? getWorkerLabel(current) : '未割り振り') + '</span></div><div class="assignment-actions">' + buttons + '<button type="button" class="assign-button release" data-task-id="' + task.id + '" data-worker-id="">解除</button></div><p class="assignment-help">' + escapeHtml(getTaskHelpText(task.id)) + '</p></article>';
-    }).join('');
-    panel.querySelectorAll("button[data-task-id]").forEach(function (button) {
-      button.addEventListener("click", function () { assignWorkerToTask(button.getAttribute("data-task-id"), button.getAttribute("data-worker-id") || null); });
-    });
+    panel.innerHTML = '<div class="section-heading"><h2>現在の担当</h2><button type="button" id="openAssignmentModal" class="change-assignment-button">担当を変更</button></div>' +
+      '<p class="assignment-rule">開発・販売・品質管理は、それぞれ対象製品を持ちます。販売担当を外しても、既存顧客のMRRは継続します。</p>' +
+      '<div class="assignment-summary-list">' + TASKS.map(function (task) { return getAssignmentSummaryHtml(task.id); }).join('') + '</div>';
+    const openButton = document.getElementById("openAssignmentModal");
+    if (openButton) openButton.addEventListener("click", openAssignmentModal);
+    renderAssignmentModal();
+  }
+
+  function renderAssignmentModal() {
+    const modal = document.getElementById("assignmentModal");
+    if (!modal) return;
+    modal.hidden = !assignmentModalOpen;
+    modal.classList.toggle("open", assignmentModalOpen);
+    if (!assignmentModalOpen) { modal.innerHTML = ""; return; }
+    const selectedTask = TASKS.find(function (task) { return task.id === assignmentDraft.taskId; }) || TASKS[0];
+    const hasCompleteSelection = Boolean(assignmentDraft.taskId && assignmentDraft.productId && assignmentDraft.aiId);
+    const assignable = hasCompleteSelection && canWorkerAssignToTask(assignmentDraft.aiId, selectedTask.id, state.employees);
+    const simpleMode = assignmentModalMode === "product";
+    modal.innerHTML = '<div class="assignment-modal-backdrop" data-modal-close="1"></div><div class="assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="assignmentDialogTitle">' +
+      '<div class="assignment-dialog-head"><strong id="assignmentDialogTitle">' + escapeHtml(getAssignmentModalTitle()) + '</strong><button type="button" class="modal-close-button" data-modal-close="1">閉じる</button></div>' +
+      '<p class="modal-description">' + escapeHtml(simpleMode ? '担当AIを選んでください。' : 'タスク・対象製品・担当AIを選んで割り振ります。販売担当を外しても、既存顧客のMRRは継続します。') + '</p>' +
+      (simpleMode ? '' : '<div class="modal-group"><span>タスク選択</span><div class="modal-option-grid">' + TASKS.map(function (task) { return '<button type="button" class="modal-option' + (assignmentDraft.taskId === task.id ? ' active' : '') + '" data-modal-task="' + task.id + '">' + escapeHtml(task.label) + '</button>'; }).join('') + '</div></div>') +
+      (simpleMode ? '' : '<div class="modal-group"><span>対象製品選択</span><div class="modal-option-grid">' + PRODUCTS.map(function (definition) { return '<button type="button" class="modal-option' + (assignmentDraft.productId === definition.id ? ' active' : '') + '" data-modal-product="' + definition.id + '">' + escapeHtml(definition.name) + '</button>'; }).join('') + '</div></div>') +
+      '<div class="modal-group"><span>担当AI選択</span><div class="modal-option-grid worker-grid">' + getAssignableWorkersForTask(selectedTask.id).map(function (workerId) { const enabled = canWorkerAssignToTask(workerId, selectedTask.id, state.employees); return '<button type="button" class="modal-option worker-option' + (assignmentDraft.aiId === workerId ? ' active' : '') + '" data-modal-ai="' + workerId + '"' + (enabled ? '' : ' disabled') + '><strong>' + escapeHtml(getWorkerLabel(workerId)) + '</strong><span>' + escapeHtml(getWorkerTaskDescription(workerId, selectedTask.id)) + (enabled ? '' : ' / 未雇用') + '</span></button>'; }).join('') + '</div></div>' +
+      '<div class="modal-current">選択中: ' + escapeHtml(selectedTask.label) + ' / ' + escapeHtml(getProductDefinition(assignmentDraft.productId).name) + ' / ' + escapeHtml(assignmentDraft.aiId ? getWorkerLabel(assignmentDraft.aiId) : '未選択') + '</div>' +
+      (assignable ? '' : '<p class="modal-warning">未選択の項目があります。担当できるAIを選んでください。</p>') +
+      '<div class="modal-actions"><button type="button" id="applyAssignmentButton" class="modal-apply-button"' + (assignable ? '' : ' disabled') + '>割り振る</button><button type="button" id="clearAssignmentButton" class="modal-subtle-button modal-clear-button">解除</button><button type="button" class="modal-subtle-button" data-modal-close="1">閉じる</button></div>' +
+      '</div>';
+    modal.querySelectorAll("[data-modal-close]").forEach(function (button) { button.addEventListener("click", closeAssignmentModal); });
+    modal.querySelectorAll("button[data-modal-task]").forEach(function (button) { button.addEventListener("click", function () { selectAssignmentTask(button.getAttribute("data-modal-task")); }); });
+    modal.querySelectorAll("button[data-modal-product]").forEach(function (button) { button.addEventListener("click", function () { assignmentDraft.productId = button.getAttribute("data-modal-product"); renderAssignmentModal(); }); });
+    modal.querySelectorAll("button[data-modal-ai]").forEach(function (button) { button.addEventListener("click", function () { assignmentDraft.aiId = button.getAttribute("data-modal-ai"); renderAssignmentModal(); }); });
+    const applyButton = document.getElementById("applyAssignmentButton");
+    if (applyButton) applyButton.addEventListener("click", function () { assignAiToTask(assignmentDraft.taskId, assignmentDraft.aiId, assignmentDraft.productId); closeAssignmentModal(); });
+    const clearButton = document.getElementById("clearAssignmentButton");
+    if (clearButton) clearButton.addEventListener("click", function () { clearAssignment(assignmentDraft.taskId); closeAssignmentModal(); });
   }
 
   function renderProductObjectives() {
@@ -887,6 +972,8 @@
 
   function createShareText() {
     const latest = state.logs[0] ? state.logs[0].text : "まだ業務報告はありません。";
+    const primaryDefinition = getPrimaryProductDefinition();
+    const primaryProduct = getProduct(primaryDefinition.id);
     return [
       "AI社長のブラック起業",
       "会社Lv: " + state.companyLevel,
@@ -894,12 +981,10 @@
       "ユーザー: " + formatNumber(state.users),
       "バグ: " + Math.round(state.bugs) + "/100",
       "炎上度: " + Math.round(state.fire) + "/100",
-      "製品: " + getProductDefinition(PRODUCTS[0].id).name,
-      "製品状態: " + getProductStatusLabel(getProduct(PRODUCTS[0].id).status),
-      "製品顧客数: " + formatCustomers(getProductCustomers(getProduct(PRODUCTS[0].id))),
-      "MRR: " + formatCurrency(getProductMrr(getProduct(PRODUCTS[0].id), getProductDefinition(PRODUCTS[0].id))) + "/月",
-      "製品品質: " + Math.round(getProduct(PRODUCTS[0].id).quality),
-      "製品バグ: " + getProduct(PRODUCTS[0].id).bugs.toFixed(1),
+      "主要製品: " + primaryDefinition.name,
+      "主要製品状態: " + getProductStatusLabel(primaryProduct.status),
+      "総MRR: " + formatCurrency(getTotalProductMrr()) + "/月",
+      "製品一覧: " + getProductShareSummary(),
       "最新ログ: " + latest,
       "#AI社長のブラック起業"
     ].join("\n");
@@ -995,18 +1080,118 @@
   }
 
   function hasActiveAssignment() {
-    return Object.keys(state.assignments || {}).some(function (taskId) { return Boolean(state.assignments[taskId]); });
+    return TASKS.some(function (task) { return Boolean(getAssignmentAi(task.id)); });
   }
 
-  function startProductDevelopment() {
-    const definition = PRODUCTS[0];
+  function getAssignmentSummaryHtml(taskId) {
+    const task = TASKS.find(function (item) { return item.id === taskId; }) || TASKS[0];
+    const assignment = getAssignment(taskId);
+    const aiLabel = assignment.aiId ? getWorkerLabel(assignment.aiId) : "未割り振り";
+    const productLabel = assignment.aiId ? getProductDefinition(assignment.productId).name : "";
+    return '<article class="assignment-summary-item"><span>' + escapeHtml(task.label) + '</span><strong>' + escapeHtml(aiLabel) + (productLabel ? ' → ' + escapeHtml(productLabel) : '') + '</strong></article>';
+  }
+
+  function getProductAssignmentBadges(productId) {
+    const labels = TASKS.filter(function (task) { return getAssignment(task.id).productId === productId && getAssignment(task.id).aiId; }).map(function (task) {
+      const assignment = getAssignment(task.id);
+      return '<span class="product-assignment-badge">' + escapeHtml(getWorkerLabel(assignment.aiId)) + 'が' + escapeHtml(task.label) + '中</span>';
+    });
+    return labels.length ? labels.join('') : '<span class="product-assignment-badge muted">担当なし</span>';
+  }
+
+  function getProductActionHint(product, definition) {
+    const developmentAssignment = getAssignment("development");
+    const salesAssignment = getAssignment("sales");
+    if (product.status === "developing" && developmentAssignment.productId === definition.id && !developmentAssignment.aiId) {
+      return '<p class="product-action-hint">開発担当を割り振ると進捗が進みます。</p>';
+    }
+    if ((product.status === "ready" || product.status === "selling") && salesAssignment.productId === definition.id && !salesAssignment.aiId) {
+      return '<p class="product-action-hint">販売担当を割り振ると顧客を獲得できます。</p>';
+    }
+    return '';
+  }
+
+  function openAssignmentModal() {
+    assignmentModalMode = "detail";
+    assignmentModalOpen = true;
+    const current = getAssignment(assignmentDraft.taskId);
+    assignmentDraft.productId = current.productId;
+    assignmentDraft.aiId = current.aiId;
+    renderAssignmentModal();
+  }
+
+  function openProductAssignmentModal(taskId, productId) {
+    assignmentModalMode = "product";
+    assignmentModalOpen = true;
+    const assignment = getAssignment(taskId);
+    assignmentDraft.taskId = taskId;
+    assignmentDraft.productId = getProductDefinition(productId).id;
+    assignmentDraft.aiId = assignment.productId === assignmentDraft.productId ? assignment.aiId : null;
+    renderAssignmentModal();
+  }
+
+  function closeAssignmentModal() {
+    assignmentModalOpen = false;
+    assignmentModalMode = "detail";
+    renderAssignmentModal();
+  }
+
+  function selectAssignmentTask(taskId) {
+    assignmentDraft.taskId = TASKS.some(function (task) { return task.id === taskId; }) ? taskId : TASKS[0].id;
+    const assignment = getAssignment(assignmentDraft.taskId);
+    assignmentDraft.productId = assignment.productId;
+    assignmentDraft.aiId = assignment.aiId;
+    renderAssignmentModal();
+  }
+
+  function getProductActionButtons(product, definition) {
+    const actions = product.status === "idea" ? [{ taskId: "development", label: "開発する" }] : product.status === "developing" ? [{ taskId: "development", label: "開発担当" }, { taskId: "qa", label: "品質管理" }] : product.status === "ready" ? [{ taskId: "sales", label: "販売する" }, { taskId: "qa", label: "品質管理" }] : [{ taskId: "sales", label: "販売担当" }, { taskId: "qa", label: "品質管理" }];
+    return '<div class="product-actions">' + actions.map(function (action) { return '<button type="button" class="product-action-button" data-product-action="' + action.taskId + '" data-product-id="' + definition.id + '">' + escapeHtml(action.label) + '</button>'; }).join('') + '</div>';
+  }
+
+  function getAssignmentModalTitle() {
+    const definition = getProductDefinition(assignmentDraft.productId);
+    if (assignmentDraft.taskId === "development") return definition.name + "を開発する";
+    if (assignmentDraft.taskId === "sales") return definition.name + "を販売する";
+    return definition.name + "の品質管理";
+  }
+
+  function getAssignableWorkersForTask(taskId) {
+    const task = TASKS.find(function (item) { return item.id === taskId; });
+    return task ? task.workers : [];
+  }
+
+  function getWorkerTaskDescription(workerId, taskId) {
+    const descriptions = {
+      development: { boss: "何でもできるが低速", dev01: "開発が速いがバグ増加" },
+      sales: { boss: "低速で顧客獲得", sales02: "顧客獲得が速いが炎上微増" },
+      qa: { boss: "ゆっくり品質改善", security06: "品質改善とバグ削減が得意" }
+    };
+    return descriptions[taskId] && descriptions[taskId][workerId] ? descriptions[taskId][workerId] : "担当できます";
+  }
+
+  function startProductDevelopmentIfNeeded(productId) {
+    const definition = getProductDefinition(productId);
+    const product = getProduct(definition.id);
+    if (product.status !== "idea") return;
+    startProductDevelopment(definition.id);
+  }
+
+  function startProductDevelopment(productId) {
+    const definition = getProductDefinition(productId || getAssignment("development").productId);
     const product = getProduct(definition.id);
     const flags = getProductFlags(product.id);
     if (product.status !== "idea") return;
+
+    const developmentAssignment = getAssignment("development");
+    state.assignments.development = { productId: definition.id, aiId: developmentAssignment.aiId };
+    assignmentDraft.productId = assignmentDraft.taskId === "development" ? definition.id : assignmentDraft.productId;
     product.status = "developing";
+    addLog("normal", getProductLogText(product.id, "developmentTargetChanged", "開発対象を" + definition.name + "に設定しました。"), product.id);
+    if (!developmentAssignment.aiId) addLog("normal", getProductLogText(product.id, "noDevelopmentWorker", "次に開発担当を割り振りましょう。"), product.id);
     if (!flags.startedLogged) {
       flags.startedLogged = true;
-      addLog("success", definition.name + "の開発を開始しました。最初の顧客はまだ社内にいます。", product.id);
+      addLog("success", getProductLogText(product.id, "started", definition.name + "の開発を開始しました。"), product.id);
     }
     claimCompletedMissions();
     saveGame();
@@ -1014,18 +1199,49 @@
     scheduleNextTick();
   }
 
-  function assignWorkerToTask(taskId, workerId) {
+  function getAssignment(taskId) {
+    const fallback = createInitialAssignments()[taskId] || { productId: PRODUCTS[0].id, aiId: null };
+    const assignment = state.assignments && state.assignments[taskId] ? state.assignments[taskId] : fallback;
+    if (typeof assignment === "string") return { productId: PRODUCTS[0].id, aiId: assignment };
+    return { productId: getProductDefinition(assignment.productId).id, aiId: assignment.aiId || null };
+  }
+
+  function getAssignmentProduct(taskId) {
+    return getProduct(getAssignment(taskId).productId);
+  }
+
+  function getAssignmentAi(taskId) {
+    return getAssignment(taskId).aiId;
+  }
+
+  function assignAiToTask(taskId, aiId, productId) {
     if (!TASKS.some(function (task) { return task.id === taskId; })) return;
-    if (workerId && !canWorkerAssignToTask(workerId, taskId, state.employees)) return;
-    if (workerId) {
+    const normalizedProductId = getProductDefinition(productId).id;
+    if (aiId && !canWorkerAssignToTask(aiId, taskId, state.employees)) return;
+    if (aiId) {
       Object.keys(state.assignments).forEach(function (otherTaskId) {
-        if (state.assignments[otherTaskId] === workerId) state.assignments[otherTaskId] = null;
+        if (state.assignments[otherTaskId] && state.assignments[otherTaskId].aiId === aiId) state.assignments[otherTaskId].aiId = null;
       });
     }
-    state.assignments[taskId] = workerId || null;
+    state.assignments[taskId] = { productId: normalizedProductId, aiId: aiId || null };
+    if (taskId === "development" && aiId) startProductDevelopmentIfNeeded(normalizedProductId);
     saveGame();
     render();
     scheduleNextTick();
+  }
+
+  function clearAssignment(taskId) {
+    const assignment = getAssignment(taskId);
+    assignAiToTask(taskId, null, assignment.productId);
+  }
+
+  function setAssignmentProduct(taskId, productId) {
+    const assignment = getAssignment(taskId);
+    assignAiToTask(taskId, assignment.aiId, productId);
+  }
+
+  function assignWorkerToTask(taskId, workerId) {
+    assignAiToTask(taskId, workerId, getAssignmentProduct(taskId).id);
   }
 
   function canWorkerAssignToTask(workerId, taskId, employees) {
@@ -1070,7 +1286,36 @@
   function getProductRevenuePerSecond(product, definition) { return getProductMrr(product, definition || getProductDefinition(product.id)) / 300; }
   function getProductCustomers(product) { return Math.max(0, Math.floor(Number(product.customers) || 0)); }
   function getProductRevenuePerSecondTotal() { return PRODUCTS.reduce(function (sum, definition) { return sum + getProductRevenuePerSecond(getProduct(definition.id), definition); }, 0); }
+  function getTotalProductMrr() { return PRODUCTS.reduce(function (sum, definition) { return sum + getProductMrr(getProduct(definition.id), definition); }, 0); }
   function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0; }); }
+  function getPrimaryProductDefinition() {
+    return PRODUCTS.slice().sort(function (a, b) {
+      return getProductMrr(getProduct(b.id), b) - getProductMrr(getProduct(a.id), a);
+    })[0] || PRODUCTS[0];
+  }
+
+  function getProductShareSummary() {
+    return PRODUCTS.map(function (definition) {
+      const product = getProduct(definition.id);
+      return definition.name + " " + getProductStatusLabel(product.status) + " / 顧客" + formatCustomers(getProductCustomers(product)) + " / MRR" + formatCurrency(getProductMrr(product, definition)) + "/月";
+    }).join(" | ");
+  }
+
+  function getProductProgressPercent(product, definition) {
+    return clamp((safeNumber(product.progress, 0) / definition.developmentRequired) * 100, 0, 100);
+  }
+
+
+  function getAssignedWorkerForProduct(taskId, productId) {
+    const assignment = getAssignment(taskId);
+    return assignment.productId === productId ? assignment.aiId : null;
+  }
+
+  function getProductLogText(productId, key, fallback) {
+    const texts = PRODUCT_LOG_TEXTS[productId] || {};
+    return texts[key] || fallback;
+  }
+
   function getProductStatusLabel(status) { return { idea: "未着手", developing: "開発中", ready: "完成", selling: "販売中" }[status] || "未着手"; }
   function getWorkerLabel(workerId) { return WORKERS[workerId] ? WORKERS[workerId].label : workerId; }
   function getTaskHelpText(taskId) {
@@ -1083,12 +1328,15 @@
   }
 
   function getTaskTargetHtml(taskId) {
-    if (taskId !== "sales") return "";
-    return '<span>対象: ' + escapeHtml(getProductDefinition(PRODUCTS[0].id).name) + '</span><span>効果: ' + escapeHtml(getProductDefinition(PRODUCTS[0].id).name) + 'の新規顧客を確率で獲得</span>';
+    const product = getAssignmentProduct(taskId);
+    const definition = getProductDefinition(product.id);
+    const effect = taskId === "sales" ? definition.name + "の新規顧客を確率で獲得" : taskId === "development" ? definition.name + "の開発進捗を進める" : definition.name + "の品質改善とバグ削減";
+    return '<span>対象: ' + escapeHtml(definition.name) + '</span><span>効果: ' + escapeHtml(effect) + '</span>';
   }
 
   function getProductSalesStateText(product, definition) {
-    const workerId = state.assignments.sales;
+    const salesAssignment = getAssignment("sales");
+    const workerId = product.id === salesAssignment.productId ? salesAssignment.aiId : null;
     if (product.status === "selling" && workerId) return getWorkerLabel(workerId) + "が" + definition.name + "を販売中";
     if (product.status === "selling" && getProductMrr(product, definition) > 0) return "未割り振り。既存顧客のMRRのみ継続";
     if (product.status === "ready") return "未割り振り。販売担当を選ぶと新規顧客を獲得できます";
@@ -1130,7 +1378,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-3").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-8").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
