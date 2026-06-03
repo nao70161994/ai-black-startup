@@ -289,6 +289,11 @@ button.share {
 .product-metrics strong { display: block; margin-top: 2px; color: var(--ink); font-size: 13px; }
 .product-metrics .wide { grid-column: 1 / -1; background: #f2ffe9; }
 .product-summary-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.product-summary-metrics .primary-metric { color: #07506a; background: #eefaff; border: 1px solid rgba(25, 189, 232, 0.16); }
+.product-summary-metrics .primary-metric strong { font-size: 14px; }
+.product-summary-metrics .product-detail-metric { padding: 5px 6px; color: #667c86; background: #f7fafb; font-size: 10px; }
+.product-summary-metrics .product-detail-metric strong { font-size: 11px; color: #33444d; }
+.product-summary-metrics .marketing-effect { grid-column: 1 / -1; color: #5e3f00; background: #fff8df; border: 1px solid rgba(255, 183, 43, 0.24); }
 .assignment-badge-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .product-assignment-badge { display: inline-flex; align-items: center; min-height: 20px; padding: 2px 6px; border-radius: 999px; color: #07506a; background: #e8faff; border: 1px solid rgba(25, 189, 232, 0.24); font-size: 10px; line-height: 1.2; }
 .product-assignment-badge.muted { color: #586b75; background: #eef3f5; border-color: rgba(83, 111, 124, 0.18); }

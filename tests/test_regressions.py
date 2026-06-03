@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.10"' in index
-    assert 'style.css?v=20260524-10' in index
-    assert 'main.js?v=20260524-10' in index
-    assert 'manifest.webmanifest?v=20260524-10' in index
-    assert 'icon.svg?v=20260524-10' in index
-    assert 'ogp.svg?v=20260524-10' in index
+    assert 'content="2026.05.24.12"' in index
+    assert 'style.css?v=20260524-12' in index
+    assert 'main.js?v=20260524-12' in index
+    assert 'manifest.webmanifest?v=20260524-12' in index
+    assert 'icon.svg?v=20260524-12' in index
+    assert 'ogp.svg?v=20260524-12' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.10"' in main
-    assert 'const APP_VERSION = "2026.05.24.10"' in sw
-    assert 'sw.js?v=20260524-10' in main
+    assert 'const APP_VERSION = "2026.05.24.12"' in main
+    assert 'const APP_VERSION = "2026.05.24.12"' in sw
+    assert 'sw.js?v=20260524-12' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-10"
+    assert manifest["start_url"] == "./index.html?v=20260524-12"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-10" in sw
-    assert "icon.svg?v=20260524-10" in sw
-    assert "ogp.svg?v=20260524-10" in sw
+    assert "manifest.webmanifest?v=20260524-12" in sw
+    assert "icon.svg?v=20260524-12" in sw
+    assert "ogp.svg?v=20260524-12" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -63,7 +63,8 @@ def run_browser_smoke(save):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const code = fs.readFileSync('main.js', 'utf8');
+let code = fs.readFileSync('main.js', 'utf8');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, tick, saveGame }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -135,6 +136,7 @@ def test_existing_save_is_normalized_with_security06():
         "development": {"productId": "dailyReportAi", "aiId": None},
         "qa": {"productId": "dailyReportAi", "aiId": None},
         "sales": {"productId": "dailyReportAi", "aiId": None},
+        "marketing": {"productId": "dailyReportAi", "aiId": None},
     }
     assert output["save"]["productFlags"]["dailyReportAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["firstCustomerGranted"] is False
@@ -146,7 +148,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AIスライド生成キット" in output["productHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.10"
+    assert output["save"]["appVersion"] == "2026.05.24.12"
 
 
 def test_security06_visible_at_company_level_5():
@@ -588,7 +590,7 @@ def test_product_card_assignment_flow_exists():
     assert "品質改善とバグ削減が得意" in main
     assert "function startProductDevelopmentIfNeeded(productId)" in main
     assert 'if (taskId === "development" && aiId)' in main
-    assert 'if (assignmentDraft.mode === "upgrade") startSubscriptionUpgrade(normalizedProductId)' in main
+    assert 'if (assignmentDraft.mode === "upgrade" || shouldStartUpgradeOnDevelopmentAssignment(targetProduct, targetDefinition)) startSubscriptionUpgrade(normalizedProductId)' in main
     assert 'else startProductDevelopmentIfNeeded(normalizedProductId)' in main
     assert ".product-actions" in css
     assert ".worker-option" in css
@@ -637,9 +639,13 @@ def test_one_shot_slide_kit_pipeline_present():
     assert 'pityLimit = workerId === "sales02" ? 25 : 40' in main
     assert "売り切り / " in main
     assert "本販売 / 累計売上" in main
-    assert "MRR <strong>なし" in main
-    assert "AIスライド生成キットが1本売れました" in main
+    assert "MRR <strong>なし" not in main
+    assert "AIスライド生成キットが初めて売れました" in main
     assert "AIスライド生成キットの販売数が10本を超えました" in main
+    assert "AIスライド生成キットの販売数が50本を超えました" in main
+    assert "AIスライド生成キットの販売数が100本を超えました" in main
+    assert "AI日報メーカーをv2にする" in main
+    assert "自動議事録AIをv2にする" in main
 
 
 def test_cache_busting_updated_for_mrr_discrete_fix():
@@ -647,10 +653,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.10"' in index
-    assert 'main.js?v=20260524-10' in index
-    assert 'sw.js?v=20260524-10' in main
-    assert 'const APP_VERSION = "2026.05.24.10"' in sw
+    assert 'content="2026.05.24.12"' in index
+    assert 'main.js?v=20260524-12' in index
+    assert 'sw.js?v=20260524-12' in main
+    assert 'const APP_VERSION = "2026.05.24.12"' in sw
 
 
 
@@ -661,8 +667,8 @@ def test_subscription_product_upgrade_pipeline_present():
     assert "upgradeProgress: 0" in main
     assert 'upgradeStatus: "idle"' in main
     assert 'product.version = Math.max(1, Math.floor(safeNumber(saved.version, product.version)))' in main
-    assert 'product.upgradeProgress = definition.type === "subscription"' in main
-    assert 'product.upgradeStatus = definition.type === "subscription"' in main
+    assert "const canResumeUpgrade = definition.type === \"subscription\"" in main
+    assert 'product.upgradeStatus = canResumeUpgrade ? "upgrading" : "idle"' in main
     assert "function getCurrentMonthlyPrice(product, definition)" in main
     assert "Math.round(definition.monthlyPrice * (1 + 0.2 * (getProductVersion(product) - 1)))" in main
     assert "getCurrentMonthlyPrice(product, definition) * getProductCustomers(product)" in main
@@ -706,8 +712,273 @@ def test_subscription_version_affects_rendered_mrr_and_share_text():
     assert product["upgradeProgress"] == 45
     assert product["upgradeStatus"] == "upgrading"
     assert product["mrr"] == 6000
-    assert "AI日報メーカー v3開発中 45%" in output["productHtml"]
-    assert "月額 <strong>¥600" in output["productHtml"]
+    assert "v2運用中 / v3開発中 45%" in output["productHtml"]
     assert "MRR <strong>¥6.0K/月" in output["productHtml"]
     slide_html = output["productHtml"].split("AIスライド生成キット", 1)[1]
     assert "バージョンアップ" not in slide_html.split("</article>", 1)[0]
+
+
+def run_game_action_smoke(save, action_script):
+    script = r'''
+const fs = require('fs');
+const vm = require('vm');
+let code = fs.readFileSync('main.js', 'utf8');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, tick, saveGame }; document.addEventListener("DOMContentLoaded", boot);');
+const input = JSON.parse(process.argv[1]);
+const action = process.argv[2];
+let timeoutQueue = [];
+function createElement(id) {
+  const classes = new Set();
+  return {
+    id, textContent: '', innerHTML: '', hidden: false, className: '', style: {},
+    classList: { add: (...n) => n.forEach(x => classes.add(x)), remove: (...n) => n.forEach(x => classes.delete(x)), toggle: (n, f) => f ? classes.add(n) : classes.delete(n) },
+    closest: () => createElement(id + '-closest'),
+    querySelectorAll: () => [], addEventListener: () => {},
+  };
+}
+const store = { ai_black_startup_save_v1: JSON.stringify(input) };
+const elements = new Map();
+const document = {
+  addEventListener: (event, cb) => { if (event === 'DOMContentLoaded') cb(); },
+  getElementById: (id) => { if (!elements.has(id)) elements.set(id, createElement(id)); return elements.get(id); },
+  createElement: (tag) => createElement(tag),
+  body: { appendChild: () => {}, removeChild: () => {} },
+  execCommand: () => true,
+};
+const window = { setTimeout: (cb) => { timeoutQueue.push(cb); return timeoutQueue.length; }, clearTimeout: () => {}, setInterval: () => 1, addEventListener: () => {}, confirm: () => true };
+const navigator = { serviceWorker: { register: () => Promise.resolve({ waiting: null, addEventListener: () => {} }), controller: null } };
+const location = { protocol: 'http:' };
+const localStorage = { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } };
+const sandbox = { window, document, localStorage, navigator, location, console, Date, Math, Number, String, Boolean, Object, Array, Promise };
+vm.runInNewContext(code, sandbox);
+vm.runInNewContext(action, sandbox);
+console.log(JSON.stringify({
+  save: JSON.parse(store.ai_black_startup_save_v1),
+  productHtml: elements.get('productPanel').innerHTML,
+  assignmentHtml: elements.get('assignmentPanel').innerHTML,
+  latestLog: elements.get('latestLogText').textContent,
+}));
+'''
+    result = subprocess.run(
+        ["node", "-e", script, json.dumps(save), action_script],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_development_assignment_to_completed_subscription_starts_upgrade_behavior():
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 10, "customers": 2, "version": 1, "upgradeStatus": "idle"}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1760000000000,
+    }, "window.__testApi.assignAiToTask('development', 'dev01', 'dailyReportAi'); window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+    assert output["save"]["assignments"]["development"] == {"productId": "dailyReportAi", "aiId": "dev01"}
+    assert product["upgradeStatus"] == "upgrading"
+    assert product["upgradeProgress"] > 0
+    assert product["status"] == "selling"
+    assert product["mrr"] == 1000
+
+
+def test_broken_upgrade_status_is_normalized_for_unfinished_and_one_shot_products():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "idea", "progress": 0, "quality": 60, "bugs": 0, "awareness": 0, "customers": 0, "version": 3, "upgradeProgress": 80, "upgradeStatus": "upgrading"},
+            "meetingMinutesAi": {"id": "meetingMinutesAi", "status": "developing", "progress": 20, "quality": 55, "bugs": 0, "awareness": 0, "customers": 0, "version": 2, "upgradeProgress": 30, "upgradeStatus": "upgrading"},
+            "slideKitAi": {"id": "slideKitAi", "status": "ready", "progress": 160, "quality": 55, "bugs": 0, "awareness": 0, "unitsSold": 0, "version": 4, "upgradeProgress": 90, "upgradeStatus": "upgrading"},
+        },
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1760000000000,
+    })
+    assert output["save"]["products"]["dailyReportAi"]["upgradeStatus"] == "idle"
+    assert output["save"]["products"]["dailyReportAi"]["upgradeProgress"] == 0
+    assert output["save"]["products"]["meetingMinutesAi"]["upgradeStatus"] == "idle"
+    assert output["save"]["products"]["meetingMinutesAi"]["upgradeProgress"] == 0
+    assert output["save"]["products"]["slideKitAi"]["upgradeStatus"] == "idle"
+    assert output["save"]["products"]["slideKitAi"]["upgradeProgress"] == 0
+
+
+def test_upgrade_completion_raises_version_price_and_mrr_behavior():
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "assignments": {"development": {"productId": "dailyReportAi", "aiId": "dev01"}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 1, "awareness": 10, "customers": 10, "version": 1, "upgradeProgress": 99, "upgradeStatus": "upgrading"}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1760000000000,
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["version"] == 2
+    assert product["upgradeStatus"] == "idle"
+    assert product["upgradeProgress"] == 0
+    assert product["quality"] >= 68
+    assert product["awareness"] >= 15
+    assert product["bugs"] >= 6
+    assert product["mrr"] == 6000
+    assert output["save"]["totalMoney"] >= 20
+
+
+def test_recurring_and_one_shot_revenue_paths_are_separate_behavior():
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "assignments": {"development": {"productId": "dailyReportAi", "aiId": None}, "qa": {"productId": "dailyReportAi", "aiId": None}, "sales": {"productId": "dailyReportAi", "aiId": None}},
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 3, "version": 2, "mrr": 9999},
+            "slideKitAi": {"id": "slideKitAi", "status": "selling", "progress": 160, "quality": 55, "bugs": 0, "awareness": 0, "unitsSold": 5, "lifetimeRevenue": 49000},
+        },
+        "logs": [],
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission", "assign_daily_sales", "daily_first_customer", "daily_mrr_500", "meeting_developing", "meeting_ready_mission", "total_mrr_10k_mission", "slide_developing", "slide_ready_mission", "slide_first_sale_mission", "daily_v2_mission", "meeting_v2_mission", "any_product_quality_70"],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    daily = output["save"]["products"]["dailyReportAi"]
+    slide = output["save"]["products"]["slideKitAi"]
+    assert daily["mrr"] == 1800
+    assert output["save"]["money"] == 6
+    assert output["save"]["totalMoney"] == 6
+    assert slide["unitsSold"] == 5
+    assert slide["lifetimeRevenue"] == 49000
+    assert "バージョンアップ" not in output["productHtml"].split("AIスライド生成キット", 1)[1].split("</article>", 1)[0]
+
+
+def test_product_card_summary_version_and_marketing_hint_present():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "function getSubscriptionVersionLine(product)" in main
+    assert "getProductVersion(product) + \"運用中\"" in main
+    assert "開発中 " in main
+    assert "function getMarketingEffectHint(productId)" in main
+    assert "認知度UP → 販売成功率UP / 炎上微増" in main
+    assert "primary-metric" in main
+    assert "product-detail-metric" in main
+    assert ".product-summary-metrics .primary-metric" in css
+    assert ".product-summary-metrics .product-detail-metric" in css
+    assert ".product-summary-metrics .marketing-effect" in css
+
+
+def test_marketing_task_and_product_centered_missions_present():
+    main = (ROOT / "main.js").read_text()
+
+    assert '{ id: "marketing", label: "広報", workers: ["boss", "buzz03"] }' in main
+    assert 'marketing: { productId: PRODUCTS[0].id, aiId: null }' in main
+    assert 'marketing: { boss: "ゆっくり認知度を上げる", buzz03: "認知度を大きく上げるが炎上微増" }' in main
+    assert 'function applyMarketingTask(product, definition)' in main
+    assert 'product.awareness = clamp(product.awareness + marketing.awareness, 0, 100)' in main
+    assert 'state.fire = clamp(state.fire + marketing.fire, 0, 100)' in main
+    assert 'function getMarketingEffect(workerId)' in main
+    assert '0.35 + level * 0.10' in main
+    assert 'fire: 0.03' in main
+    assert 'AI日報メーカーを開発中にする' in main
+    assert 'AI日報メーカーに販売担当を割り振る' in main
+    assert 'AIスライド生成キットを1本販売する' in main
+    assert 'いずれかの製品の品質を70以上にする' in main
+    assert 'AI日報メーカーをv2にする' in main
+    assert '自動議事録AIをv2にする' in main
+
+
+def test_qa_and_marketing_status_limits_behavior():
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 1, "care04": 0, "fire05": 0, "security06": 1},
+        "assignments": {"qa": {"productId": "dailyReportAi", "aiId": "security06"}, "marketing": {"productId": "dailyReportAi", "aiId": "buzz03"}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "idea", "progress": 0, "quality": 60, "bugs": 10, "awareness": 0, "customers": 0}},
+        "logs": [],
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission", "assign_daily_sales", "daily_first_customer", "daily_mrr_500", "meeting_developing", "meeting_ready_mission", "total_mrr_10k_mission", "slide_developing", "slide_ready_mission", "slide_first_sale_mission", "daily_v2_mission", "meeting_v2_mission", "any_product_quality_70"],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["quality"] == 60
+    assert product["bugs"] == 10
+    assert product["awareness"] == 0
+
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 1, "care04": 0, "fire05": 0, "security06": 1},
+        "assignments": {"qa": {"productId": "dailyReportAi", "aiId": "security06"}, "marketing": {"productId": "dailyReportAi", "aiId": "buzz03"}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "developing", "progress": 1, "quality": 60, "bugs": 10, "awareness": 0, "customers": 0}},
+        "logs": [],
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission", "assign_daily_sales", "daily_first_customer", "daily_mrr_500", "meeting_developing", "meeting_ready_mission", "total_mrr_10k_mission", "slide_developing", "slide_ready_mission", "slide_first_sale_mission", "daily_v2_mission", "meeting_v2_mission", "any_product_quality_70"],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["quality"] > 60
+    assert product["bugs"] < 10
+    assert product["awareness"] > 0
+    assert output["save"]["fire"] > 0
+
+
+def test_one_shot_primary_score_and_milestone_flags_present():
+    main = (ROOT / "main.js").read_text()
+    assert "function getProductPrimaryScore(product, definition)" in main
+    assert 'if (definition.type === "oneShot") return safeNumber(product.lifetimeRevenue, 0)' in main
+    assert "getProductMrr(product, definition) * 1.1" in main
+    assert "firstSaleLogged" in main
+    assert "sales10Logged" in main
+    assert "sales50Logged" in main
+    assert "sales100Logged" in main
+    assert "unitSold" not in main
+    assert "firstSale" in main
+    assert "sales50" in main
+    assert "sales100" in main
+
+
+def test_marketing_assignment_is_normalized_and_visible_behavior():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 2,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 0, "fire05": 0, "security06": 0},
+        "assignments": {"marketing": {"productId": "meetingMinutesAi", "aiId": "buzz03"}},
+        "products": {"meetingMinutesAi": {"id": "meetingMinutesAi", "status": "developing", "progress": 20, "quality": 55, "bugs": 0, "awareness": 0}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+    assert output["save"]["assignments"]["marketing"] == {"productId": "meetingMinutesAi", "aiId": "buzz03"}
+    assert "広報" in output["assignmentHtml"]
+    assert "Buzz-03 → 自動議事録AI" in output["assignmentHtml"]
+    assert "広報" in output["productHtml"]

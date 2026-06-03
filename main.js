@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.10";
+  const APP_VERSION = "2026.05.24.12";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -33,14 +33,16 @@
   const TASKS = [
     { id: "development", label: "開発", workers: ["boss", "dev01"] },
     { id: "qa", label: "品質管理", workers: ["boss", "security06"] },
-    { id: "sales", label: "販売", workers: ["boss", "sales02"] }
+    { id: "sales", label: "販売", workers: ["boss", "sales02"] },
+    { id: "marketing", label: "広報", workers: ["boss", "buzz03"] }
   ];
 
   const WORKERS = {
     boss: { id: "boss", label: "AI社長", alwaysAvailable: true },
     dev01: { id: "dev01", label: "Dev-01" },
     security06: { id: "security06", label: "Security-06" },
-    sales02: { id: "sales02", label: "Sales-02" }
+    sales02: { id: "sales02", label: "Sales-02" },
+    buzz03: { id: "buzz03", label: "Buzz-03" }
   };
 
 
@@ -52,38 +54,45 @@
       id: "startup",
       label: "起業準備",
       missions: [
-        { id: "hire_first", text: "Dev-01またはSales-02を雇用する", reward: 200, done: function () { return (state.employees.dev01 || 0) > 0 || (state.employees.sales02 || 0) > 0; } },
-        { id: "money_1k", text: "売上を¥1.0K貯める", reward: 300, done: function () { return state.money >= 1000 || state.totalMoney >= 1000; } },
-        { id: "company_lv2", text: "会社Lv2に到達する", reward: 500, done: function () { return state.companyLevel >= 2; } },
-        { id: "hire_buzz03", text: "Buzz-03を雇用する", reward: 700, done: function () { return (state.employees.buzz03 || 0) > 0; } }
+        { id: "daily_report_developing", text: "AI日報メーカーを開発中にする", reward: 200, done: function () { return getProduct("dailyReportAi").status !== "idea"; } },
+        { id: "assign_daily_development", text: "AI社長またはDev-01を開発に割り振る", reward: 200, done: function () { const assignment = getAssignment("development"); return assignment.productId === "dailyReportAi" && Boolean(assignment.aiId); } },
+        { id: "daily_report_ready_mission", text: "AI日報メーカーを完成させる", reward: 300, done: function () { return ["ready", "selling"].indexOf(getProduct("dailyReportAi").status) !== -1; } }
       ]
     },
     {
-      id: "growth",
-      label: "成長運用",
+      id: "first_sale",
+      label: "初回販売",
       missions: [
-        { id: "dev01_lv5", text: "Dev-01をLv5にする", reward: 1000, done: function () { return (state.employees.dev01 || 0) >= 5; } },
-        { id: "fire_under_30", text: "炎上度を30未満に下げる", reward: 800, done: function () { return hasAnyEmployee() && state.fire < 30; } },
-        { id: "hire_care04", text: "Care-04を雇用する", reward: 1200, done: function () { return (state.employees.care04 || 0) > 0; } },
-        { id: "company_lv4", text: "会社Lv4に到達する", reward: 1600, done: function () { return state.companyLevel >= 4; } },
-        { id: "unlock_fire05", text: "Fire-05を解放する", reward: 2000, done: function () { return state.companyLevel >= 4; } }
+        { id: "assign_daily_sales", text: "AI日報メーカーに販売担当を割り振る", reward: 300, done: function () { const assignment = getAssignment("sales"); return assignment.productId === "dailyReportAi" && Boolean(assignment.aiId); } },
+        { id: "daily_first_customer", text: "AI日報メーカーの初顧客を1社獲得する", reward: 400, done: function () { return getProductCustomers(getProduct("dailyReportAi")) >= 1; } },
+        { id: "daily_mrr_500", text: "MRR ¥500/月を達成する", reward: 500, done: function () { return getProductMrr(getProduct("dailyReportAi"), getProductDefinition("dailyReportAi")) >= 500; } }
       ]
     },
     {
-      id: "scale",
-      label: "拡大運用",
+      id: "product_growth",
+      label: "製品拡大",
       missions: [
-        { id: "hire_fire05", text: "Fire-05を雇用する", reward: 2500, done: function () { return (state.employees.fire05 || 0) > 0; } },
-        { id: "total_300k", text: "累計売上¥300Kに到達する", reward: 3500, done: function () { return state.totalMoney >= 300000; } },
-        { id: "company_lv5", text: "会社Lv5に到達する", reward: 5000, done: function () { return state.companyLevel >= 5; } }
+        { id: "meeting_developing", text: "自動議事録AIを開発中にする", reward: 600, done: function () { return getProduct("meetingMinutesAi").status !== "idea"; } },
+        { id: "meeting_ready_mission", text: "自動議事録AIを完成させる", reward: 800, done: function () { return ["ready", "selling"].indexOf(getProduct("meetingMinutesAi").status) !== -1; } },
+        { id: "total_mrr_10k_mission", text: "総MRR ¥10K/月を達成する", reward: 1200, done: function () { return getTotalProductMrr() >= 10000; } }
       ]
     },
     {
-      id: "quality",
-      label: "品質管理",
+      id: "instant_revenue",
+      label: "即時売上",
       missions: [
-        { id: "hire_security06", text: "Security-06を雇用する", reward: 4000, done: function () { return (state.employees.security06 || 0) > 0; } },
-        { id: "bugs_under_30", text: "バグを30未満に下げる", reward: 2500, done: function () { return (state.employees.security06 || 0) > 0 && state.bugs < 30; } }
+        { id: "slide_developing", text: "AIスライド生成キットを開発中にする", reward: 700, done: function () { return getProduct("slideKitAi").status !== "idea"; } },
+        { id: "slide_ready_mission", text: "AIスライド生成キットを完成させる", reward: 900, done: function () { return ["ready", "selling"].indexOf(getProduct("slideKitAi").status) !== -1; } },
+        { id: "slide_first_sale_mission", text: "AIスライド生成キットを1本販売する", reward: 1000, done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 1; } }
+      ]
+    },
+    {
+      id: "improvement",
+      label: "改善運用",
+      missions: [
+        { id: "daily_v2_mission", text: "AI日報メーカーをv2にする", reward: 1200, done: function () { return getProductVersion(getProduct("dailyReportAi")) >= 2; } },
+        { id: "meeting_v2_mission", text: "自動議事録AIをv2にする", reward: 1400, done: function () { return getProductVersion(getProduct("meetingMinutesAi")) >= 2; } },
+        { id: "any_product_quality_70", text: "いずれかの製品の品質を70以上にする", reward: 1000, done: function () { return PRODUCTS.some(function (definition) { return getProduct(definition.id).quality >= 70; }); } }
       ]
     }
   ];
@@ -98,6 +107,8 @@
     { id: "slide_kit_ready", productId: "slideKitAi", text: "AIスライド生成キットを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("slideKitAi").status) !== -1; } },
     { id: "slide_kit_first_sale", productId: "slideKitAi", text: "AIスライド生成キットを1本販売する", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 1; } },
     { id: "slide_kit_10_sales", productId: "slideKitAi", text: "AIスライド生成キットを10本販売する", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 10; } },
+    { id: "daily_report_v2", productId: "dailyReportAi", text: "AI日報メーカーをv2にする", done: function () { return getProductVersion(getProduct("dailyReportAi")) >= 2; } },
+    { id: "meeting_minutes_v2", productId: "meetingMinutesAi", text: "自動議事録AIをv2にする", done: function () { return getProductVersion(getProduct("meetingMinutesAi")) >= 2; } },
     { id: "total_mrr_10k", productId: "dailyReportAi", text: "総MRR ¥10K/月を達成する", done: function () { return getTotalProductMrr() >= 10000; } }
   ];
 
@@ -107,37 +118,48 @@
       developmentTargetChanged: "開発対象をAI日報メーカーに設定しました。",
       noDevelopmentWorker: "次に開発担当を割り振りましょう。AI社長でも進捗は進みます。",
       completed: "AI日報メーカーが完成しました。日報より先に営業資料ができています。",
-      salesStarted: "AI日報メーカーの販売を開始しました。Sales-02が「毎日が導入日です」と言っています。",
+      salesStarted: "AI日報メーカーの販売を開始しました。毎日が導入日です。",
       customer10: "AI日報メーカーの顧客が10社に到達しました。日報が少しだけ会社を救っています。",
       customer50: "AI日報メーカーの顧客が50社に到達しました。毎朝の定型文に市場性が出ています。",
       customer100: "AI日報メーカーの顧客が100社に到達しました。AI社長が導入実績を連呼しています。",
       mrr10k: "AI日報メーカーのMRRが¥10K/月を超えました。小さな継続収益が回り始めました。",
       mrr100k: "AI日報メーカーのMRRが¥100K/月を超えました。継続収益が会議より強くなっています。",
       upgradeStarted: "AI日報メーカー v{version} の開発を開始しました。日報が少し偉そうになります。",
-      upgradeCompleted: "AI日報メーカーが v{version} にアップデートされました。月額価格も少し成長しました。"
+      upgradeCompleted: "AI日報メーカーが v{version} にアップデートされました。月額価格も少し成長しました。",
+      marketingStarted: "Buzz-03がAI日報メーカーの広報を開始しました。認知度と通知欄が伸び始めました。",
+      awareness50: "AI日報メーカーの認知度が50を超えました。Sales-02が少し売りやすそうです。",
+      awareness100: "AI日報メーカーの認知度が100に到達しました。日報が朝の定番になりかけています。"
     },
     meetingMinutesAi: {
       started: "自動議事録AIの開発を開始しました。会議が終わる前に要約だけが先に歩き出しました。",
       developmentTargetChanged: "開発対象を自動議事録AIに設定しました。",
       noDevelopmentWorker: "次に開発担当を割り振りましょう。会議ログはまだ白紙です。",
       completed: "自動議事録AIが完成しました。会議の沈黙まで要約できそうです。",
-      salesStarted: "自動議事録AIの販売を開始しました。Sales-02が「会議時間も削減できます」と言っています。",
+      salesStarted: "自動議事録AIの販売を開始しました。会議時間も削減できるはずです。",
       customer10: "自動議事録AIの顧客が10社に到達しました。会議後の沈黙が少し短くなっています。",
       customer50: "自動議事録AIの顧客が50社に到達しました。議事録の山がクラウドに移りました。",
       customer100: "自動議事録AIの顧客が100社に到達しました。会議の記憶が商品になっています。",
       mrr10k: "自動議事録AIのMRRが¥10K/月を超えました。会議が継続収益に変換され始めました。",
       mrr100k: "自動議事録AIのMRRが¥100K/月を超えました。要約が会社を支えています。",
       upgradeStarted: "自動議事録AI v{version} の開発を開始しました。会議の沈黙まで記録しようとしています。",
-      upgradeCompleted: "自動議事録AIが v{version} にアップデートされました。議事録が少し先回りするようになりました。"
+      upgradeCompleted: "自動議事録AIが v{version} にアップデートされました。議事録が少し先回りするようになりました。",
+      marketingStarted: "Buzz-03が自動議事録AIの広報を開始しました。会議前から話題になり始めました。",
+      awareness50: "自動議事録AIの認知度が50を超えました。会議前から話題になっています。",
+      awareness100: "自動議事録AIの認知度が100に到達しました。会議の前に議事録の話が出ています。"
     },
     slideKitAi: {
       started: "AIスライド生成キットの開発を開始しました。資料作成AIが資料の資料を作り始めました。",
       developmentTargetChanged: "開発対象をAIスライド生成キットに設定しました。",
       noDevelopmentWorker: "次に開発担当を割り振りましょう。スライドはまだ白紙です。",
       completed: "AIスライド生成キットが完成しました。スライドより先に発表タイトルが決まりました。",
-      salesStarted: "AIスライド生成キットの販売を開始しました。Sales-02が「資料はだいたい自動です」と説明しています。",
-      unitSold: "AIスライド生成キットが1本売れました。即時売上 {price} を獲得しました。",
-      unit10: "AIスライド生成キットの販売数が10本を超えました。社内のスライド文化が少し変わりました。"
+      salesStarted: "AIスライド生成キットの販売を開始しました。資料はだいたい自動です。",
+      firstSale: "AIスライド生成キットが初めて売れました。即時売上 {price} を獲得しました。",
+      sales10: "AIスライド生成キットの販売数が10本を超えました。社内のスライド文化が少し変わりました。",
+      sales50: "AIスライド生成キットの販売数が50本を超えました。会議資料の枚数だけが増えています。",
+      sales100: "AIスライド生成キットの販売数が100本を超えました。営業資料が営業を始めました。",
+      marketingStarted: "Buzz-03がAIスライド生成キットの広報を開始しました。スライドの表紙だけ先に話題です。",
+      awareness50: "AIスライド生成キットの認知度が50を超えました。資料作成の期待だけが先に伸びています。",
+      awareness100: "AIスライド生成キットの認知度が100に到達しました。スライドが会議の主役になっています。"
     }
   };
 
@@ -208,14 +230,15 @@
     return {
       development: { productId: PRODUCTS[0].id, aiId: null },
       qa: { productId: PRODUCTS[0].id, aiId: null },
-      sales: { productId: PRODUCTS[0].id, aiId: null }
+      sales: { productId: PRODUCTS[0].id, aiId: null },
+      marketing: { productId: PRODUCTS[0].id, aiId: null }
     };
   }
 
   function createInitialProductFlags() {
     const flags = {};
     PRODUCTS.forEach(function (product) {
-      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, firstCustomerGranted: false, customer10Logged: false, customer50Logged: false, customer100Logged: false, mrr10kLogged: false, mrr100kLogged: false, unit10Logged: false, qaLogShown: false };
+      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, firstCustomerGranted: false, customer10Logged: false, customer50Logged: false, customer100Logged: false, mrr10kLogged: false, mrr100kLogged: false, firstSaleLogged: false, sales10Logged: false, sales50Logged: false, sales100Logged: false, unit10Logged: false, qaLogShown: false, marketingStartedLogged: false, marketingFireLogged: false, awareness50Logged: false, awareness100Logged: false };
     });
     return flags;
   }
@@ -283,8 +306,9 @@
       product.oneShotSalesPityCounter = Math.max(0, safeNumber(saved.oneShotSalesPityCounter, product.oneShotSalesPityCounter));
       product.sellingSeconds = Math.max(0, safeNumber(saved.sellingSeconds, product.sellingSeconds));
       product.version = Math.max(1, Math.floor(safeNumber(saved.version, product.version)));
-      product.upgradeProgress = definition.type === "subscription" ? clamp(safeNumber(saved.upgradeProgress, product.upgradeProgress), 0, 100) : 0;
-      product.upgradeStatus = definition.type === "subscription" && saved.upgradeStatus === "upgrading" ? "upgrading" : "idle";
+      const canResumeUpgrade = definition.type === "subscription" && ["ready", "selling"].indexOf(product.status) !== -1 && saved.upgradeStatus === "upgrading";
+      product.upgradeStatus = canResumeUpgrade ? "upgrading" : "idle";
+      product.upgradeProgress = canResumeUpgrade ? clamp(safeNumber(saved.upgradeProgress, product.upgradeProgress), 0, 100) : 0;
       product.mrr = 0;
       product.lifetimeRevenue = Math.max(0, safeNumber(saved.lifetimeRevenue, safeNumber(saved.totalRevenue, safeNumber(saved.totalSales, product.lifetimeRevenue))));
       recalculateProductMrr(product, definition);
@@ -306,8 +330,16 @@
       flags[product.id].customer100Logged = Boolean(current.customer100Logged);
       flags[product.id].mrr10kLogged = Boolean(current.mrr10kLogged || (product.id === "dailyReportAi" && source.dailyReportMrr10kLogged));
       flags[product.id].mrr100kLogged = Boolean(current.mrr100kLogged);
+      flags[product.id].firstSaleLogged = Boolean(current.firstSaleLogged);
+      flags[product.id].sales10Logged = Boolean(current.sales10Logged || current.unit10Logged);
+      flags[product.id].sales50Logged = Boolean(current.sales50Logged);
+      flags[product.id].sales100Logged = Boolean(current.sales100Logged);
       flags[product.id].unit10Logged = Boolean(current.unit10Logged);
       flags[product.id].qaLogShown = Boolean(current.qaLogShown || (product.id === "dailyReportAi" && source.dailyReportQaLogShown));
+      flags[product.id].marketingStartedLogged = Boolean(current.marketingStartedLogged);
+      flags[product.id].marketingFireLogged = Boolean(current.marketingFireLogged);
+      flags[product.id].awareness50Logged = Boolean(current.awareness50Logged);
+      flags[product.id].awareness100Logged = Boolean(current.awareness100Logged);
     });
     return flags;
   }
@@ -477,6 +509,7 @@
     applyDevelopmentTask(product, definition);
     applyQaTask(product, definition);
     applySalesTask(product, definition);
+    applyMarketingTask(product, definition);
     recalculateProductMrr(product, definition);
     applyProductMilestones(product, definition);
   }
@@ -526,7 +559,7 @@
   function applyQaTask(product, definition) {
     const flags = getProductFlags(product.id);
     const qaWorker = getAssignedWorkerForProduct("qa", product.id);
-    if (!qaWorker) return;
+    if (!qaWorker || !canApplyQa(product)) return;
 
     const qa = getQaEffect(qaWorker);
     const previousBugs = product.bugs;
@@ -536,6 +569,32 @@
       flags.qaLogShown = true;
       addLog("support", "Security-06が" + definition.name + "の未分類機能を整理しました。", "security06");
     }
+  }
+
+  function canApplyQa(product) {
+    return ["developing", "ready", "selling"].indexOf(product.status) !== -1;
+  }
+
+  function applyMarketingTask(product, definition) {
+    const flags = getProductFlags(product.id);
+    const marketingWorker = getAssignedWorkerForProduct("marketing", product.id);
+    if (!marketingWorker || !canApplyMarketing(product)) return;
+
+    const marketing = getMarketingEffect(marketingWorker);
+    product.awareness = clamp(product.awareness + marketing.awareness, 0, 100);
+    state.fire = clamp(state.fire + marketing.fire, 0, 100);
+    if (marketingWorker === "buzz03" && !flags.marketingStartedLogged) {
+      flags.marketingStartedLogged = true;
+      addLog("success", getProductLogText(product.id, "marketingStarted", "Buzz-03が" + definition.name + "の広報を開始しました。認知度と通知欄が伸び始めました。"), "buzz03");
+    }
+    if (marketingWorker === "buzz03" && marketing.fire > 0 && !flags.marketingFireLogged) {
+      flags.marketingFireLogged = true;
+      addLog("fire", "Buzz-03の広報で少し高温話題化しました。", "buzz03");
+    }
+  }
+
+  function canApplyMarketing(product) {
+    return ["developing", "ready", "selling"].indexOf(product.status) !== -1;
   }
 
   function applySalesTask(product, definition) {
@@ -595,7 +654,6 @@
     product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + price);
     state.money = Math.max(0, state.money + price);
     state.totalMoney = Math.max(0, state.totalMoney + price);
-    addLog("success", getProductLogText(product.id, "unitSold", definition.name + "が1本売れました。即時売上 " + formatCurrency(price) + " を獲得しました。").replace("{price}", formatCurrency(price)), product.id);
     applyProductMilestones(product, definition);
   }
 
@@ -614,10 +672,31 @@
 
   function applyProductMilestones(product, definition) {
     const flags = getProductFlags(product.id);
+    if (product.awareness >= 50 && !flags.awareness50Logged) {
+      flags.awareness50Logged = true;
+      addLog("success", getProductLogText(product.id, "awareness50", definition.name + "の認知度が50を超えました。"), product.id);
+    }
+    if (product.awareness >= 100 && !flags.awareness100Logged) {
+      flags.awareness100Logged = true;
+      addLog("success", getProductLogText(product.id, "awareness100", definition.name + "の認知度が100に到達しました。"), product.id);
+    }
     if (definition.type === "oneShot") {
-      if (getProductUnitsSold(product) >= 10 && !flags.unit10Logged) {
-        flags.unit10Logged = true;
-        addLog("success", getProductLogText(product.id, "unit10", definition.name + "の販売数が10本を超えました。"), product.id);
+      const unitsSold = getProductUnitsSold(product);
+      if (unitsSold >= 1 && !flags.firstSaleLogged) {
+        flags.firstSaleLogged = true;
+        addLog("success", getProductLogText(product.id, "firstSale", definition.name + "が初めて売れました。即時売上 {price} を獲得しました。").replace("{price}", formatCurrency(definition.price)), product.id);
+      }
+      if (unitsSold >= 10 && !flags.sales10Logged) {
+        flags.sales10Logged = true;
+        addLog("success", getProductLogText(product.id, "sales10", definition.name + "の販売数が10本を超えました。"), product.id);
+      }
+      if (unitsSold >= 50 && !flags.sales50Logged) {
+        flags.sales50Logged = true;
+        addLog("success", getProductLogText(product.id, "sales50", definition.name + "の販売数が50本を超えました。"), product.id);
+      }
+      if (unitsSold >= 100 && !flags.sales100Logged) {
+        flags.sales100Logged = true;
+        addLog("success", getProductLogText(product.id, "sales100", definition.name + "の販売数が100本を超えました。"), product.id);
       }
       return;
     }
@@ -1178,6 +1257,10 @@
   function getProductActionHint(product, definition) {
     const developmentAssignment = getAssignment("development");
     const salesAssignment = getAssignment("sales");
+    const qaAssignment = getAssignment("qa");
+    const marketingAssignment = getAssignment("marketing");
+    if (product.status === "idea" && qaAssignment.productId === definition.id && qaAssignment.aiId) return '<p class="product-action-hint">開発開始後に品質管理できます。</p>';
+    if (product.status === "idea" && marketingAssignment.productId === definition.id && marketingAssignment.aiId) return '<p class="product-action-hint">開発開始後に広報できます。</p>';
     if (product.status === "developing" && developmentAssignment.productId === definition.id && !developmentAssignment.aiId) {
       return '<p class="product-action-hint">開発担当を割り振ると進捗が進みます。</p>';
     }
@@ -1236,34 +1319,39 @@
   }
 
   function getProductDisplayName(product, definition) {
-    if (definition.type !== "subscription") return definition.name;
-    if (product.upgradeStatus === "upgrading") return definition.name + " v" + (getProductVersion(product) + 1) + "開発中 " + Math.floor(product.upgradeProgress) + "%";
-    return definition.name + " v" + getProductVersion(product);
+    return definition.name;
+  }
+
+  function getSubscriptionVersionLine(product) {
+    const current = "v" + getProductVersion(product) + "運用中";
+    if (product.upgradeStatus === "upgrading") return current + " / v" + (getProductVersion(product) + 1) + "開発中 " + Math.floor(product.upgradeProgress) + "%";
+    return current;
+  }
+
+  function getMarketingEffectHint(productId) {
+    return getAssignedWorkerForProduct("marketing", productId) ? '<span class="product-detail-metric marketing-effect">広報中 <strong>認知度UP → 販売成功率UP / 炎上微増</strong></span>' : '';
   }
 
   function getProductSummaryMetrics(product, definition, progressPercent) {
-    const common = '<span>進捗 <strong>' + Math.floor(progressPercent) + '%</strong></span>' +
-      '<span>品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
-      '<span>製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
-      '<span>認知度 <strong>' + Math.round(product.awareness) + '</strong></span>';
+    const detail = '<span class="product-detail-metric">進捗 <strong>' + Math.floor(progressPercent) + '%</strong></span>' +
+      '<span class="product-detail-metric">品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
+      '<span class="product-detail-metric">製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
+      '<span class="product-detail-metric">認知度 <strong>' + Math.round(product.awareness) + '</strong></span>';
     if (definition.type === "oneShot") {
-      return common +
-        '<span>販売数 <strong>' + getProductUnitsSold(product) + '本</strong></span>' +
-        '<span>累計売上 <strong>' + formatCurrency(product.lifetimeRevenue) + '</strong></span>' +
-        '<span>MRR <strong>なし</strong></span>' +
-        '<span>担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>';
+      return '<span class="primary-metric">販売数 <strong>' + getProductUnitsSold(product) + '本</strong></span>' +
+        '<span class="primary-metric">累計売上 <strong>' + formatCurrency(product.lifetimeRevenue) + '</strong></span>' +
+        '<span class="primary-metric wide">担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
+        getMarketingEffectHint(definition.id) + detail;
     }
-    return common +
-      '<span>バージョン <strong>v' + getProductVersion(product) + '</strong></span>' +
-      '<span>月額 <strong>' + formatCurrency(getCurrentMonthlyPrice(product, definition)) + '</strong></span>' +
-      '<span>顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
-      '<span>MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
-      '<span>v' + (getProductVersion(product) + 1) + '開発 <strong>' + (product.upgradeStatus === "upgrading" ? Math.floor(product.upgradeProgress) + '%' : '待機中') + '</strong></span>' +
-      '<span>担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>';
+    return '<span class="primary-metric wide">バージョン <strong>' + getSubscriptionVersionLine(product) + '</strong></span>' +
+      '<span class="primary-metric">顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
+      '<span class="primary-metric">MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
+      '<span class="primary-metric wide">担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
+      getMarketingEffectHint(definition.id) + detail;
   }
 
   function getProductActionButtons(product, definition) {
-    const actions = product.status === "idea" ? [{ taskId: "development", label: "開発する" }] : product.status === "developing" ? [{ taskId: "development", label: "開発担当" }, { taskId: "qa", label: "品質管理" }] : product.status === "ready" ? [{ taskId: "sales", label: "販売する" }, { taskId: "qa", label: "品質管理" }] : [{ taskId: "sales", label: "販売担当" }, { taskId: "qa", label: "品質管理" }];
+    const actions = product.status === "idea" ? [{ taskId: "development", label: "開発する" }] : product.status === "developing" ? [{ taskId: "development", label: "開発担当" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }] : product.status === "ready" ? [{ taskId: "sales", label: "販売する" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }] : [{ taskId: "sales", label: "販売担当" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }];
     if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle") actions.unshift({ taskId: "development", label: "バージョンアップ", mode: "upgrade" });
     return '<div class="product-actions">' + actions.map(function (action) { return '<button type="button" class="product-action-button" data-product-action="' + action.taskId + '" data-product-id="' + definition.id + '" data-product-mode="' + (action.mode || 'normal') + '">' + escapeHtml(action.label) + '</button>'; }).join('') + '</div>';
   }
@@ -1273,6 +1361,7 @@
     if (assignmentDraft.mode === "upgrade") return definition.name + " v" + (getProductVersion(getProduct(definition.id)) + 1) + " の開発";
     if (assignmentDraft.taskId === "development") return definition.name + "を開発する";
     if (assignmentDraft.taskId === "sales") return definition.name + "を販売する";
+    if (assignmentDraft.taskId === "marketing") return definition.name + "を広報する";
     return definition.name + "の品質管理";
   }
 
@@ -1285,6 +1374,7 @@
     const descriptions = {
       development: { boss: "何でもできるが低速", dev01: "開発が速いがバグ増加" },
       sales: { boss: "低速で顧客獲得", sales02: "顧客獲得が速いが炎上微増" },
+      marketing: { boss: "ゆっくり認知度を上げる", buzz03: "認知度を大きく上げるが炎上微増" },
       qa: { boss: "ゆっくり品質改善", security06: "品質改善とバグ削減が得意" }
     };
     return descriptions[taskId] && descriptions[taskId][workerId] ? descriptions[taskId][workerId] : "担当できます";
@@ -1322,10 +1412,18 @@
   function startSubscriptionUpgrade(productId) {
     const definition = getProductDefinition(productId);
     const product = getProduct(definition.id);
-    if (definition.type !== "subscription" || ["ready", "selling"].indexOf(product.status) === -1 || product.upgradeStatus !== "idle") return;
+    if (!canStartSubscriptionUpgrade(product, definition)) return;
     product.upgradeStatus = "upgrading";
     product.upgradeProgress = 0;
     addLog("normal", getProductLogText(product.id, "upgradeStarted", definition.name + " v{version} の開発を開始しました。").replace("{version}", getProductVersion(product) + 1), product.id);
+  }
+
+  function canStartSubscriptionUpgrade(product, definition) {
+    return definition.type === "subscription" && ["ready", "selling"].indexOf(product.status) !== -1 && product.upgradeStatus === "idle";
+  }
+
+  function shouldStartUpgradeOnDevelopmentAssignment(product, definition) {
+    return canStartSubscriptionUpgrade(product, definition);
   }
 
   function getAssignment(taskId) {
@@ -1354,7 +1452,9 @@
     }
     state.assignments[taskId] = { productId: normalizedProductId, aiId: aiId || null };
     if (taskId === "development" && aiId) {
-      if (assignmentDraft.mode === "upgrade") startSubscriptionUpgrade(normalizedProductId);
+      const targetDefinition = getProductDefinition(normalizedProductId);
+      const targetProduct = getProduct(targetDefinition.id);
+      if (assignmentDraft.mode === "upgrade" || shouldStartUpgradeOnDevelopmentAssignment(targetProduct, targetDefinition)) startSubscriptionUpgrade(normalizedProductId);
       else startProductDevelopmentIfNeeded(normalizedProductId);
     }
     saveGame();
@@ -1407,6 +1507,14 @@
     return { quality: 0.15, bugs: -0.10 };
   }
 
+  function getMarketingEffect(workerId) {
+    if (workerId === "buzz03") {
+      const level = state.employees.buzz03 || 0;
+      return { awareness: 0.35 + level * 0.10, fire: 0.03 };
+    }
+    return { awareness: 0.05, fire: 0.005 };
+  }
+
   function getSalesEffect(workerId, product, definition) {
     const awarenessFactor = 0.7 + product.awareness / 166.7;
     const qualityFactor = 0.5 + product.quality / 100;
@@ -1442,17 +1550,24 @@
   function getProductRevenuePerSecondTotal() { return PRODUCTS.reduce(function (sum, definition) { return definition.type === "subscription" ? sum + getProductRevenuePerSecond(getProduct(definition.id), definition) : sum; }, 0); }
   function getTotalProductMrr() { return PRODUCTS.reduce(function (sum, definition) { return definition.type === "subscription" ? sum + getProductMrr(getProduct(definition.id), definition) : sum; }, 0); }
   function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && (getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0); }); }
+  function getProductPrimaryScore(product, definition) {
+    if (definition.type === "oneShot") return safeNumber(product.lifetimeRevenue, 0);
+    return getProductMrr(product, definition) * 1.1;
+  }
+
   function getPrimaryProductDefinition() {
     return PRODUCTS.slice().sort(function (a, b) {
-      return getProductMrr(getProduct(b.id), b) - getProductMrr(getProduct(a.id), a);
+      return getProductPrimaryScore(getProduct(b.id), b) - getProductPrimaryScore(getProduct(a.id), a);
     })[0] || PRODUCTS[0];
   }
 
   function getProductShareSummary() {
     return PRODUCTS.map(function (definition) {
       const product = getProduct(definition.id);
-      if (definition.type === "oneShot") return definition.name + ": 売り切り / " + getProductUnitsSold(product) + "本販売 / 累計売上 " + formatCurrency(product.lifetimeRevenue);
-      return definition.name + " v" + getProductVersion(product) + ": サブスク / 顧客" + formatCustomers(getProductCustomers(product)) + " / MRR" + formatCurrency(getProductMrr(product, definition)) + "/月";
+      const marketing = getAssignedWorkerForProduct("marketing", definition.id);
+      const marketingText = marketing ? " / 広報" + getWorkerLabel(marketing) : "";
+      if (definition.type === "oneShot") return definition.name + ": 売り切り / " + getProductUnitsSold(product) + "本販売 / 累計売上 " + formatCurrency(product.lifetimeRevenue) + " / 認知" + Math.round(product.awareness) + marketingText;
+      return definition.name + " v" + getProductVersion(product) + ": サブスク / 顧客" + formatCustomers(getProductCustomers(product)) + " / MRR" + formatCurrency(getProductMrr(product, definition)) + "/月 / 認知" + Math.round(product.awareness) + marketingText;
     }).join(" | ");
   }
 
@@ -1533,7 +1648,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-10").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-12").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
