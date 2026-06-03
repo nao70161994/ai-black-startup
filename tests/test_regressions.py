@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.18"' in index
-    assert 'style.css?v=20260524-18' in index
-    assert 'main.js?v=20260524-18' in index
-    assert 'manifest.webmanifest?v=20260524-18' in index
-    assert 'icon.svg?v=20260524-18' in index
-    assert 'ogp.svg?v=20260524-18' in index
+    assert 'content="2026.05.24.20"' in index
+    assert 'style.css?v=20260524-20' in index
+    assert 'main.js?v=20260524-20' in index
+    assert 'manifest.webmanifest?v=20260524-20' in index
+    assert 'icon.svg?v=20260524-20' in index
+    assert 'ogp.svg?v=20260524-20' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.18"' in main
-    assert 'const APP_VERSION = "2026.05.24.18"' in sw
-    assert 'sw.js?v=20260524-18' in main
+    assert 'const APP_VERSION = "2026.05.24.20"' in main
+    assert 'const APP_VERSION = "2026.05.24.20"' in sw
+    assert 'sw.js?v=20260524-20' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-18"
+    assert manifest["start_url"] == "./index.html?v=20260524-20"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-18" in sw
-    assert "icon.svg?v=20260524-18" in sw
-    assert "ogp.svg?v=20260524-18" in sw
+    assert "manifest.webmanifest?v=20260524-20" in sw
+    assert "icon.svg?v=20260524-20" in sw
+    assert "ogp.svg?v=20260524-20" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -146,6 +146,7 @@ def test_existing_save_is_normalized_with_security06():
         "qa": {"productId": "dailyReportAi", "aiId": None},
         "sales": {"productId": "dailyReportAi", "aiId": None},
         "marketing": {"productId": "dailyReportAi", "aiId": None},
+        "support": {"productId": "dailyReportAi", "aiId": None},
     }
     assert output["save"]["productFlags"]["dailyReportAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["firstCustomerGranted"] is False
@@ -157,7 +158,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.18"
+    assert output["save"]["appVersion"] == "2026.05.24.20"
 
 
 def test_security06_visible_at_company_level_5():
@@ -246,11 +247,12 @@ def test_product_pipeline_ui_and_assignment_rules_present():
     assert '{ id: "development", label: "開発", workers: ["boss", "dev01"] }' in main
     assert '{ id: "qa", label: "品質管理", workers: ["boss", "security06"] }' in main
     assert '{ id: "sales", label: "販売", workers: ["boss", "sales02"] }' in main
+    assert '{ id: "support", label: "サポート", workers: ["boss", "care04"] }' in main
     assert 'if (workerId === "boss") return true' in main
     assert "function getAssignment(taskId)" in main
     assert "function getAssignmentProduct(taskId)" in main
     assert "function getAssignmentAi(taskId)" in main
-    assert "function assignAiToTask(taskId, aiId, productId)" in main
+    assert "function assignAiToTask(taskId, aiId, productId, mode)" in main
     assert "function clearAssignment(taskId)" in main
     assert 'if (state.assignments[otherTaskId] && state.assignments[otherTaskId].aiId === aiId) state.assignments[otherTaskId].aiId = null' in main
     assert "function openAssignmentModal()" in main
@@ -286,6 +288,7 @@ def test_legacy_assignments_migrate_to_product_scoped_shape():
     assert output["save"]["products"]["meetingMinutesAi"]["id"] == "meetingMinutesAi"
     assert assignments["qa"] == {"productId": "dailyReportAi", "aiId": "security06"}
     assert assignments["sales"] == {"productId": "dailyReportAi", "aiId": "sales02"}
+    assert assignments["support"] == {"productId": "dailyReportAi", "aiId": None}
     assert assignments["development"]["productId"] == "dailyReportAi"
 
 
@@ -530,7 +533,7 @@ def test_assignment_modal_ui_present():
     assert "disabled" in main
     assert "タスク・対象製品・担当AIを選んで割り振ります" in main
     assert "未選択の項目があります" in main
-    assert "assignAiToTask(assignmentDraft.taskId, assignmentDraft.aiId, assignmentDraft.productId)" in main
+    assert "assignAiToTask(assignmentDraft.taskId, assignmentDraft.aiId, assignmentDraft.productId, assignmentDraft.mode)" in main
     assert "clearAssignment(assignmentDraft.taskId)" in main
 
 
@@ -596,7 +599,7 @@ def test_product_card_assignment_flow_exists():
     assert "function openProductAssignmentModal(taskId, productId, mode)" in main
     assert 'assignmentModalMode = "product"' in main
     assert "assignmentDraft.taskId = taskId" in main
-    assert "assignmentDraft.productId = getProductDefinition(productId).id" in main
+    assert "assignmentDraft.productId = definition.id" in main
     assert "function getAssignmentModalTitle()" in main
     assert "担当AIを選んでください" in main
     assert "function getWorkerTaskDescription(workerId, taskId)" in main
@@ -606,7 +609,7 @@ def test_product_card_assignment_flow_exists():
     assert "品質改善とバグ削減が得意" in main
     assert "function startProductDevelopmentIfNeeded(productId)" in main
     assert 'if (taskId === "development" && aiId)' in main
-    assert 'if (assignmentDraft.mode === "upgrade" || shouldStartUpgradeOnDevelopmentAssignment(targetProduct, targetDefinition)) startSubscriptionUpgrade(normalizedProductId)' in main
+    assert 'if (actionMode === "upgrade") startSubscriptionUpgrade(normalizedProductId);' in main
     assert 'else startProductDevelopmentIfNeeded(normalizedProductId)' in main
     assert ".product-actions" in css
     assert ".product-action-menu-modal.open" in css
@@ -671,10 +674,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.18"' in index
-    assert 'main.js?v=20260524-18' in index
-    assert 'sw.js?v=20260524-18' in main
-    assert 'const APP_VERSION = "2026.05.24.18"' in sw
+    assert 'content="2026.05.24.20"' in index
+    assert 'main.js?v=20260524-20' in index
+    assert 'sw.js?v=20260524-20' in main
+    assert 'const APP_VERSION = "2026.05.24.20"' in sw
 
 
 
@@ -790,7 +793,7 @@ console.log(JSON.stringify({
     return json.loads(result.stdout)
 
 
-def test_development_assignment_to_completed_subscription_starts_upgrade_behavior():
+def test_development_assignment_to_completed_subscription_requires_upgrade_mode():
     output = run_game_action_smoke({
         "money": 0,
         "totalMoney": 0,
@@ -806,6 +809,22 @@ def test_development_assignment_to_completed_subscription_starts_upgrade_behavio
     }, "window.__testApi.assignAiToTask('development', 'dev01', 'dailyReportAi'); window.__testApi.tick(); window.__testApi.saveGame();")
     product = output["save"]["products"]["dailyReportAi"]
     assert output["save"]["assignments"]["development"] == {"productId": "dailyReportAi", "aiId": "dev01"}
+    assert product["upgradeStatus"] == "idle"
+
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 10, "customers": 2, "version": 1, "upgradeStatus": "idle"}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1760000000000,
+    }, "window.__testApi.assignAiToTask('development', 'dev01', 'dailyReportAi', 'upgrade'); window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
     assert product["upgradeStatus"] == "upgrading"
     assert product["upgradeProgress"] > 0
     assert product["status"] == "selling"
@@ -1006,6 +1025,91 @@ def test_marketing_assignment_is_normalized_and_visible_behavior():
     assert "製品一覧を開く" in output["productHtml"]
 
 
+def test_subscription_support_state_and_assignment_are_normalized():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 3,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 1, "fire05": 0, "security06": 0},
+        "assignments": {"support": {"productId": "dailyReportAi", "aiId": "care04"}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 10, "awareness": 0, "customers": 5, "supportLoad": 120, "satisfaction": -5, "churnRisk": 999}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["supportLoad"] == 100
+    assert product["satisfaction"] == 0
+    assert product["churnRisk"] == 100
+    assert output["save"]["assignments"]["support"] == {"productId": "dailyReportAi", "aiId": "care04"}
+    assert "サポート" in output["assignmentHtml"]
+    assert "Care-04 → AI日報メーカー" in output["assignmentHtml"]
+
+
+def test_support_task_behavior_and_churn_are_subscription_only():
+    main = (ROOT / "main.js").read_text()
+    assert "function applySupportOperations(product, definition)" in main
+    assert 'if (definition.type !== "subscription") return;' in main
+    assert "function getSupportEffect(workerId)" in main
+    assert "supportLoad: -(0.3 + level * 0.08)" in main
+    assert "product.customers = Math.max(0, getProductCustomers(product) - 1)" in main
+    assert "churnChance = clamp(product.churnRisk / 1000, 0, 0.05)" in main
+    assert 'id: "support", label: "サポート"' in main
+
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 20,
+        "companyLevel": 3,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 5, "fire05": 0, "security06": 0},
+        "assignments": {"support": {"productId": "dailyReportAi", "aiId": "care04"}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 80, "bugs": 5, "awareness": 0, "customers": 10, "supportLoad": 80, "satisfaction": 50, "churnRisk": 30}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["supportLoad"] < 80
+    assert product["satisfaction"] > 50
+    assert output["save"]["fire"] < 20
+
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 100,
+        "fire": 100,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 20, "bugs": 100, "awareness": 0, "customers": 3, "supportLoad": 100, "satisfaction": 0, "churnRisk": 100}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    }, "Math.random = function () { return 0; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    assert output["save"]["products"]["dailyReportAi"]["customers"] == 2
+    assert output["save"]["productFlags"]["dailyReportAi"]["firstChurnLogged"] is True
+
+
+def test_support_ui_and_detail_metrics_are_present():
+    main = (ROOT / "main.js").read_text()
+
+    assert "満足度" in main
+    assert "サポート負荷" in main
+    assert "解約リスク" in main
+    assert "サポート負荷DOWN / 満足度UP / 解約リスクDOWN" in main
+    assert "解約リスクが高い" in main
+    assert "Care-04を" in main
+    assert "supportLoad50Logged" in main
+    assert "satisfaction40Logged" in main
+    assert "churnRisk50Logged" in main
+    assert "firstChurnLogged" in main
+
+
 def test_product_summary_cards_have_detail_modal_flow():
     index = (ROOT / "index.html").read_text()
     main = (ROOT / "main.js").read_text()
@@ -1148,8 +1252,8 @@ def test_product_action_menu_can_route_to_assignment_modal():
 
     assert 'id="productActionMenuModal"' in index
     assert "function renderProductActionMenuModal()" in main
+    assert "getProductAvailableActions(product, definition)" in main
     assert "getProductAssignmentActions(product, definition)" in main
-    assert "getProductActionMenuDescription(action, definition, product)" in main
     assert "closeProductActionMenu();" in main
     assert 'openProductAssignmentModal(button.getAttribute("data-product-action")' in main
     assert "月額価格UP / 品質UP / 製品バグ増" in main
@@ -1308,8 +1412,184 @@ def test_current_mission_stage_ignores_unclaimed_completed_missions_in_code():
     main = (ROOT / "main.js").read_text()
 
     start = main.index("function getCurrentMissionStage()")
-    end = main.index("function claimCompletedMissions()", start)
+    end = main.index("function claimCompletedMissions(options)", start)
     stage_code = main[start:end]
     assert "!mission.done()" in stage_code
     assert "isMissionClaimed" not in stage_code
     assert "MISSION_STAGES.forEach(function (stage)" in main
+
+
+def test_product_action_menu_uses_explicit_action_definitions():
+    main = (ROOT / "main.js").read_text()
+
+    assert "function getProductAvailableActions(product, definition)" in main
+    assert "id: \"newProduct\"" in main
+    assert "mode: \"newProduct\"" in main
+    assert "id: \"upgrade\"" in main
+    assert "mode: \"upgrade\"" in main
+    assert "id: \"support\"" in main
+    assert "disabledReason" in main
+    assert "data-product-action-id" in main
+    assert "data-product-mode" in main
+    assert "openProductAssignmentModal(button.getAttribute(\"data-product-action\"), button.getAttribute(\"data-product-id\"), button.getAttribute(\"data-product-mode\")" in main
+
+
+def test_product_action_availability_matches_product_status_and_type():
+    main = (ROOT / "main.js").read_text()
+    start = main.index("function getProductAvailableActions(product, definition)")
+    end = main.index("function getProductAssignmentActions(product, definition)", start)
+    action_code = main[start:end]
+
+    assert 'if (isIdea) return [' in action_code
+    assert 'enabled: true' in action_code
+    assert 'enabled: isDeveloping' in action_code
+    assert 'enabled: isReady || isSelling' in action_code
+    assert 'enabled: canOperate' in action_code
+    assert 'if (isIdea) return [' in action_code
+    assert 'label: "開発する"' in action_code
+    assert 'enabled: isSubscription && isSelling && hasCustomers' in action_code
+    assert 'enabled: isSubscription && (isReady || isSelling) && product.upgradeStatus === "idle"' in action_code
+    assert 'if (action.id === "support" || action.id === "upgrade") return isSubscription' in action_code
+    assert 'if (action.id === "newProduct") return isIdea || isDeveloping' in action_code
+    assert 'if (action.id === "sales") return isReady || isSelling' in action_code
+    assert 'if (action.id === "qa" || action.id === "marketing") return !isIdea' in action_code
+
+
+def test_development_and_upgrade_modes_are_kept_separate_when_assigning():
+    main = (ROOT / "main.js").read_text()
+
+    assert "function assignAiToTask(taskId, aiId, productId, mode)" in main
+    assert 'const actionMode = mode || "normal"' in main
+    assert 'if (actionMode === "upgrade") startSubscriptionUpgrade(normalizedProductId);' in main
+    assert 'else startProductDevelopmentIfNeeded(normalizedProductId);' in main
+    assert 'shouldStartUpgradeOnDevelopmentAssignment(targetProduct, targetDefinition)' not in main[main.index("function assignAiToTask"):main.index("function clearAssignment", main.index("function assignAiToTask"))]
+    assert 'if (assignmentDraft.mode === "upgrade") return definition.name + "をバージョンアップする"' in main
+    assert 'if (assignmentDraft.taskId === "development") return definition.name + "を開発する"' in main
+
+
+def test_idea_product_action_menu_only_offers_development():
+    main = (ROOT / "main.js").read_text()
+    start = main.index("function getProductAvailableActions(product, definition)")
+    end = main.index("function getProductAssignmentActions(product, definition)", start)
+    action_code = main[start:end]
+
+    idea_block_start = action_code.index("if (isIdea) return [")
+    idea_block_end = action_code.index("];", idea_block_start)
+    idea_block = action_code[idea_block_start:idea_block_end]
+    assert 'id: "newProduct"' in idea_block
+    assert 'label: "開発する"' in idea_block
+    assert 'mode: "newProduct"' in idea_block
+    assert 'id: "support"' not in idea_block
+    assert 'id: "upgrade"' not in idea_block
+    assert 'id: "sales"' not in idea_block
+    assert 'id: "qa"' not in idea_block
+    assert 'id: "marketing"' not in idea_block
+
+
+def test_mission_sync_claim_uses_single_summary_log_on_load():
+    main = (ROOT / "main.js").read_text()
+
+    assert "claimCompletedMissions({ sync: true })" in main
+    assert "過去に達成済みのミッションを" in main
+    assert "件同期しました。" in main
+    start = main.index("function claimCompletedMissions(options)")
+    end = main.index("function isMissionClaimed", start)
+    claim_code = main[start:end]
+    assert "const syncMode" in claim_code
+    assert "syncedCount += 1" in claim_code
+    assert "if (syncMode && syncedCount > 0) addLog" in claim_code
+    assert 'else addLog("success", "ミッション達成:' in claim_code
+
+
+def test_action_menu_disabled_styles_are_readable():
+    css = (ROOT / "style.css").read_text()
+
+    assert ".product-action-menu-button:disabled" in css
+    assert "opacity: 1" in css
+    assert "disabled-action" in css
+
+
+def test_next_recommendation_prioritizes_churn_and_support_before_fire_and_bugs():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 90,
+        "fire": 90,
+        "companyLevel": 5,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 0, "fire05": 1, "security06": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 40, "bugs": 30, "awareness": 60, "customers": 8, "version": 1, "supportLoad": 90, "satisfaction": 20, "churnRisk": 80}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "解約リスクが高いAI日報メーカーをサポートしましょう。" in output["recommendationHtml"]
+    assert "炎上" not in output["recommendationHtml"]
+    assert "バグ" not in output["recommendationHtml"]
+
+
+def test_next_recommendation_promotes_care04_for_high_support_load():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 4,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 1, "fire05": 0, "security06": 1},
+        "products": {"meetingMinutesAi": {"id": "meetingMinutesAi", "status": "selling", "progress": 180, "quality": 70, "bugs": 5, "awareness": 60, "customers": 10, "version": 1, "supportLoad": 70, "satisfaction": 60, "churnRisk": 20}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "Care-04を自動議事録AIのサポートに割り振りましょう。" in output["recommendationHtml"]
+
+
+def test_employee_summary_includes_hired_ai_specialty_labels():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 300000,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 5, "sales02": 3, "buzz03": 2, "care04": 1, "fire05": 1, "security06": 1},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "Dev-01 Lv5 開発" in output["employeePanelHtml"]
+    assert "Sales-02 Lv3 販売" in output["employeePanelHtml"]
+    assert "Buzz-03 Lv2 広報" in output["employeePanelHtml"]
+    assert "Care-04 Lv1 サポート" in output["employeePanelHtml"]
+    assert "Security-06 Lv1 品質管理" in output["employeePanelHtml"]
+    assert "Fire-05 Lv1 炎上対応" in output["employeePanelHtml"]
+
+
+def test_product_detail_modal_has_group_headings_for_scanability():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "product-detail-heading" in main
+    assert ">収益<" in main
+    assert ">品質<" in main
+    assert ">運用<" in main
+    assert ">担当<" in main
+    assert ".product-detail-heading" in css
+    assert "grid-column: 1 / -1" in css
+
+
+def test_reset_button_is_subdued_danger_action():
+    css = (ROOT / "style.css").read_text()
+
+    start = css.index("button.danger {")
+    end = css.index("}\nbutton.danger:hover", start)
+    danger_style = css[start:end]
+    assert "#fff7f9" in danger_style
+    assert "#9b2f46" in danger_style
+    assert "box-shadow: none" in danger_style
+    assert "font-size: 12px" in danger_style
+    assert "min-height: 34px" in danger_style

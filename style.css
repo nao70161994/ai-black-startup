@@ -51,8 +51,17 @@ button:disabled {
   box-shadow: none;
 }
 button.danger {
-  border-color: rgba(255, 107, 138, 0.4);
-  background: linear-gradient(180deg, #ff8aa2, #ff5d7e);
+  min-height: 34px;
+  padding: 0 10px;
+  color: #9b2f46;
+  border: 1px solid rgba(255, 107, 138, 0.42);
+  background: #fff7f9;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 800;
+}
+button.danger:hover {
+  background: #fff1f5;
 }
 
 .app-shell { width: min(100%, 760px); margin: 0 auto; padding: 7px 10px 14px; }
@@ -389,6 +398,8 @@ button.share {
 .product-action-menu-button { display: grid; gap: 2px; min-height: 44px; padding: 7px 9px; border-radius: 9px; border: 1.5px solid rgba(25, 127, 170, 0.38); color: #07506a; background: #ffffff; box-shadow: none; text-align: left; }
 .product-action-menu-button strong { color: inherit; font-size: 13px; }
 .product-action-menu-button span { color: #536f7c; font-size: 11px; line-height: 1.2; }
+.product-action-menu-button:disabled, .product-action-menu-button.disabled-action { opacity: 1; color: #465963; background: #eef3f5; border-color: rgba(83, 111, 124, 0.28); box-shadow: none; }
+.product-action-menu-button:disabled span, .product-action-menu-button.disabled-action span { color: #5f7078; }
 @media (max-width: 520px) {
   .product-action-menu-modal.open { align-items: end; padding: 0; }
   .product-action-menu-dialog { width: 100%; max-height: 82vh; border-radius: 14px 14px 0 0; border-width: 2px 0 0; }
@@ -402,6 +413,18 @@ button.share {
 .product-detail-item { padding: 5px 6px; border-radius: 8px; color: var(--muted); background: #f6fbfd; border: 1px solid rgba(25, 189, 232, 0.12); font-size: 11px; line-height: 1.25; }
 .product-detail-item strong { display: block; margin-top: 1px; color: var(--ink); font-size: 13px; }
 .product-detail-item.wide { grid-column: 1 / -1; }
+.product-detail-heading {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding: 3px 7px;
+  border: 1px solid rgba(25, 189, 232, 0.16);
+  border-radius: 999px;
+  color: #0b6680;
+  background: #eefaff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+}
 .product-detail-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .product-detail-actions button { min-height: 38px; border-radius: 9px; font-size: 12px; line-height: 1.15; }
 @media (max-width: 520px) {
