@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI社長のブラック起業</title>
   <meta name="description" content="社長も社員もAI。売上もバグも炎上も伸びていく、明るいブラックコメディ放置経営ゲーム。">
-  <meta name="app-version" content="2026.05.24.12">
+  <meta name="app-version" content="2026.05.24.18">
   <meta name="theme-color" content="#19bde8">
   <meta property="og:title" content="AI社長のブラック起業">
   <meta property="og:description" content="社長も社員もAI。売上もバグも炎上も伸びていく、明るいブラックコメディ放置経営ゲーム。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nao70161994.github.io/ai-black-startup/">
-  <meta property="og:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-12">
+  <meta property="og:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-18">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AI社長のブラック起業">
   <meta name="twitter:description" content="社長も社員もAI。売上もバグも炎上も伸びていく、明るいブラックコメディ放置経営ゲーム。">
-  <meta name="twitter:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-12">
+  <meta name="twitter:image" content="https://nao70161994.github.io/ai-black-startup/ogp.svg?v=20260524-18">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="manifest" href="manifest.webmanifest?v=20260524-12">
-  <link rel="icon" href="icon.svg?v=20260524-12" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20260524-12">
+  <link rel="manifest" href="manifest.webmanifest?v=20260524-18">
+  <link rel="icon" href="icon.svg?v=20260524-18" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=20260524-18">
 </head>
 <body>
   <div class="app-shell">
@@ -40,47 +40,37 @@
       <button id="onboardingClose" type="button" aria-label="案内を閉じる">OK</button>
     </section>
     <main>
-      <section class="status-grid compact-status" aria-label="会社ステータス">
+      <section class="status-grid compact-status dashboard-status" aria-label="会社ステータス">
         <article class="status-card money-card"><span>売上</span><strong id="money">¥0</strong></article>
-        <article class="status-card"><span>ユーザー</span><strong id="users">0</strong></article>
-        <article class="status-card"><span>会社Lv</span><strong id="inlineCompanyLevel">1</strong></article>
+        <article class="status-card"><span>総MRR</span><strong id="totalMrrDashboard">¥0/月</strong></article>
+        <article class="status-card"><span>総顧客</span><strong id="users">0社</strong></article>
         <article class="status-card bug"><span>バグ</span><strong id="bugs">0</strong></article>
         <article class="status-card fire"><span>炎上</span><strong id="fire">0</strong></article>
-        <article class="status-card next-level-card" id="nextLevelCard"><span>次Lv</span><strong id="nextLevel">¥5.0K</strong><small id="nextUnlock"></small></article>
-        <article class="status-card boost"><span id="startupBoostLabel">稼働状態</span><strong id="startupBoost">通常稼働</strong></article>
-        <article class="status-card"><span>累計</span><strong id="totalMoney">¥0</strong></article>
-        <article class="status-card"><span>基礎受託/秒</span><strong id="baseIncomeRate">+¥0 / 秒</strong></article>
-        <article class="status-card"><span>製品/秒</span><strong id="productIncomeRate">+¥0 / 秒</strong></article>
       </section>
 
-      <section class="activity-panel" id="activityPanel">
-        <strong>現在の主な動き</strong>
+      <section class="activity-panel" id="activityPanel" aria-live="polite">
+        <div class="activity-head"><strong>現在の動き</strong><span id="latestLogType">LOG</span></div>
         <span id="activityText">AI社員の起動待ちです</span>
+        <p class="activity-latest">最新: <span id="latestLogText">経営最適化AIが起動しました。</span></p>
       </section>
 
-      <section class="latest-log-panel" id="latestLogPanel" aria-live="polite">
-        <div class="latest-log-label"><span id="latestLogType">LOG</span><small>最新の業務報告</small></div>
-        <p id="latestLogText">経営最適化AIが起動しました。</p>
-      </section>
+      <section class="section-block next-recommendation-panel" id="nextRecommendationPanel" aria-label="次のおすすめ"></section>
 
-      <section class="section-block product-panel" id="productPanel" aria-label="現在の製品"></section>
+      <section class="section-block primary-product-panel" id="primaryProductPanel" aria-label="現在の主力製品"></section>
+
+      <section class="section-block product-panel" id="productPanel" aria-label="製品ポートフォリオ"></section>
 
       <section class="section-block assignment-panel" id="assignmentPanel" aria-label="現在の担当"></section>
 
       <section class="assignment-modal" id="assignmentModal" aria-label="担当変更" hidden></section>
 
-      <section class="mission-panel product-objective-panel" id="productObjectivePanel" aria-label="製品目標">
-        <div class="mission-head">
-          <strong>製品目標</strong>
-          <span>AI日報メーカー</span>
-        </div>
-        <div class="mission-list" id="productObjectiveList"></div>
-      </section>
+      <section class="product-detail-modal" id="productDetailModal" aria-label="製品詳細" hidden></section>
 
-      <section class="section-block log-section">
-        <div class="section-heading"><h2>業務報告ログ</h2><span>最新50件</span></div>
-        <div class="log-list" id="logList" aria-live="polite"></div>
-      </section>
+      <section class="product-action-menu-modal" id="productActionMenuModal" aria-label="製品操作" hidden></section>
+
+      <section class="mission-panel product-objective-panel" id="productObjectivePanel" aria-label="製品目標"><div id="productObjectiveList" hidden></div></section>
+
+      <section class="section-block log-section" id="logPanel" aria-label="業務報告ログ"></section>
 
       <section class="mission-panel" id="missionPanel" aria-label="現在のミッション">
         <div class="mission-head">
@@ -103,10 +93,7 @@
         </div>
       </section>
 
-      <section class="section-block">
-        <div class="section-heading"><h2>AI社員</h2><span id="incomeRate">+¥0 / 秒</span></div>
-        <div class="employee-list" id="employeeList"></div>
-      </section>
+      <section class="section-block employee-panel" id="employeePanel" aria-label="AI社員"></section>
       <section class="actions" aria-label="操作">
         <button id="saveButton" type="button">手動保存</button>
         <button id="shareButton" type="button" class="share">共有</button>
@@ -114,6 +101,6 @@
       </section>
     </main>
   </div>
-  <script src="main.js?v=20260524-12"></script>
+  <script src="main.js?v=20260524-18"></script>
 </body>
 </html>

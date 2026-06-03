@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.12";
+  const APP_VERSION = "2026.05.24.18";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -55,7 +55,7 @@
       label: "起業準備",
       missions: [
         { id: "daily_report_developing", text: "AI日報メーカーを開発中にする", reward: 200, done: function () { return getProduct("dailyReportAi").status !== "idea"; } },
-        { id: "assign_daily_development", text: "AI社長またはDev-01を開発に割り振る", reward: 200, done: function () { const assignment = getAssignment("development"); return assignment.productId === "dailyReportAi" && Boolean(assignment.aiId); } },
+        { id: "assign_daily_development", text: "AI社長またはDev-01を開発に割り振る", reward: 200, done: function () { const assignment = getAssignment("development"); return getProduct("dailyReportAi").status !== "idea" || (assignment.productId === "dailyReportAi" && Boolean(assignment.aiId)); } },
         { id: "daily_report_ready_mission", text: "AI日報メーカーを完成させる", reward: 300, done: function () { return ["ready", "selling"].indexOf(getProduct("dailyReportAi").status) !== -1; } }
       ]
     },
@@ -63,7 +63,7 @@
       id: "first_sale",
       label: "初回販売",
       missions: [
-        { id: "assign_daily_sales", text: "AI日報メーカーに販売担当を割り振る", reward: 300, done: function () { const assignment = getAssignment("sales"); return assignment.productId === "dailyReportAi" && Boolean(assignment.aiId); } },
+        { id: "assign_daily_sales", text: "AI日報メーカーに販売担当を割り振る", reward: 300, done: function () { const assignment = getAssignment("sales"); return getProductCustomers(getProduct("dailyReportAi")) >= 1 || (assignment.productId === "dailyReportAi" && Boolean(assignment.aiId)); } },
         { id: "daily_first_customer", text: "AI日報メーカーの初顧客を1社獲得する", reward: 400, done: function () { return getProductCustomers(getProduct("dailyReportAi")) >= 1; } },
         { id: "daily_mrr_500", text: "MRR ¥500/月を達成する", reward: 500, done: function () { return getProductMrr(getProduct("dailyReportAi"), getProductDefinition("dailyReportAi")) >= 500; } }
       ]
@@ -180,6 +180,11 @@
   let assignmentModalOpen = false;
   let assignmentModalMode = "detail";
   let assignmentDraft = { taskId: "development", productId: PRODUCTS[0].id, aiId: null, mode: "normal" };
+  let productDetailModalOpen = false;
+  let productDetailProductId = PRODUCTS[0].id;
+  let productActionMenuOpen = false;
+  let productActionMenuProductId = PRODUCTS[0].id;
+  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false };
 
   function buildReportLogs(source) {
     return Object.keys(source).flatMap(function (employeeId) {
@@ -857,7 +862,11 @@
     renderStatus();
     renderOnboarding();
     renderRiskPanel();
+    renderNextRecommendationPanel();
+    renderPrimaryProductPanel();
     renderProductPanel();
+    renderProductDetailModal();
+    renderProductActionMenuModal();
     renderAssignments();
     renderProductObjectives();
     renderMissions();
@@ -869,10 +878,10 @@
 
   function renderStatus() {
     setText("companyLevel", state.companyLevel);
-    setText("inlineCompanyLevel", state.companyLevel);
     setText("money", formatCurrency(state.money));
     setText("totalMoney", formatCurrency(state.totalMoney));
-    setText("users", formatNumber(state.users));
+    setText("users", formatCustomers(getTotalProductCustomers()));
+    setText("totalMrrDashboard", formatCurrency(getTotalProductMrr()) + "/月");
     setText("bugs", Math.round(state.bugs) + " / 100");
     setText("fire", Math.round(state.fire) + " / 100");
     setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)));
@@ -910,9 +919,10 @@
     if (rates.users > 0) parts.push("ユーザー +" + formatNumber(rates.users) + "/秒");
     if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
+    if (rates.productRevenue > 0) parts.push("MRR継続 +" + formatCurrencyPrecise(rates.productRevenue) + "/秒");
+    if (rates.baseMoney !== 0) parts.push("基礎受託 " + formatSignedCurrencyRate(rates.baseMoney) + "/秒");
     const sellingProduct = PRODUCTS.map(function (definition) { return getProduct(definition.id); }).find(function (product) { return product.status === "selling"; });
     if (sellingProduct && getAssignmentAi("sales")) parts.push("顧客獲得判定中");
-    if (sellingProduct && getProductCustomers(sellingProduct) > 0) parts.push("MRR継続収益 " + formatCurrencyPrecise(getProductRevenuePerSecond(sellingProduct, getProductDefinition(sellingProduct.id))) + "/秒");
     if (rates.bugs < 0) parts.push("バグ " + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire < 0) parts.push("炎上 " + rates.fire.toFixed(1) + "/秒");
     element.textContent = parts.join(" / ") || "AI社員は静かに待機中です。";
@@ -926,30 +936,123 @@
     panel.classList.toggle("hidden", shouldHide);
   }
 
+  function renderNextRecommendationPanel() {
+    const panel = document.getElementById("nextRecommendationPanel");
+    if (!panel) return;
+    panel.innerHTML = '<div class="section-heading"><h2>次のおすすめ</h2><span>次の一手</span></div><p class="next-recommendation-text">' + escapeHtml(getNextRecommendationText()) + '</p>';
+  }
+
+  function getNextRecommendationText() {
+    if (state.bugs >= 70) {
+      if (state.companyLevel >= 5 && (state.employees.security06 || 0) <= 0) return "バグが高いのでSecurity-06を雇用しましょう。";
+      return "バグが高いのでSecurity-06を品質管理へ割り振りましょう。";
+    }
+    if (state.fire >= 70) {
+      if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return "炎上が高いのでFire-05を雇用しましょう。";
+      return "炎上が高いので広報より品質管理や火消しを優先しましょう。";
+    }
+    const developing = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status === "developing" && getAssignment("development").productId !== definition.id; });
+    if (developing) return developing.name + "を開発対象にして、AI社長かDev-01を割り振りましょう。";
+    const upgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.upgradeStatus === "upgrading" && getAssignment("development").productId !== definition.id; });
+    if (upgrade) return upgrade.name + "のv" + (getProductVersion(getProduct(upgrade.id)) + 1) + "開発を進めましょう。";
+    const ready = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return ["ready", "selling"].indexOf(product.status) !== -1 && getAssignment("sales").productId !== definition.id; });
+    if (ready) return ready.name + "に販売担当を割り振りましょう。";
+    const lowAwareness = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 50 && getAssignment("marketing").productId !== definition.id; });
+    if (lowAwareness) return lowAwareness.name + "を広報して認知度を上げましょう。";
+    const lowQuality = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.quality < 70 || product.bugs >= 30); });
+    if (lowQuality) return lowQuality.name + "を品質管理してバグを下げましょう。";
+    const nextIdea = PRODUCTS.find(function (definition) { return getProduct(definition.id).status === "idea"; });
+    if (nextIdea) return nextIdea.name + "の開発を始めましょう。";
+    return "製品目標を確認し、主力製品の販売・広報・品質管理を回しましょう。";
+  }
+
+  function getPrimaryProductRecommendation(product, definition) {
+    if (product.status === "idea") return "開発する";
+    if (product.status === "developing" || product.upgradeStatus === "upgrading") return getAssignment("development").productId === definition.id && getAssignmentAi("development") ? "開発を継続" : "開発担当を割り振る";
+    if ((product.status === "ready" || product.status === "selling") && (!getAssignmentAi("sales") || getAssignment("sales").productId !== definition.id)) return "販売担当を割り振る";
+    if (product.awareness < 50) return "広報で認知度を上げる";
+    if (product.bugs >= 25 || product.quality < 70) return "品質管理でバグを下げる";
+    if (definition.type === "subscription" && product.upgradeStatus === "idle") return "バージョンアップを検討";
+    return "販売と広報を継続";
+  }
+
+  function renderPrimaryProductPanel() {
+    const panel = document.getElementById("primaryProductPanel");
+    if (!panel) return;
+    const definition = getPrimaryProductDefinition();
+    const product = getProduct(definition.id);
+    panel.innerHTML = '<div class="section-heading"><h2>現在の主力製品</h2><span>' + escapeHtml(getPrimaryProductValueText(product, definition)) + '</span></div>' +
+      '<article class="primary-product-card"><div><strong>' + escapeHtml(getPrimaryProductTitle(product, definition)) + '</strong><span>' + escapeHtml(getPrimaryProductSummary(product, definition)) + '</span><em>おすすめ: ' + escapeHtml(getPrimaryProductRecommendation(product, definition)) + '</em></div><div class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</div></article>';
+  }
+
   function renderProductPanel() {
     const panel = document.getElementById("productPanel");
     if (!panel) return;
-    panel.innerHTML = '<div class="section-heading"><h2>製品一覧</h2><span>3製品運用</span></div>' + PRODUCTS.map(function (definition) {
-      const product = getProduct(definition.id);
-      const progressPercent = getProductProgressPercent(product, definition);
-      return '<article class="product-card product-' + product.status + '">' +
-        '<div class="product-top"><div><strong>' + escapeHtml(getProductDisplayName(product, definition)) + '</strong><span>' + escapeHtml(getProductTypeLine(definition, product)) + ' / 開発量 ' + definition.developmentRequired + '</span></div><div class="level-badge">' + getProductStatusLabel(product.status) + '</div></div>' +
-        '<div class="product-progress"><span style="width:' + progressPercent + '%"></span></div>' +
-        '<div class="product-metrics product-summary-metrics">' + getProductSummaryMetrics(product, definition, progressPercent) + '</div>' +
-        getProductActionHint(product, definition) +
-        getProductActionButtons(product, definition) +
-        '</article>';
-    }).join('');
-    panel.querySelectorAll("button[data-product-action]").forEach(function (button) {
-      button.addEventListener("click", function () { openProductAssignmentModal(button.getAttribute("data-product-action"), button.getAttribute("data-product-id"), button.getAttribute("data-product-mode") || "normal"); });
+    const body = dashboardUi.productsExpanded ? '<div class="portfolio-products">' + PRODUCTS.map(function (definition) { return getProductCardHtml(definition); }).join('') + '</div>' : '';
+    panel.innerHTML = '<div class="section-heading"><h2>製品ポートフォリオ</h2><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (dashboardUi.productsExpanded ? '製品一覧を閉じる' : '製品一覧を開く') + '</button></div>' +
+      '<p class="dashboard-summary">3製品運用 / 総MRR ' + formatCurrency(getTotalProductMrr()) + '/月 / 売り切り累計 ' + formatCurrency(getTotalOneShotRevenue()) + '</p>' + body;
+    const toggle = document.getElementById("toggleProductsButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("productsExpanded"); });
+    panel.querySelectorAll("button[data-product-detail]").forEach(function (button) {
+      button.addEventListener("click", function () { openProductDetailModal(button.getAttribute("data-product-detail")); });
     });
+    panel.querySelectorAll("button[data-product-menu]").forEach(function (button) {
+      button.addEventListener("click", function () { openProductActionMenu(button.getAttribute("data-product-menu")); });
+    });
+  }
+
+  function getProductCardHtml(definition) {
+    const product = getProduct(definition.id);
+    const progressPercent = product.upgradeStatus === "upgrading" ? clamp(product.upgradeProgress, 0, 100) : getProductProgressPercent(product, definition);
+    const shouldShowProgress = product.status === "developing" || product.upgradeStatus === "upgrading";
+    return '<article class="product-card product-' + product.status + '">' +
+      '<div class="product-top"><div><strong>' + escapeHtml(getProductDisplayName(product, definition)) + '</strong><span>' + escapeHtml(getProductTypeLine(definition, product)) + '</span></div><div class="level-badge">' + getProductStatusLabel(product.status) + '</div></div>' +
+      (shouldShowProgress ? '<div class="product-progress"><span style="width:' + progressPercent + '%"></span></div>' : '') +
+      '<div class="product-metrics product-summary-metrics">' + getProductSummaryMetrics(product, definition, progressPercent) + '</div>' +
+      getProductActionHint(product, definition) +
+      getProductActionButtons(product, definition) +
+      '</article>';
+  }
+
+
+  function toggleDashboardPanel(key) {
+    dashboardUi[key] = !dashboardUi[key];
+    render();
+  }
+
+  function getPrimaryProductTitle(product, definition) {
+    if (definition.type === "subscription") return definition.name + " v" + getProductVersion(product);
+    return definition.name;
+  }
+
+  function getPrimaryProductSummary(product, definition) {
+    if (definition.type === "oneShot") return getProductUnitsSold(product) + "本販売 / 累計売上 " + formatCurrency(product.lifetimeRevenue);
+    return formatCustomers(getProductCustomers(product)) + " / MRR " + formatCurrency(getProductMrr(product, definition)) + "/月";
+  }
+
+  function getPrimaryProductValueText(product, definition) {
+    if (definition.type === "oneShot") return "累計 " + formatCurrency(product.lifetimeRevenue);
+    return "MRR " + formatCurrency(getProductMrr(product, definition)) + "/月";
+  }
+
+  function getTotalProductCustomers() {
+    return PRODUCTS.reduce(function (sum, definition) { return definition.type === "subscription" ? sum + getProductCustomers(getProduct(definition.id)) : sum; }, 0);
+  }
+
+  function getTotalOneShotRevenue() {
+    return PRODUCTS.reduce(function (sum, definition) { return definition.type === "oneShot" ? sum + safeNumber(getProduct(definition.id).lifetimeRevenue, 0) : sum; }, 0);
+  }
+
+  function getHiredEmployeeSummary() {
+    const hired = EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.code + " Lv" + (state.employees[employee.id] || 0); });
+    return hired.length ? hired.join(" / ") : "未雇用";
   }
 
   function renderAssignments() {
     const panel = document.getElementById("assignmentPanel");
     if (!panel) return;
     panel.innerHTML = '<div class="section-heading"><h2>現在の担当</h2><button type="button" id="openAssignmentModal" class="change-assignment-button">担当を変更</button></div>' +
-      '<p class="assignment-rule">開発・販売・品質管理は、それぞれ対象製品を持ちます。販売担当を外しても、既存顧客のMRRは継続します。</p>' +
+      '<p class="assignment-rule">AIたちが担当中の製品です。</p>' +
       '<div class="assignment-summary-list">' + TASKS.map(function (task) { return getAssignmentSummaryHtml(task.id); }).join('') + '</div>';
     const openButton = document.getElementById("openAssignmentModal");
     if (openButton) openButton.addEventListener("click", openAssignmentModal);
@@ -987,13 +1090,141 @@
     if (clearButton) clearButton.addEventListener("click", function () { clearAssignment(assignmentDraft.taskId); closeAssignmentModal(); });
   }
 
+
+  function renderProductDetailModal() {
+    const modal = document.getElementById("productDetailModal");
+    if (!modal) return;
+    modal.hidden = !productDetailModalOpen;
+    modal.classList.toggle("open", productDetailModalOpen);
+    if (!productDetailModalOpen) { modal.innerHTML = ""; return; }
+    const definition = getProductDefinition(productDetailProductId);
+    const product = getProduct(definition.id);
+    const progressPercent = getProductProgressPercent(product, definition);
+    modal.innerHTML = '<div class="assignment-modal-backdrop product-detail-backdrop" data-product-detail-close="1"></div><div class="product-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">' +
+      '<div class="assignment-dialog-head"><strong id="productDetailTitle">' + escapeHtml(definition.name) + 'の詳細</strong><button type="button" class="modal-close-button" data-product-detail-close="1">閉じる</button></div>' +
+      '<div class="product-detail-status"><span>' + escapeHtml(getProductTypeLine(definition, product)) + '</span><strong>' + escapeHtml(getProductStatusLabel(product.status)) + '</strong></div>' +
+      '<div class="product-detail-grid">' +
+      '<span class="product-detail-item">進捗 <strong>' + Math.floor(progressPercent) + '%</strong></span>' +
+      '<span class="product-detail-item">品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
+      '<span class="product-detail-item">製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
+      '<span class="product-detail-item">認知度 <strong>' + Math.round(product.awareness) + '</strong></span>' +
+      '<span class="product-detail-item wide">担当中タスク <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
+      '<span class="product-detail-item wide">最新状態 <strong>' + escapeHtml(getProductLatestStateText(product, definition)) + '</strong></span>' +
+      getProductSpecificDetailHtml(product, definition) +
+      '</div>' +
+      '<div class="product-detail-actions"><button type="button" class="product-action-button" data-product-menu="' + definition.id + '">操作</button><button type="button" class="modal-subtle-button" data-product-detail-close="1">閉じる</button></div>' +
+      '</div>';
+    modal.querySelectorAll("[data-product-detail-close]").forEach(function (button) { button.addEventListener("click", closeProductDetailModal); });
+    modal.querySelectorAll("button[data-product-menu]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        closeProductDetailModal();
+        openProductActionMenu(button.getAttribute("data-product-menu"));
+      });
+    });
+  }
+
+  function openProductDetailModal(productId) {
+    productDetailProductId = getProductDefinition(productId).id;
+    productDetailModalOpen = true;
+    renderProductDetailModal();
+  }
+
+  function closeProductDetailModal() {
+    productDetailModalOpen = false;
+    renderProductDetailModal();
+  }
+
+  function getProductSpecificDetailHtml(product, definition) {
+    if (definition.type === "oneShot") {
+      return '<span class="product-detail-item">価格 <strong>' + formatCurrency(definition.price) + '</strong></span>' +
+        '<span class="product-detail-item">販売数 <strong>' + getProductUnitsSold(product) + '本</strong></span>' +
+        '<span class="product-detail-item">累計売上 <strong>' + formatCurrency(product.lifetimeRevenue) + '</strong></span>' +
+        '<span class="product-detail-item">MRR <strong>なし</strong></span>' +
+        '<span class="product-detail-item wide">売り切り収益 <strong>販売成功時に即時売上が入ります</strong></span>';
+    }
+    return '<span class="product-detail-item">現在version <strong>v' + getProductVersion(product) + '</strong></span>' +
+      '<span class="product-detail-item">次version開発 <strong>' + escapeHtml(product.upgradeStatus === "upgrading" ? 'v' + (getProductVersion(product) + 1) + ' ' + Math.floor(product.upgradeProgress) + '%' : '待機中') + '</strong></span>' +
+      '<span class="product-detail-item">月額価格 <strong>' + formatCurrency(getCurrentMonthlyPrice(product, definition)) + '</strong></span>' +
+      '<span class="product-detail-item">顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
+      '<span class="product-detail-item">MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
+      '<span class="product-detail-item">製品売上/秒 <strong>' + formatCurrencyPrecise(getProductRevenuePerSecond(product, definition)) + '/秒</strong></span>' +
+      '<span class="product-detail-item wide">バージョンアップ効果 <strong>月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5</strong></span>';
+  }
+
+  function getProductLatestStateText(product, definition) {
+    if (definition.type === "oneShot") {
+      if (product.status === "selling" && getAssignment("sales").productId === definition.id && getAssignmentAi("sales")) return "販売判定中";
+      return getProductUnitsSold(product) > 0 ? "販売実績あり" : "販売担当待ち";
+    }
+    if (product.upgradeStatus === "upgrading") return "v" + (getProductVersion(product) + 1) + "を開発中です。";
+    if (product.status === "selling" && getAssignment("sales").productId === definition.id && getAssignmentAi("sales")) return "顧客獲得判定中";
+    if (getProductCustomers(product) > 0) return "既存顧客は継続課金中";
+    return "販売担当待ち";
+  }
+
+
+  function renderProductActionMenuModal() {
+    const modal = document.getElementById("productActionMenuModal");
+    if (!modal) return;
+    modal.hidden = !productActionMenuOpen;
+    modal.classList.toggle("open", productActionMenuOpen);
+    if (!productActionMenuOpen) { modal.innerHTML = ""; return; }
+    const definition = getProductDefinition(productActionMenuProductId);
+    const product = getProduct(definition.id);
+    const actions = getProductAssignmentActions(product, definition);
+    modal.innerHTML = '<div class="assignment-modal-backdrop product-action-menu-backdrop" data-product-menu-close="1"></div><div class="product-action-menu-dialog" role="dialog" aria-modal="true" aria-labelledby="productActionMenuTitle">' +
+      '<div class="assignment-dialog-head"><strong id="productActionMenuTitle">' + escapeHtml(definition.name) + 'の操作</strong><button type="button" class="modal-close-button" data-product-menu-close="1">閉じる</button></div>' +
+      '<p class="modal-description">操作を選ぶと、担当AI選択へ進みます。</p>' +
+      '<div class="product-action-menu-list">' + actions.map(function (action) { return '<button type="button" class="product-action-menu-button" data-product-action="' + action.taskId + '" data-product-id="' + definition.id + '" data-product-mode="' + (action.mode || 'normal') + '"><strong>' + escapeHtml(action.label) + '</strong><span>' + escapeHtml(getProductActionMenuDescription(action, definition, product)) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="product-detail-actions"><button type="button" class="modal-subtle-button" data-product-detail="' + definition.id + '">詳細を見る</button><button type="button" class="modal-subtle-button" data-product-menu-close="1">閉じる</button></div>' +
+      '</div>';
+    modal.querySelectorAll("[data-product-menu-close]").forEach(function (button) { button.addEventListener("click", closeProductActionMenu); });
+    modal.querySelectorAll("button[data-product-action]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        closeProductActionMenu();
+        openProductAssignmentModal(button.getAttribute("data-product-action"), button.getAttribute("data-product-id"), button.getAttribute("data-product-mode") || "normal");
+      });
+    });
+    modal.querySelectorAll("button[data-product-detail]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        closeProductActionMenu();
+        openProductDetailModal(button.getAttribute("data-product-detail"));
+      });
+    });
+  }
+
+  function openProductActionMenu(productId) {
+    productActionMenuProductId = getProductDefinition(productId).id;
+    productActionMenuOpen = true;
+    renderProductActionMenuModal();
+  }
+
+  function closeProductActionMenu() {
+    productActionMenuOpen = false;
+    renderProductActionMenuModal();
+  }
+
+  function getProductActionMenuDescription(action, definition, product) {
+    if (action.mode === "upgrade") return "月額価格UP / 品質UP / 製品バグ増";
+    if (action.taskId === "development") return product.status === "idea" ? "新製品の開発を開始" : "開発担当を変更";
+    if (action.taskId === "sales") return definition.type === "oneShot" ? "販売成功で即時売上UP" : "顧客獲得 / MRR UP";
+    if (action.taskId === "qa") return "品質UP / 製品バグDOWN";
+    if (action.taskId === "marketing") return "認知度UP / 販売成功率UP / 炎上微増";
+    return "担当AIを選びます";
+  }
+
   function renderProductObjectives() {
-    const list = document.getElementById("productObjectiveList");
-    if (!list) return;
-    list.innerHTML = PRODUCT_OBJECTIVES.map(function (objective) {
-      const done = Boolean(objective.done());
-      return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(objective.text) + '</span></div>';
-    }).join("");
+    const panel = document.getElementById("productObjectivePanel");
+    if (!panel) return;
+    const pending = PRODUCT_OBJECTIVES.filter(function (objective) { return !objective.done(); });
+    const visible = dashboardUi.objectivesExpanded ? PRODUCT_OBJECTIVES : pending.slice(0, 2);
+    panel.innerHTML = '<div class="mission-head"><strong>製品目標</strong><button type="button" id="toggleObjectivesButton" class="change-assignment-button">' + (dashboardUi.objectivesExpanded ? '目標を閉じる' : 'すべての目標を見る') + '</button></div>' +
+      '<div class="mission-list" id="productObjectiveList">' + visible.map(function (objective) {
+        const done = Boolean(objective.done());
+        return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(objective.text) + '</span></div>';
+      }).join("") + '</div>';
+    const toggle = document.getElementById("toggleObjectivesButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("objectivesExpanded"); });
   }
 
   function renderMissions() {
@@ -1001,30 +1232,34 @@
     const label = document.getElementById("missionStage");
     if (!list || !label) return;
     const stage = getCurrentMissionStage();
-    label.textContent = stage.label;
-    list.innerHTML = stage.missions.map(function (mission) {
+    label.textContent = dashboardUi.missionsExpanded ? stage.label : "次のおすすめに集約";
+    const missionItems = stage.missions.map(function (mission) {
       const done = Boolean(mission.done());
       return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(mission.text) + '</span><span class="mission-reward">+' + formatCurrency(mission.reward) + '</span></div>';
     }).join("");
+    list.innerHTML = dashboardUi.missionsExpanded ? missionItems + '<button type="button" id="toggleMissionsButton" class="change-assignment-button">ミッションを閉じる</button>' : '<p class="dashboard-summary">現在ミッションは「次のおすすめ」で要約しています。</p><button type="button" id="toggleMissionsButton" class="change-assignment-button">すべてのミッションを見る</button>';
+    const toggle = document.getElementById("toggleMissionsButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("missionsExpanded"); });
   }
 
   function getCurrentMissionStage() {
     return MISSION_STAGES.find(function (stage) {
-      return stage.missions.some(function (mission) { return !mission.done() || !isMissionClaimed(mission.id); });
+      return stage.missions.some(function (mission) { return !mission.done(); });
     }) || MISSION_STAGES[MISSION_STAGES.length - 1];
   }
 
   function claimCompletedMissions() {
     let claimed = false;
-    const stage = getCurrentMissionStage();
-    stage.missions.forEach(function (mission) {
-      if (mission.done() && !isMissionClaimed(mission.id)) {
-        state.claimedMissions.push(mission.id);
-        state.money += mission.reward;
-        state.totalMoney += mission.reward;
-        addLog("success", "ミッション達成: " + mission.text + "。報酬" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
-        claimed = true;
-      }
+    MISSION_STAGES.forEach(function (stage) {
+      stage.missions.forEach(function (mission) {
+        if (mission.done() && !isMissionClaimed(mission.id)) {
+          state.claimedMissions.push(mission.id);
+          state.money += mission.reward;
+          state.totalMoney += mission.reward;
+          addLog("success", "ミッション達成: " + mission.text + "。報酬" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
+          claimed = true;
+        }
+      });
     });
     if (claimed) {
       updateCompanyLevel(state.companyLevel, true);
@@ -1082,8 +1317,19 @@
   }
 
   function renderEmployees() {
+    const panel = document.getElementById("employeePanel");
+    if (!panel) return;
+    panel.innerHTML = '<div class="section-heading"><h2>AI社員</h2><button type="button" id="toggleEmployeesButton" class="change-assignment-button">' + (dashboardUi.employeesExpanded ? '社員を閉じる' : '社員を見る') + '</button></div>' +
+      '<p class="dashboard-summary">雇用済み: ' + escapeHtml(getHiredEmployeeSummary()) + ' / 収益 ' + formatSignedCurrencyRate(getRates().money) + ' / 秒</p>' +
+      '<div class="employee-list" id="employeeList">' + (dashboardUi.employeesExpanded ? getEmployeeCardsHtml() : '') + '</div>';
+    const toggle = document.getElementById("toggleEmployeesButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("employeesExpanded"); });
     const list = document.getElementById("employeeList");
-    list.innerHTML = EMPLOYEES.map(function (employee) {
+    if (list) list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
+  }
+
+  function getEmployeeCardsHtml() {
+    return EMPLOYEES.map(function (employee) {
       const level = state.employees[employee.id] || 0;
       const locked = !canUnlockEmployee(employee.id);
       const maxed = level >= MAX_LEVEL;
@@ -1092,16 +1338,13 @@
       const action = level === 0 ? "雇用" : "強化";
       const effect = multiplyEffect(employee.effect, level);
       const recommended = startupCredit && (employee.id === "dev01" || employee.id === "sales02");
-      if (locked) {
-        return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div><span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span></article>';
-      }
+      if (locked) return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div><span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span></article>';
       if (level === 0) {
         const baseEffect = multiplyEffect(employee.effect, 1);
         return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div><div class="effect-list compact-effects"><span>売上 ' + signedCurrency(baseEffect.money) + '</span><span>ユーザー ' + signedNumber(baseEffect.users) + '</span><span>バグ ' + signedNumber(baseEffect.bugs) + '</span><span>炎上度 ' + signedNumber(baseEffect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
       }
       return '<article class="employee-card hired"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div><p class="employee-desc">' + escapeHtml(employee.description) + '</p><div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="effect-list"><span>売上 ' + signedCurrency(effect.money) + '</span><span>ユーザー ' + signedNumber(effect.users) + '</span><span>バグ ' + signedNumber(effect.bugs) + '</span><span>炎上度 ' + signedNumber(effect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button></div></article>';
     }).join("");
-    list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
   }
 
   function renderLatestLog() {
@@ -1109,16 +1352,26 @@
     const text = document.getElementById("latestLogText");
     const type = document.getElementById("latestLogType");
     const panel = document.getElementById("latestLogPanel");
-    if (!latest || !text || !type || !panel) return;
+    if (!latest || !text || !type) return;
     const logType = LOG_LABELS[latest.type] ? latest.type : "normal";
     text.textContent = latest.text;
     type.textContent = LOG_LABELS[logType];
-    panel.className = "latest-log-panel latest-" + logType;
+    if (panel) panel.className = "latest-log-panel latest-" + logType;
+    const activityPanel = document.getElementById("activityPanel");
+    if (activityPanel) activityPanel.classList.toggle("latest-danger", logType === "bug" || logType === "fire");
   }
 
   function renderLogs() {
-    const list = document.getElementById("logList");
-    list.innerHTML = state.logs.slice(1).map(function (log, index) {
+    const panel = document.getElementById("logPanel");
+    if (!panel) return;
+    panel.innerHTML = '<div class="section-heading"><h2>業務報告ログ</h2><button type="button" id="toggleLogsButton" class="change-assignment-button">' + (dashboardUi.logsExpanded ? 'ログを閉じる' : 'ログを見る') + '</button></div>' +
+      '<div class="log-list" id="logList" aria-live="polite">' + (dashboardUi.logsExpanded ? getLogListHtml() : '') + '</div>';
+    const toggle = document.getElementById("toggleLogsButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("logsExpanded"); });
+  }
+
+  function getLogListHtml() {
+    return state.logs.slice(1).map(function (log, index) {
       const type = LOG_LABELS[log.type] ? log.type : "normal";
       const ageClass = index >= 5 ? ' old-log' : '';
       return '<article class="log-item log-' + type + ageClass + (log.boot ? ' boot-log' : '') + '"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></article>';
@@ -1249,7 +1502,11 @@
   function getProductAssignmentBadges(productId) {
     const labels = TASKS.filter(function (task) { return getAssignment(task.id).productId === productId && getAssignment(task.id).aiId; }).map(function (task) {
       const assignment = getAssignment(task.id);
-      return '<span class="product-assignment-badge">' + escapeHtml(getWorkerLabel(assignment.aiId)) + 'が' + escapeHtml(task.label) + '中</span>';
+      const definition = getProductDefinition(productId);
+      const product = getProduct(definition.id);
+      let taskLabel = task.label + "中";
+      if (task.id === "development" && definition.type === "subscription" && product.upgradeStatus === "upgrading") taskLabel = "v" + (getProductVersion(product) + 1) + "開発中";
+      return '<span class="product-assignment-badge">' + escapeHtml(getWorkerLabel(assignment.aiId)) + 'が' + escapeHtml(taskLabel) + '</span>';
     });
     return labels.length ? labels.join('') : '<span class="product-assignment-badge muted">担当なし</span>';
   }
@@ -1270,9 +1527,7 @@
     if ((product.status === "ready" || product.status === "selling") && salesAssignment.productId === definition.id && !salesAssignment.aiId) {
       return '<p class="product-action-hint">販売担当を割り振ると顧客を獲得できます。</p>';
     }
-    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle") {
-      return '<p class="product-action-hint">バージョンアップ効果: 月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5。</p>';
-    }
+    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle") return '';
     return '';
   }
 
@@ -1329,31 +1584,31 @@
   }
 
   function getMarketingEffectHint(productId) {
-    return getAssignedWorkerForProduct("marketing", productId) ? '<span class="product-detail-metric marketing-effect">広報中 <strong>認知度UP → 販売成功率UP / 炎上微増</strong></span>' : '';
+    return getAssignedWorkerForProduct("marketing", productId) ? '<span class="marketing-effect">広報中 <strong>認知度UP → 販売成功率UP / 炎上微増</strong></span>' : '';
   }
 
   function getProductSummaryMetrics(product, definition, progressPercent) {
-    const detail = '<span class="product-detail-metric">進捗 <strong>' + Math.floor(progressPercent) + '%</strong></span>' +
-      '<span class="product-detail-metric">品質 <strong>' + Math.round(product.quality) + '</strong></span>' +
-      '<span class="product-detail-metric">製品バグ <strong>' + product.bugs.toFixed(1) + '</strong></span>' +
-      '<span class="product-detail-metric">認知度 <strong>' + Math.round(product.awareness) + '</strong></span>';
     if (definition.type === "oneShot") {
       return '<span class="primary-metric">販売数 <strong>' + getProductUnitsSold(product) + '本</strong></span>' +
         '<span class="primary-metric">累計売上 <strong>' + formatCurrency(product.lifetimeRevenue) + '</strong></span>' +
         '<span class="primary-metric wide">担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
-        getMarketingEffectHint(definition.id) + detail;
+        getMarketingEffectHint(definition.id);
     }
     return '<span class="primary-metric wide">バージョン <strong>' + getSubscriptionVersionLine(product) + '</strong></span>' +
       '<span class="primary-metric">顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
       '<span class="primary-metric">MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
       '<span class="primary-metric wide">担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
-      getMarketingEffectHint(definition.id) + detail;
+      getMarketingEffectHint(definition.id);
+  }
+
+  function getProductAssignmentActions(product, definition) {
+    const actions = product.status === "idea" ? [{ taskId: "development", label: "開発する" }] : product.status === "developing" ? [{ taskId: "development", label: "開発担当" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }] : product.status === "ready" ? [{ taskId: "sales", label: "販売する" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }] : [{ taskId: "sales", label: "販売担当" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }];
+    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle") actions.unshift({ taskId: "development", label: "バージョンアップ", mode: "upgrade" });
+    return actions;
   }
 
   function getProductActionButtons(product, definition) {
-    const actions = product.status === "idea" ? [{ taskId: "development", label: "開発する" }] : product.status === "developing" ? [{ taskId: "development", label: "開発担当" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }] : product.status === "ready" ? [{ taskId: "sales", label: "販売する" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }] : [{ taskId: "sales", label: "販売担当" }, { taskId: "qa", label: "品質管理" }, { taskId: "marketing", label: "広報" }];
-    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle") actions.unshift({ taskId: "development", label: "バージョンアップ", mode: "upgrade" });
-    return '<div class="product-actions">' + actions.map(function (action) { return '<button type="button" class="product-action-button" data-product-action="' + action.taskId + '" data-product-id="' + definition.id + '" data-product-mode="' + (action.mode || 'normal') + '">' + escapeHtml(action.label) + '</button>'; }).join('') + '</div>';
+    return '<div class="product-actions compact-product-actions"><button type="button" class="product-action-button" data-product-menu="' + definition.id + '">操作</button><button type="button" class="product-action-button product-detail-button" data-product-detail="' + definition.id + '">詳細</button></div>';
   }
 
   function getAssignmentModalTitle() {
@@ -1648,7 +1903,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-12").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-18").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

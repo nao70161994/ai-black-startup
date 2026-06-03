@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.12"' in index
-    assert 'style.css?v=20260524-12' in index
-    assert 'main.js?v=20260524-12' in index
-    assert 'manifest.webmanifest?v=20260524-12' in index
-    assert 'icon.svg?v=20260524-12' in index
-    assert 'ogp.svg?v=20260524-12' in index
+    assert 'content="2026.05.24.18"' in index
+    assert 'style.css?v=20260524-18' in index
+    assert 'main.js?v=20260524-18' in index
+    assert 'manifest.webmanifest?v=20260524-18' in index
+    assert 'icon.svg?v=20260524-18' in index
+    assert 'ogp.svg?v=20260524-18' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.12"' in main
-    assert 'const APP_VERSION = "2026.05.24.12"' in sw
-    assert 'sw.js?v=20260524-12' in main
+    assert 'const APP_VERSION = "2026.05.24.18"' in main
+    assert 'const APP_VERSION = "2026.05.24.18"' in sw
+    assert 'sw.js?v=20260524-18' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-12"
+    assert manifest["start_url"] == "./index.html?v=20260524-18"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-12" in sw
-    assert "icon.svg?v=20260524-12" in sw
-    assert "ogp.svg?v=20260524-12" in sw
+    assert "manifest.webmanifest?v=20260524-18" in sw
+    assert "icon.svg?v=20260524-18" in sw
+    assert "ogp.svg?v=20260524-18" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -89,8 +89,17 @@ vm.runInNewContext(code, { window, document, localStorage, navigator, location, 
 console.log(JSON.stringify({
   save: JSON.parse(store.ai_black_startup_save_v1),
   employeeHtml: elements.get('employeeList').innerHTML,
+  employeePanelHtml: elements.get('employeePanel').innerHTML,
   productHtml: elements.get('productPanel').innerHTML,
-  assignmentHtml: elements.get('assignmentPanel').innerHTML
+  primaryProductHtml: elements.get('primaryProductPanel').innerHTML,
+  recommendationHtml: elements.get('nextRecommendationPanel').innerHTML,
+  activityText: elements.get('activityText').textContent,
+  latestLog: elements.get('latestLogText').textContent,
+  assignmentHtml: elements.get('assignmentPanel').innerHTML,
+  logPanelHtml: elements.get('logPanel').innerHTML,
+  objectiveHtml: elements.get('productObjectivePanel').innerHTML,
+  missionStage: elements.get('missionStage').textContent,
+  missionHtml: elements.get('missionList').innerHTML
 }));
 '''
     result = subprocess.run(
@@ -143,12 +152,12 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
     assert output["save"]["productFlags"]["meetingMinutesAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["slideKitAi"]["startedLogged"] is False
-    assert "AI日報メーカー" in output["productHtml"]
-    assert "自動議事録AI" in output["productHtml"]
-    assert "AIスライド生成キット" in output["productHtml"]
+    assert "製品一覧を開く" in output["productHtml"]
+    assert "3製品運用" in output["productHtml"]
+    assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.12"
+    assert output["save"]["appVersion"] == "2026.05.24.18"
 
 
 def test_security06_visible_at_company_level_5():
@@ -165,8 +174,9 @@ def test_security06_visible_at_company_level_5():
         "lastSavedAt": 1760000000000,
     }
     output = run_browser_smoke(lv5_save)
-    assert "Security-06" in output["employeeHtml"]
-    assert "雇用 ¥5.0K" in output["employeeHtml"]
+    assert "社員を見る" in output["employeePanelHtml"]
+    assert "Dev-01 Lv1" in output["employeePanelHtml"]
+    assert "Security-06" in (ROOT / "main.js").read_text()
 
 
 def test_product_pipeline_minimum_definition_present():
@@ -226,8 +236,10 @@ def test_product_pipeline_ui_and_assignment_rules_present():
 
     assert 'id="productPanel"' in index
     assert 'id="assignmentPanel"' in index
-    assert 'id="baseIncomeRate"' in index
-    assert 'id="productIncomeRate"' in index
+    assert 'id="baseIncomeRate"' not in index
+    assert 'id="productIncomeRate"' not in index
+    assert 'id="activityPanel"' in index
+    assert 'id="latestLogText"' in index
     assert 'id="productObjectiveList"' in index
     assert 'AI社長を開発に割り振れば、専門AIがいなくても開発できます' in index
     assert 'boss: { id: "boss", label: "AI社長"' in main
@@ -483,7 +495,7 @@ def test_two_product_targets_and_share_summary_present():
 
     assert 'name: "自動議事録AI"' in main
     assert 'PRODUCTS.map(function (definition)' in main
-    assert 'button[data-product-action]' in main
+    assert 'button[data-product-menu]' in main
     assert 'id="openAssignmentModal"' in main
     assert 'button[data-modal-product]' in main
     assert 'button[data-modal-ai]' in main
@@ -502,7 +514,7 @@ def test_sales_target_ui_is_explicit():
     assert "現在の担当" in main
     assert "担当を変更" in main
     assert "未割り振り。既存顧客のMRRのみ継続" in main
-    assert "開発・販売・品質管理は、それぞれ対象製品を持ちます" in main
+    assert "AIたちが担当中の製品です。" in main
 
 
 def test_assignment_modal_ui_present():
@@ -573,9 +585,13 @@ def test_product_card_assignment_flow_exists():
     css = (ROOT / "style.css").read_text()
 
     assert "function getProductActionButtons(product, definition)" in main
+    assert "function renderProductActionMenuModal()" in main
+    assert "function openProductActionMenu(productId)" in main
+    assert "操作を選ぶと、担当AI選択へ進みます" in main
     assert "開発する" in main
     assert "販売する" in main
     assert "品質管理" in main
+    assert "data-product-menu" in main
     assert "data-product-action" in main
     assert "function openProductAssignmentModal(taskId, productId, mode)" in main
     assert 'assignmentModalMode = "product"' in main
@@ -593,6 +609,8 @@ def test_product_card_assignment_flow_exists():
     assert 'if (assignmentDraft.mode === "upgrade" || shouldStartUpgradeOnDevelopmentAssignment(targetProduct, targetDefinition)) startSubscriptionUpgrade(normalizedProductId)' in main
     assert 'else startProductDevelopmentIfNeeded(normalizedProductId)' in main
     assert ".product-actions" in css
+    assert ".product-action-menu-modal.open" in css
+    assert ".product-action-menu-button" in css
     assert ".worker-option" in css
 
 
@@ -639,7 +657,7 @@ def test_one_shot_slide_kit_pipeline_present():
     assert 'pityLimit = workerId === "sales02" ? 25 : 40' in main
     assert "売り切り / " in main
     assert "本販売 / 累計売上" in main
-    assert "MRR <strong>なし" not in main
+    assert "MRR <strong>なし" in main
     assert "AIスライド生成キットが初めて売れました" in main
     assert "AIスライド生成キットの販売数が10本を超えました" in main
     assert "AIスライド生成キットの販売数が50本を超えました" in main
@@ -653,10 +671,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.12"' in index
-    assert 'main.js?v=20260524-12' in index
-    assert 'sw.js?v=20260524-12' in main
-    assert 'const APP_VERSION = "2026.05.24.12"' in sw
+    assert 'content="2026.05.24.18"' in index
+    assert 'main.js?v=20260524-18' in index
+    assert 'sw.js?v=20260524-18' in main
+    assert 'const APP_VERSION = "2026.05.24.18"' in sw
 
 
 
@@ -712,10 +730,9 @@ def test_subscription_version_affects_rendered_mrr_and_share_text():
     assert product["upgradeProgress"] == 45
     assert product["upgradeStatus"] == "upgrading"
     assert product["mrr"] == 6000
-    assert "v2運用中 / v3開発中 45%" in output["productHtml"]
-    assert "MRR <strong>¥6.0K/月" in output["productHtml"]
-    slide_html = output["productHtml"].split("AIスライド生成キット", 1)[1]
-    assert "バージョンアップ" not in slide_html.split("</article>", 1)[0]
+    assert "製品一覧を開く" in output["productHtml"]
+    assert "AI日報メーカー v2" in output["primaryProductHtml"]
+    assert "MRR ¥6.0K/月" in output["primaryProductHtml"]
 
 
 def run_game_action_smoke(save, action_script):
@@ -755,7 +772,11 @@ vm.runInNewContext(action, sandbox);
 console.log(JSON.stringify({
   save: JSON.parse(store.ai_black_startup_save_v1),
   productHtml: elements.get('productPanel').innerHTML,
+  primaryProductHtml: elements.get('primaryProductPanel').innerHTML,
+  employeePanelHtml: elements.get('employeePanel').innerHTML,
   assignmentHtml: elements.get('assignmentPanel').innerHTML,
+  missionStage: elements.get('missionStage').textContent,
+  missionHtml: elements.get('missionList').innerHTML,
   latestLog: elements.get('latestLogText').textContent,
 }));
 '''
@@ -868,7 +889,7 @@ def test_recurring_and_one_shot_revenue_paths_are_separate_behavior():
     assert output["save"]["totalMoney"] == 6
     assert slide["unitsSold"] == 5
     assert slide["lifetimeRevenue"] == 49000
-    assert "バージョンアップ" not in output["productHtml"].split("AIスライド生成キット", 1)[1].split("</article>", 1)[0]
+    assert "売り切り累計 ¥49.0K" in output["productHtml"]
 
 
 def test_product_card_summary_version_and_marketing_hint_present():
@@ -881,9 +902,9 @@ def test_product_card_summary_version_and_marketing_hint_present():
     assert "function getMarketingEffectHint(productId)" in main
     assert "認知度UP → 販売成功率UP / 炎上微増" in main
     assert "primary-metric" in main
-    assert "product-detail-metric" in main
+    assert "product-detail-item" in main
     assert ".product-summary-metrics .primary-metric" in css
-    assert ".product-summary-metrics .product-detail-metric" in css
+    assert ".product-detail-item" in css
     assert ".product-summary-metrics .marketing-effect" in css
 
 
@@ -981,4 +1002,314 @@ def test_marketing_assignment_is_normalized_and_visible_behavior():
     assert output["save"]["assignments"]["marketing"] == {"productId": "meetingMinutesAi", "aiId": "buzz03"}
     assert "広報" in output["assignmentHtml"]
     assert "Buzz-03 → 自動議事録AI" in output["assignmentHtml"]
-    assert "広報" in output["productHtml"]
+    assert "広報" in output["assignmentHtml"]
+    assert "製品一覧を開く" in output["productHtml"]
+
+
+def test_product_summary_cards_have_detail_modal_flow():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert 'id="productDetailModal"' in index
+    assert 'data-product-detail="' in main
+    assert '>詳細</button>' in main
+    assert "function renderProductDetailModal()" in main
+    assert "function openProductDetailModal(productId)" in main
+    assert "function closeProductDetailModal()" in main
+    assert "productDetailModalOpen" in main
+    assert ".product-detail-modal.open" in css
+    assert ".product-detail-dialog" in css
+
+
+def test_product_detail_modal_contains_common_subscription_and_one_shot_metrics():
+    main = (ROOT / "main.js").read_text()
+
+    assert "品質 <strong>" in main
+    assert "製品バグ <strong>" in main
+    assert "認知度 <strong>" in main
+    assert "担当中タスク" in main
+    assert "最新状態" in main
+    assert "現在version" in main
+    assert "次version開発" in main
+    assert "月額価格" in main
+    assert "MRR <strong>" in main
+    assert "製品売上/秒" in main
+    assert "バージョンアップ効果" in main
+    assert "販売数 <strong>" in main
+    assert "累計売上 <strong>" in main
+    assert "MRR <strong>なし" in main
+    assert "販売成功時に即時売上が入ります" in main
+
+
+def test_product_summary_cards_keep_assignment_summary_and_card_actions():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 0, "fire05": 0, "security06": 1},
+        "assignments": {"development": {"productId": "meetingMinutesAi", "aiId": "dev01"}, "sales": {"productId": "dailyReportAi", "aiId": "sales02"}, "marketing": {"productId": "slideKitAi", "aiId": "buzz03"}},
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 1, "awareness": 40, "customers": 2, "version": 1},
+            "meetingMinutesAi": {"id": "meetingMinutesAi", "status": "developing", "progress": 40, "quality": 55, "bugs": 2, "awareness": 5, "customers": 0},
+            "slideKitAi": {"id": "slideKitAi", "status": "selling", "progress": 160, "quality": 55, "bugs": 3, "awareness": 20, "unitsSold": 3, "lifetimeRevenue": 29400},
+        },
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "現在の担当" in output["assignmentHtml"]
+    assert "開発" in output["assignmentHtml"]
+    assert "販売" in output["assignmentHtml"]
+    assert "広報" in output["assignmentHtml"]
+    assert "Dev-01 → 自動議事録AI" in output["assignmentHtml"]
+    assert "Sales-02 → AI日報メーカー" in output["assignmentHtml"]
+    assert "製品一覧を開く" in output["productHtml"]
+    assert "操作" not in output["productHtml"]
+    assert "詳細" not in output["productHtml"]
+    assert "data-product-menu" not in output["productHtml"]
+    assert "data-product-detail" not in output["productHtml"]
+    assert "data-product-action=\"sales\"" not in output["productHtml"]
+    assert "data-product-action=\"marketing\"" not in output["productHtml"]
+    assert "品質 <strong>" not in output["productHtml"]
+    assert "製品バグ <strong>" not in output["productHtml"]
+    assert "認知度 <strong>" not in output["productHtml"]
+
+
+def test_product_card_keeps_upgrade_effect_out_of_summary_html():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 1, "version": 1, "upgradeStatus": "idle"}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "バージョンアップ効果: 月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5" not in output["productHtml"]
+    assert "品質 <strong>" not in output["productHtml"]
+    assert "製品バグ <strong>" not in output["productHtml"]
+    assert "認知度 <strong>" not in output["productHtml"]
+
+
+def test_product_assignment_badge_shows_vnext_development_when_upgrading():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "assignments": {"development": {"productId": "dailyReportAi", "aiId": "dev01"}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 1, "version": 4, "upgradeStatus": "upgrading", "upgradeProgress": 30}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "Dev-01がv5開発中" in output["primaryProductHtml"]
+    assert "Dev-01が開発中" not in output["primaryProductHtml"]
+
+
+def test_product_cards_show_compact_operation_and_detail_buttons_only():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 1, "version": 1}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "製品一覧を開く" in output["productHtml"]
+    assert 'data-product-menu="dailyReportAi"' not in output["productHtml"]
+    assert 'data-product-detail="dailyReportAi"' not in output["productHtml"]
+    assert "data-product-action" not in output["productHtml"]
+
+
+def test_product_action_menu_can_route_to_assignment_modal():
+    main = (ROOT / "main.js").read_text()
+    index = (ROOT / "index.html").read_text()
+
+    assert 'id="productActionMenuModal"' in index
+    assert "function renderProductActionMenuModal()" in main
+    assert "getProductAssignmentActions(product, definition)" in main
+    assert "getProductActionMenuDescription(action, definition, product)" in main
+    assert "closeProductActionMenu();" in main
+    assert 'openProductAssignmentModal(button.getAttribute("data-product-action")' in main
+    assert "月額価格UP / 品質UP / 製品バグ増" in main
+    assert "販売成功で即時売上" in main
+    assert "認知度UP / 販売成功率UP / 炎上微増" in main
+
+
+def test_product_card_renderer_does_not_emit_individual_action_buttons():
+    main = (ROOT / "main.js").read_text()
+
+    start = main.index("function getProductActionButtons(product, definition)")
+    end = main.index("function getAssignmentModalTitle()", start)
+    card_renderer = main[start:end]
+    assert "data-product-menu" in card_renderer
+    assert "data-product-detail" in card_renderer
+    assert "data-product-action" not in card_renderer
+    assert "販売担当" not in card_renderer
+    assert "品質管理" not in card_renderer
+    assert "広報" not in card_renderer
+    assert "バージョンアップ" not in card_renderer
+    assert "function getProductAssignmentActionButtons" not in main
+
+
+def test_dashboard_home_collapses_heavy_sections_by_default():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 2, "version": 1}},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "現在の主力製品" in output["primaryProductHtml"]
+    assert "製品一覧を開く" in output["productHtml"]
+    assert "ログを見る" in output["logPanelHtml"]
+    assert "社員を見る" in output["employeePanelHtml"]
+    assert "すべての目標を見る" in output["objectiveHtml"]
+    assert "product-card" not in output["productHtml"]
+    assert "employee-card" not in output["employeePanelHtml"]
+    assert "log-item" not in output["logPanelHtml"]
+
+
+def test_dashboard_render_functions_and_toggles_exist():
+    main = (ROOT / "main.js").read_text()
+    index = (ROOT / "index.html").read_text()
+
+    assert 'id="primaryProductPanel"' in index
+    assert 'id="logPanel"' in index
+    assert 'id="employeePanel"' in index
+    assert "function renderPrimaryProductPanel()" in main
+    assert "function toggleDashboardPanel(key)" in main
+    assert 'productsExpanded: false' in main
+    assert 'logsExpanded: false' in main
+    assert 'employeesExpanded: false' in main
+    assert 'objectivesExpanded: false' in main
+    assert 'missionsExpanded: false' in main
+    assert 'id="toggleProductsButton"' in main
+    assert 'id="toggleLogsButton"' in main
+    assert 'id="toggleEmployeesButton"' in main
+    assert "getProductCardHtml(definition)" in main
+    assert "getProductActionButtons(product, definition)" in main
+
+
+def test_dashboard_home_uses_five_primary_status_cards_and_integrated_activity():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+
+    start = index.index('<section class="status-grid compact-status dashboard-status"')
+    end = index.index('</section>', start)
+    status_section = index[start:end]
+    assert status_section.count('class="status-card') == 5
+    assert '<span>売上</span>' in status_section
+    assert '<span>総MRR</span>' in status_section
+    assert '<span>総顧客</span>' in status_section
+    assert '<span>バグ</span>' in status_section
+    assert '<span>炎上</span>' in status_section
+    assert '製品/秒' not in status_section
+    assert '基礎受託/秒' not in status_section
+    assert '会社Lv' not in status_section
+    assert 'id="latestLogPanel"' not in index
+    assert '現在の動き' in index
+    assert '最新: <span id="latestLogText"' in index
+    assert 'MRR継続 +' in main
+    assert '基礎受託 ' in main
+
+
+def test_next_recommendation_and_compact_missions_are_rendered():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 75,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 2, "version": 1}},
+        "logs": [{"type": "success", "text": "テストログ", "createdAt": 9999999999999}],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert "次のおすすめ" in output["recommendationHtml"]
+    assert "Security-06" in output["recommendationHtml"]
+    assert output["latestLog"]
+    assert "最新:" in (ROOT / "index.html").read_text()
+    assert "次のおすすめに集約" == output["missionStage"]
+    assert "すべてのミッションを見る" in output["missionHtml"]
+
+
+def test_product_action_menu_descriptions_explain_effects():
+    main = (ROOT / "main.js").read_text()
+
+    assert "顧客獲得 / MRR UP" in main
+    assert "販売成功で即時売上UP" in main
+    assert "品質UP / 製品バグDOWN" in main
+    assert "認知度UP / 販売成功率UP / 炎上微増" in main
+    assert "月額価格UP / 品質UP / 製品バグ増" in main
+    assert "AIたちが担当中の製品です。" in main
+
+
+def test_mission_stage_uses_current_state_not_claimed_history_for_existing_saves():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 300000,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 5, "sales02": 2, "buzz03": 1, "care04": 0, "fire05": 0, "security06": 1},
+        "assignments": {"development": {"productId": "meetingMinutesAi", "aiId": "dev01"}, "sales": {"productId": "dailyReportAi", "aiId": "sales02"}},
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 72, "bugs": 0, "awareness": 60, "customers": 20, "version": 1},
+            "meetingMinutesAi": {"id": "meetingMinutesAi", "status": "selling", "progress": 180, "quality": 65, "bugs": 0, "awareness": 40, "customers": 10, "version": 1},
+            "slideKitAi": {"id": "slideKitAi", "status": "selling", "progress": 160, "quality": 55, "bugs": 0, "awareness": 20, "unitsSold": 3, "lifetimeRevenue": 29400},
+        },
+        "claimedMissions": [],
+        "logs": [],
+        "lastSavedAt": 9999999999999,
+    })
+
+    assert output["missionStage"] == "次のおすすめに集約"
+    assert output["missionStage"] != "起業準備"
+    assert "すべてのミッションを見る" in output["missionHtml"]
+    assert "daily_report_developing" in output["save"]["claimedMissions"]
+    assert "daily_report_ready_mission" in output["save"]["claimedMissions"]
+    assert "meeting_ready_mission" in output["save"]["claimedMissions"]
+
+
+def test_current_mission_stage_ignores_unclaimed_completed_missions_in_code():
+    main = (ROOT / "main.js").read_text()
+
+    start = main.index("function getCurrentMissionStage()")
+    end = main.index("function claimCompletedMissions()", start)
+    stage_code = main[start:end]
+    assert "!mission.done()" in stage_code
+    assert "isMissionClaimed" not in stage_code
+    assert "MISSION_STAGES.forEach(function (stage)" in main
