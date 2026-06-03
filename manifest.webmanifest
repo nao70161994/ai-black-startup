@@ -1,7 +1,7 @@
 {
   "name": "AI社長のブラック起業",
   "short_name": "AI社長",
-  "start_url": "./index.html?v=20260524-8",
+  "start_url": "./index.html?v=20260524-10",
   "scope": "./",
   "display": "standalone",
   "background_color": "#effbff",
@@ -9,7 +9,7 @@
   "description": "AI社員を雇用・強化し、売上、バグ、炎上を管理する放置経営ブラックコメディゲーム。",
   "icons": [
     {
-      "src": "./icon.svg?v=20260524-8",
+      "src": "./icon.svg?v=20260524-10",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

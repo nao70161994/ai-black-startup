@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.8"' in index
-    assert 'style.css?v=20260524-8' in index
-    assert 'main.js?v=20260524-8' in index
-    assert 'manifest.webmanifest?v=20260524-8' in index
-    assert 'icon.svg?v=20260524-8' in index
-    assert 'ogp.svg?v=20260524-8' in index
+    assert 'content="2026.05.24.10"' in index
+    assert 'style.css?v=20260524-10' in index
+    assert 'main.js?v=20260524-10' in index
+    assert 'manifest.webmanifest?v=20260524-10' in index
+    assert 'icon.svg?v=20260524-10' in index
+    assert 'ogp.svg?v=20260524-10' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.8"' in main
-    assert 'const APP_VERSION = "2026.05.24.8"' in sw
-    assert 'sw.js?v=20260524-8' in main
+    assert 'const APP_VERSION = "2026.05.24.10"' in main
+    assert 'const APP_VERSION = "2026.05.24.10"' in sw
+    assert 'sw.js?v=20260524-10' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-8"
+    assert manifest["start_url"] == "./index.html?v=20260524-10"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-8" in sw
-    assert "icon.svg?v=20260524-8" in sw
-    assert "ogp.svg?v=20260524-8" in sw
+    assert "manifest.webmanifest?v=20260524-10" in sw
+    assert "icon.svg?v=20260524-10" in sw
+    assert "ogp.svg?v=20260524-10" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -119,8 +119,18 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["employees"]["security06"] == 0
     assert output["save"]["products"]["dailyReportAi"]["status"] == "idea"
     assert output["save"]["products"]["dailyReportAi"]["quality"] == 60
+    assert output["save"]["products"]["dailyReportAi"]["version"] == 1
+    assert output["save"]["products"]["dailyReportAi"]["upgradeProgress"] == 0
+    assert output["save"]["products"]["dailyReportAi"]["upgradeStatus"] == "idle"
     assert output["save"]["products"]["meetingMinutesAi"]["status"] == "idea"
     assert output["save"]["products"]["meetingMinutesAi"]["quality"] == 55
+    assert output["save"]["products"]["meetingMinutesAi"]["version"] == 1
+    assert output["save"]["products"]["meetingMinutesAi"]["upgradeProgress"] == 0
+    assert output["save"]["products"]["meetingMinutesAi"]["upgradeStatus"] == "idle"
+    assert output["save"]["products"]["slideKitAi"]["status"] == "idea"
+    assert output["save"]["products"]["slideKitAi"]["quality"] == 55
+    assert output["save"]["products"]["slideKitAi"]["unitsSold"] == 0
+    assert output["save"]["products"]["slideKitAi"]["oneShotSalesPityCounter"] == 0
     assert output["save"]["assignments"] == {
         "development": {"productId": "dailyReportAi", "aiId": None},
         "qa": {"productId": "dailyReportAi", "aiId": None},
@@ -130,11 +140,13 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["productFlags"]["dailyReportAi"]["firstCustomerGranted"] is False
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
     assert output["save"]["productFlags"]["meetingMinutesAi"]["startedLogged"] is False
+    assert output["save"]["productFlags"]["slideKitAi"]["startedLogged"] is False
     assert "AI日報メーカー" in output["productHtml"]
     assert "自動議事録AI" in output["productHtml"]
+    assert "AIスライド生成キット" in output["productHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.8"
+    assert output["save"]["appVersion"] == "2026.05.24.10"
 
 
 def test_security06_visible_at_company_level_5():
@@ -175,7 +187,13 @@ def test_product_pipeline_minimum_definition_present():
     assert 'demand: 1.0' in main
     assert 'risk: 1.0' in main
     assert 'initialQuality: 55' in main
-    assert 'return definition.monthlyPrice * getProductCustomers(product)' in main
+    assert 'id: "slideKitAi"' in main
+    assert 'name: "AIスライド生成キット"' in main
+    assert 'type: "oneShot"' in main
+    assert 'price: 9800' in main
+    assert 'developmentRequired: 160' in main
+    assert 'demand: 1.2' in main
+    assert 'getCurrentMonthlyPrice(product, definition) * getProductCustomers(product)' in main
     assert 'getProductRevenuePerSecond(product, definition)' in main
     assert 'lifetimeRevenue' in main
     assert 'salesPityCounter' in main
@@ -184,7 +202,7 @@ def test_product_pipeline_minimum_definition_present():
     assert 'PRODUCTS.forEach(function (definition)' in main
     assert 'function applySingleProductPipeline(product, definition)' in main
     assert 'function addProductCustomer(product, definition, flags, firstGuaranteed)' in main
-    assert 'return definition.monthlyPrice * getProductCustomers(product)' in main
+    assert 'getCurrentMonthlyPrice(product, definition) * getProductCustomers(product)' in main
     assert 'return getProductMrr(product, definition || getProductDefinition(product.id)) / 300' in main
 
 
@@ -194,6 +212,7 @@ def test_products_collection_has_two_subscription_products():
     assert 'id: "dailyReportAi"' in main
     assert 'id: "meetingMinutesAi"' in main
     assert main.count('type: "subscription"') == 2
+    assert main.count('type: "oneShot"') == 1
     assert 'PRODUCTS.map(function (definition)' in main
     assert 'getAssignmentTargetButtons(taskId)' not in main
     assert 'button[data-modal-product]' in main
@@ -393,7 +412,7 @@ def test_customer_display_and_share_use_integer_company_units():
 
     assert "function formatCustomers(value)" in main
     assert 'formatNumber(getProductCustomers({ customers: value })) + "社"' in main
-    assert '" / 顧客" + formatCustomers(getProductCustomers(product))' in main
+    assert '" / 顧客" + formatCustomers(getProductCustomers(product))' in main or '": サブスク / 顧客" + formatCustomers(getProductCustomers(product))' in main
     assert "formatCurrency(getProductMrr(product, definition))" in main
 
 
@@ -449,7 +468,7 @@ def test_product_mrr_and_revenue_are_derived_values():
     assert "function getProductCustomers(product)" in main
     assert "return Math.max(0, Math.floor(Number(product.customers) || 0))" in main
     assert "function getProductMrr(product, definition)" in main
-    assert "return definition.monthlyPrice * getProductCustomers(product)" in main
+    assert 'getCurrentMonthlyPrice(product, definition) * getProductCustomers(product)' in main
     assert "function getProductRevenuePerSecond(product, definition)" in main
     assert "return getProductMrr(product, definition || getProductDefinition(product.id)) / 300" in main
     assert "formatCurrency(getProductMrr(product, definition))" in main
@@ -476,7 +495,7 @@ def test_sales_target_ui_is_explicit():
 
     assert "対象: " in main
     assert "製品一覧" in main
-    assert "2製品運用" in main
+    assert "3製品運用" in main
     assert "の新規顧客を確率で獲得" in main
     assert "現在の担当" in main
     assert "担当を変更" in main
@@ -556,7 +575,7 @@ def test_product_card_assignment_flow_exists():
     assert "販売する" in main
     assert "品質管理" in main
     assert "data-product-action" in main
-    assert "function openProductAssignmentModal(taskId, productId)" in main
+    assert "function openProductAssignmentModal(taskId, productId, mode)" in main
     assert 'assignmentModalMode = "product"' in main
     assert "assignmentDraft.taskId = taskId" in main
     assert "assignmentDraft.productId = getProductDefinition(productId).id" in main
@@ -568,7 +587,9 @@ def test_product_card_assignment_flow_exists():
     assert "顧客獲得が速いが炎上微増" in main
     assert "品質改善とバグ削減が得意" in main
     assert "function startProductDevelopmentIfNeeded(productId)" in main
-    assert 'if (taskId === "development" && aiId) startProductDevelopmentIfNeeded(normalizedProductId)' in main
+    assert 'if (taskId === "development" && aiId)' in main
+    assert 'if (assignmentDraft.mode === "upgrade") startSubscriptionUpgrade(normalizedProductId)' in main
+    assert 'else startProductDevelopmentIfNeeded(normalizedProductId)' in main
     assert ".product-actions" in css
     assert ".worker-option" in css
 
@@ -595,12 +616,98 @@ def test_high_priority_pipeline_foundation_is_prepared():
     assert "getAssignmentTargetButtons" not in main
 
 
+def test_one_shot_slide_kit_pipeline_present():
+    main = (ROOT / "main.js").read_text()
+
+    assert 'id: "slideKitAi"' in main
+    assert 'name: "AIスライド生成キット"' in main
+    assert 'type: "oneShot"' in main
+    assert 'price: 9800' in main
+    assert "unitsSold" in main
+    assert "oneShotSalesPityCounter" in main
+    assert "function getProductUnitsSold(product)" in main
+    assert "function applyOneShotSalesActivity(product, definition, workerId, flags)" in main
+    assert "function addOneShotSale(product, definition, flags)" in main
+    assert "state.money = Math.max(0, state.money + price)" in main
+    assert "state.totalMoney = Math.max(0, state.totalMoney + price)" in main
+    assert "product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + price)" in main
+    assert "function applyOneShotRevenue(product, definition)" in main
+    assert "return 0" in main
+    assert "saleChance" in main
+    assert 'pityLimit = workerId === "sales02" ? 25 : 40' in main
+    assert "売り切り / " in main
+    assert "本販売 / 累計売上" in main
+    assert "MRR <strong>なし" in main
+    assert "AIスライド生成キットが1本売れました" in main
+    assert "AIスライド生成キットの販売数が10本を超えました" in main
+
+
 def test_cache_busting_updated_for_mrr_discrete_fix():
     index = (ROOT / "index.html").read_text()
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.8"' in index
-    assert 'main.js?v=20260524-8' in index
-    assert 'sw.js?v=20260524-8' in main
-    assert 'const APP_VERSION = "2026.05.24.8"' in sw
+    assert 'content="2026.05.24.10"' in index
+    assert 'main.js?v=20260524-10' in index
+    assert 'sw.js?v=20260524-10' in main
+    assert 'const APP_VERSION = "2026.05.24.10"' in sw
+
+
+
+def test_subscription_product_upgrade_pipeline_present():
+    main = (ROOT / "main.js").read_text()
+
+    assert "version: 1" in main
+    assert "upgradeProgress: 0" in main
+    assert 'upgradeStatus: "idle"' in main
+    assert 'product.version = Math.max(1, Math.floor(safeNumber(saved.version, product.version)))' in main
+    assert 'product.upgradeProgress = definition.type === "subscription"' in main
+    assert 'product.upgradeStatus = definition.type === "subscription"' in main
+    assert "function getCurrentMonthlyPrice(product, definition)" in main
+    assert "Math.round(definition.monthlyPrice * (1 + 0.2 * (getProductVersion(product) - 1)))" in main
+    assert "getCurrentMonthlyPrice(product, definition) * getProductCustomers(product)" in main
+    assert "function startSubscriptionUpgrade(productId)" in main
+    assert 'product.upgradeStatus = "upgrading"' in main
+    assert "function applySubscriptionUpgradeDevelopment(product, definition, workerId)" in main
+    assert "function completeSubscriptionUpgrade(product, definition)" in main
+    assert "product.version = getProductVersion(product) + 1" in main
+    assert "product.quality = clamp(product.quality + 8, 0, 100)" in main
+    assert "product.awareness = clamp(product.awareness + 5, 0, 100)" in main
+    assert "product.bugs = clamp(product.bugs + 5, 0, 100)" in main
+    assert "バージョンアップ" in main
+    assert 'definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle"' in main
+    assert "売り切り / 価格" in main
+    assert "AI日報メーカー v{version} の開発を開始しました" in main
+    assert "自動議事録AI v{version} の開発を開始しました" in main
+    assert 'return definition.name + " v" + getProductVersion(product)' in main
+    assert "月額価格+20%" in main
+    assert "副作用: 製品バグ+5" in main
+
+
+def test_subscription_version_affects_rendered_mrr_and_share_text():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 10, "customers": 10, "mrr": 9999, "version": 2, "upgradeProgress": 45, "upgradeStatus": "upgrading"},
+            "slideKitAi": {"id": "slideKitAi", "status": "ready", "progress": 160, "quality": 55, "bugs": 0, "awareness": 0, "unitsSold": 0, "version": 4, "upgradeProgress": 80, "upgradeStatus": "upgrading"},
+        },
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 1760000000000,
+    })
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["version"] == 2
+    assert product["upgradeProgress"] == 45
+    assert product["upgradeStatus"] == "upgrading"
+    assert product["mrr"] == 6000
+    assert "AI日報メーカー v3開発中 45%" in output["productHtml"]
+    assert "月額 <strong>¥600" in output["productHtml"]
+    assert "MRR <strong>¥6.0K/月" in output["productHtml"]
+    slide_html = output["productHtml"].split("AIスライド生成キット", 1)[1]
+    assert "バージョンアップ" not in slide_html.split("</article>", 1)[0]
