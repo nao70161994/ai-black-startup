@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.22"' in index
-    assert 'style.css?v=20260524-22' in index
-    assert 'main.js?v=20260524-22' in index
-    assert 'manifest.webmanifest?v=20260524-22' in index
-    assert 'icon.svg?v=20260524-22' in index
-    assert 'ogp.svg?v=20260524-22' in index
+    assert 'content="2026.05.24.25"' in index
+    assert 'style.css?v=20260524-25' in index
+    assert 'main.js?v=20260524-25' in index
+    assert 'manifest.webmanifest?v=20260524-25' in index
+    assert 'icon.svg?v=20260524-25' in index
+    assert 'ogp.svg?v=20260524-25' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.22"' in main
-    assert 'const APP_VERSION = "2026.05.24.22"' in sw
-    assert 'sw.js?v=20260524-22' in main
+    assert 'const APP_VERSION = "2026.05.24.25"' in main
+    assert 'const APP_VERSION = "2026.05.24.25"' in sw
+    assert 'sw.js?v=20260524-25' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-22"
+    assert manifest["start_url"] == "./index.html?v=20260524-25"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-22" in sw
-    assert "icon.svg?v=20260524-22" in sw
-    assert "ogp.svg?v=20260524-22" in sw
+    assert "manifest.webmanifest?v=20260524-25" in sw
+    assert "icon.svg?v=20260524-25" in sw
+    assert "ogp.svg?v=20260524-25" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -64,7 +64,7 @@ def run_browser_smoke(save):
 const fs = require('fs');
 const vm = require('vm');
 let code = fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, tick, saveGame }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, tick, saveGame, claimMissionReward, expandCompanyLevel }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -159,7 +159,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.22"
+    assert output["save"]["appVersion"] == "2026.05.24.25"
 
 
 def test_security06_visible_at_company_level_5():
@@ -676,10 +676,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.22"' in index
-    assert 'main.js?v=20260524-22' in index
-    assert 'sw.js?v=20260524-22' in main
-    assert 'const APP_VERSION = "2026.05.24.22"' in sw
+    assert 'content="2026.05.24.25"' in index
+    assert 'main.js?v=20260524-25' in index
+    assert 'sw.js?v=20260524-25' in main
+    assert 'const APP_VERSION = "2026.05.24.25"' in sw
 
 
 
@@ -745,7 +745,7 @@ def run_game_action_smoke(save, action_script):
 const fs = require('fs');
 const vm = require('vm');
 let code = fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, tick, saveGame }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, tick, saveGame, claimMissionReward, expandCompanyLevel }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -1359,7 +1359,7 @@ def test_next_recommendation_and_compact_missions_are_rendered():
         "employees": {"dev01": 1, "sales02": 1, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 60, "bugs": 0, "awareness": 0, "customers": 2, "version": 1}},
         "logs": [{"type": "success", "text": "テストログ", "createdAt": 9999999999999}],
-        "claimedMissions": [],
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission", "assign_daily_sales", "daily_first_customer", "daily_mrr_500", "meeting_developing", "meeting_ready_mission", "total_mrr_10k_mission", "slide_developing", "slide_ready_mission", "slide_first_sale_mission", "daily_v2_mission", "meeting_v2_mission", "any_product_quality_70"],
         "lastSavedAt": 9999999999999,
     })
 
@@ -1404,22 +1404,22 @@ def test_mission_stage_uses_current_state_not_claimed_history_for_existing_saves
     })
 
     assert output["missionStage"] == "次のおすすめに集約"
-    assert output["missionStage"] != "起業準備"
     assert "すべてのミッションを見る" in output["missionHtml"]
-    assert "daily_report_developing" in output["save"]["claimedMissions"]
-    assert "daily_report_ready_mission" in output["save"]["claimedMissions"]
-    assert "meeting_ready_mission" in output["save"]["claimedMissions"]
+    assert "報酬を受け取る" in output["missionHtml"]
+    assert "daily_report_developing" not in output["save"]["claimedMissions"]
+    assert "daily_report_ready_mission" not in output["save"]["claimedMissions"]
+    assert "meeting_ready_mission" not in output["save"]["claimedMissions"]
 
 
-def test_current_mission_stage_ignores_unclaimed_completed_missions_in_code():
+def test_current_mission_stage_includes_unclaimed_completed_missions_in_code():
     main = (ROOT / "main.js").read_text()
 
     start = main.index("function getCurrentMissionStage()")
-    end = main.index("function claimCompletedMissions(options)", start)
+    end = main.index("function getAllMissions()", start)
     stage_code = main[start:end]
-    assert "!mission.done()" in stage_code
-    assert "isMissionClaimed" not in stage_code
-    assert "MISSION_STAGES.forEach(function (stage)" in main
+    assert "!mission.done() || !isMissionClaimed(mission.id)" in stage_code
+    assert "isMissionClaimed" in stage_code
+    assert "function getAllMissions()" in main
 
 
 def test_product_action_menu_uses_explicit_action_definitions():
@@ -1490,19 +1490,14 @@ def test_idea_product_action_menu_only_offers_development():
     assert 'id: "marketing"' not in idea_block
 
 
-def test_mission_sync_claim_uses_single_summary_log_on_load():
+def test_manual_mission_rewards_are_not_auto_synced_on_load():
     main = (ROOT / "main.js").read_text()
 
-    assert "claimCompletedMissions({ sync: true })" in main
-    assert "過去に達成済みのミッションを" in main
-    assert "件同期しました。" in main
-    start = main.index("function claimCompletedMissions(options)")
-    end = main.index("function isMissionClaimed", start)
-    claim_code = main[start:end]
-    assert "const syncMode" in claim_code
-    assert "syncedCount += 1" in claim_code
-    assert "if (syncMode && syncedCount > 0) addLog" in claim_code
-    assert 'else addLog("success", "ミッション達成:' in claim_code
+    assert "claimCompletedMissions" not in main
+    assert "function claimMissionReward(missionId)" in main
+    assert "getClaimableMissions()" in main
+    assert "報酬を受け取る" in main
+    assert "data-claim-mission" in main
 
 
 def test_action_menu_disabled_styles_are_readable():
@@ -1790,3 +1785,119 @@ def test_fire05_crisis_task_reduces_fire_without_old_effects():
 
     assert output["save"]["fire"] < 80
     assert output["save"]["productFlags"]["dailyReportAi"]["crisisStartedLogged"] is True
+
+
+def test_claiming_completed_mission_reward_is_manual():
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "developing", "progress": 1, "quality": 60, "bugs": 0, "awareness": 0, "customers": 0}},
+        "claimedMissions": [],
+        "logs": [],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.saveGame();")
+    assert "daily_report_developing" not in output["save"]["claimedMissions"]
+
+    claimed = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "developing", "progress": 1, "quality": 60, "bugs": 0, "awareness": 0, "customers": 0}},
+        "claimedMissions": [],
+        "logs": [],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.claimMissionReward('daily_report_developing'); window.__testApi.saveGame();")
+    assert "daily_report_developing" in claimed["save"]["claimedMissions"]
+    assert claimed["save"]["money"] == 200
+    assert claimed["save"]["totalMoney"] == 200
+
+
+def test_company_level_expansion_is_manual_and_one_level_per_click():
+    output = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 1000000,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.saveGame();")
+    assert output["save"]["companyLevel"] == 1
+
+    expanded = run_game_action_smoke({
+        "money": 0,
+        "totalMoney": 1000000,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 1,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    }, "window.__testApi.expandCompanyLevel(); window.__testApi.saveGame();")
+    assert expanded["save"]["companyLevel"] == 2
+
+
+def test_company_level_existing_save_is_not_lowered_by_normalize():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "users": 0,
+        "bugs": 0,
+        "fire": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 0, "sales02": 0, "buzz03": 0, "care04": 0, "fire05": 0, "security06": 0},
+        "logs": [],
+        "claimedMissions": [],
+        "lastSavedAt": 9999999999999,
+    })
+    assert output["save"]["companyLevel"] == 5
+
+
+def test_company_expansion_panel_and_manual_reward_ui_are_present():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+
+    assert 'id="companyExpansionPanel"' in index
+    assert "会社Lvアップ可能" in main
+    assert "会社を拡張する" in main
+    assert "function expandCompanyLevel()" in main
+    assert "function canExpandCompany()" in main
+    assert "報酬を受け取る" in main
+    assert "function claimMissionReward(missionId)" in main
+
+def test_manual_mission_reward_button_uses_full_width_claim_row():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "mission-claim-block" in main
+    assert "mission-reward-row" in main
+    assert "mission-claim-button" in main
+    assert "mission-item done claimable" in main
+    assert "達成済み・未受け取り" in main
+    assert "報酬: +" in main
+    assert "claim-mission-button" not in main
+    assert "claimed ? '' : '<span class=\"mission-reward-row\">報酬: +'" in main
+    assert "done ? '✓' : '○'" in main
+    assert ".mission-claim-block" in css
+    assert "flex-direction: column" in css
+    assert ".mission-reward-row" in css
+    assert "grid-column: 1 / -1" in css
+    assert ".mission-claim-button { display: flex" in css
+    assert "width: 100%" in css
+    assert "min-height: 44px" in css
+    assert ".mission-item.claimable" in css
+    assert ".mission-item.claimed" in css

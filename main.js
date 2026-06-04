@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.22";
+  const APP_VERSION = "2026.05.24.25";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -249,7 +249,8 @@
       qa: { productId: PRODUCTS[0].id, aiId: null },
       sales: { productId: PRODUCTS[0].id, aiId: null },
       marketing: { productId: PRODUCTS[0].id, aiId: null },
-      support: { productId: PRODUCTS[0].id, aiId: null }
+      support: { productId: PRODUCTS[0].id, aiId: null },
+      crisis: { productId: PRODUCTS[0].id, aiId: null }
     };
   }
 
@@ -267,7 +268,6 @@
       if (!raw) { state = createInitialState(); return; }
       state = normalizeState(JSON.parse(raw));
       calculateOfflineReward();
-      claimCompletedMissions({ sync: true });
       saveGame();
     } catch (error) {
       console.warn("Save data could not be loaded.", error);
@@ -302,7 +302,7 @@
     normalized.money = Math.max(0, normalized.money);
     normalized.totalMoney = Math.max(0, normalized.totalMoney);
     normalized.users = Math.max(0, normalized.users);
-    normalized.companyLevel = getCompanyLevel(normalized.totalMoney);
+    normalized.companyLevel = clamp(Math.floor(safeNumber(saved.companyLevel, base.companyLevel)), 1, MAX_LEVEL);
     return normalized;
   }
 
@@ -405,7 +405,6 @@
     state = createInitialState();
     penaltyElapsed = 0;
     scheduleNextTick();
-    claimCompletedMissions();
     saveGame();
     render();
   }
@@ -425,10 +424,8 @@
     const ticks = Math.floor(elapsed / TICK_MS);
     const reward = getRates().money * ticks;
     if (reward > 0) {
-      const previousLevel = state.companyLevel;
       state.money += reward;
       state.totalMoney += reward;
-      updateCompanyLevel(previousLevel, false);
       addLog("success", "オフライン中にAI社員が自律稼働し、" + formatCurrency(reward) + "を生成しました。", "company");
     }
   }
@@ -477,7 +474,6 @@
       showFirstHireHelp(employee);
       scheduleNextTick();
     }
-    claimCompletedMissions();
     saveGame();
     render();
   }
@@ -491,14 +487,11 @@
 
   function tick() {
     const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
-    const previousLevel = state.companyLevel;
     applyBaseContractWork();
     state.firstFastTickDone = true;
     penaltyElapsed += elapsedForPenalty;
     if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
-    updateCompanyLevel(previousLevel, true);
-    claimCompletedMissions();
-    if (state.companyLevel !== previousLevel) saveGame();
+    saveGame();
     render();
     scheduleNextTick();
   }
@@ -861,26 +854,24 @@
     if (state.fire >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("fire", "外部の熱量が急上昇しました。売上5%が冷却材になりました。", "company"); }
   }
 
-  function updateCompanyLevel(previousLevel, showToast) {
-    const nextLevel = getCompanyLevel(state.totalMoney);
-    if (nextLevel <= previousLevel) {
-      state.companyLevel = nextLevel;
-      return;
-    }
+  function canExpandCompany() {
+    return state.companyLevel < getCompanyLevel(state.totalMoney) && state.companyLevel < MAX_LEVEL;
+  }
 
+  function expandCompanyLevel() {
+    if (!canExpandCompany()) return;
+    const previousLevel = state.companyLevel;
+    const nextLevel = previousLevel + 1;
     state.companyLevel = nextLevel;
-    for (let level = previousLevel + 1; level <= nextLevel; level += 1) {
-      addLog("success", "会社Lvが" + level + "に上昇しました。" + getLevelUpMessage(level), "company");
-      EMPLOYEES.filter(function (employee) { return employee.unlockLevel === level; }).forEach(function (employee) {
-        addLog("success", employee.code + "が解放されました。" + getUnlockMessage(employee.id), employee.id);
-      });
-    }
-
-    if (showToast) {
-      const unlocked = EMPLOYEES.filter(function (employee) { return employee.unlockLevel > previousLevel && employee.unlockLevel <= nextLevel; });
-      const suffix = unlocked.length ? " / " + unlocked.map(function (employee) { return employee.code + "解放"; }).join("・") : "";
-      showLevelToast("会社Lv " + nextLevel + " 到達" + suffix);
-    }
+    addLog("success", "会社Lvが" + nextLevel + "に上昇しました。" + getLevelUpMessage(nextLevel), "company");
+    EMPLOYEES.filter(function (employee) { return employee.unlockLevel === nextLevel; }).forEach(function (employee) {
+      addLog("success", employee.code + "が解放されました。" + getUnlockMessage(employee.id), employee.id);
+    });
+    const unlocked = EMPLOYEES.filter(function (employee) { return employee.unlockLevel === nextLevel; });
+    const suffix = unlocked.length ? " / " + unlocked.map(function (employee) { return employee.code + "解放"; }).join("・") : "";
+    showLevelToast("会社Lv " + nextLevel + " 到達" + suffix);
+    saveGame();
+    render();
   }
 
   function getLevelUpMessage(level) {
@@ -973,6 +964,7 @@
     renderOnboarding();
     renderRiskPanel();
     renderNextRecommendationPanel();
+    renderCompanyExpansionPanel();
     renderPrimaryProductPanel();
     renderProductPanel();
     renderProductDetailModal();
@@ -994,7 +986,7 @@
     setText("totalMrrDashboard", formatCurrency(getTotalProductMrr()) + "/月");
     setText("bugs", Math.round(state.bugs) + " / 100");
     setText("fire", Math.round(state.fire) + " / 100");
-    setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)));
+    setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : (canExpandCompany() ? "拡張可能" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney))));
     setText("nextUnlock", getNextUnlockText());
     const rates = getRates();
     setText("incomeRate", formatSignedCurrencyRate(rates.money) + " / 秒");
@@ -1051,11 +1043,30 @@
     panel.innerHTML = '<div class="section-heading"><h2>次のおすすめ</h2><span>次の一手</span></div><p class="next-recommendation-text">' + escapeHtml(getNextRecommendationText()) + '</p>';
   }
 
+  function renderCompanyExpansionPanel() {
+    const panel = document.getElementById("companyExpansionPanel");
+    if (!panel) return;
+    if (!canExpandCompany()) {
+      panel.hidden = true;
+      panel.innerHTML = "";
+      return;
+    }
+    panel.hidden = false;
+    const nextLevel = state.companyLevel + 1;
+    panel.innerHTML = '<div class="section-heading"><h2>会社Lvアップ可能</h2><span>次: 会社Lv' + nextLevel + '</span></div>' +
+      '<p class="dashboard-summary">条件達成: 累計売上 ' + formatCurrency(LEVEL_THRESHOLDS[nextLevel - 1]) + '</p>' +
+      '<button type="button" id="expandCompanyButton" class="modal-apply-button">会社を拡張する</button>';
+    const button = document.getElementById("expandCompanyButton");
+    if (button) button.addEventListener("click", expandCompanyLevel);
+  }
+
   function getNextRecommendationText() {
     const churnHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.churnRisk >= 45; });
     const supportHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.supportLoad >= 50; });
     if (churnHeavy) return "解約リスクが高い" + churnHeavy.name + "をサポートしましょう。";
     if (supportHeavy) return "Care-04を" + supportHeavy.name + "のサポートに割り振りましょう。";
+    if (getClaimableMissions().length > 0) return "達成済みミッションの報酬を受け取りましょう。";
+    if (canExpandCompany()) return "会社を拡張してLvを上げましょう。";
     if (state.fire >= 70) {
       if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return "炎上が高いのでFire-05を雇用しましょう。";
       return "Fire-05またはCare-04で炎上対応しましょう。";
@@ -1373,40 +1384,43 @@
     label.textContent = dashboardUi.missionsExpanded ? stage.label : "次のおすすめに集約";
     const missionItems = stage.missions.map(function (mission) {
       const done = Boolean(mission.done());
-      return '<div class="mission-item' + (done ? ' done' : '') + '"><span class="mission-check">' + (done ? '✓' : '') + '</span><span class="mission-text">' + escapeHtml(mission.text) + '</span><span class="mission-reward">+' + formatCurrency(mission.reward) + '</span></div>';
+      const claimed = isMissionClaimed(mission.id);
+      const pending = done && !claimed;
+      const stateHtml = claimed || pending ? '<span class="mission-state">' + (claimed ? '受け取り済み' : '達成済み・未受け取り') + '</span>' : '';
+      const rewardHtml = pending ? '<div class="mission-claim-block"><span class="mission-reward-row">報酬: +' + formatCurrency(mission.reward) + '</span><button type="button" class="mission-claim-button" data-claim-mission="' + mission.id + '">報酬を受け取る</button></div>' : (claimed ? '' : '<span class="mission-reward-row">報酬: +' + formatCurrency(mission.reward) + '</span>');
+      return '<div class="mission-item' + (done ? ' done' : '') + (claimed ? ' claimed' : '') + (pending ? ' claimable' : '') + '"><span class="mission-check">' + (done ? '✓' : '○') + '</span><span class="mission-text">' + escapeHtml(mission.text) + '</span>' + stateHtml + rewardHtml + '</div>';
     }).join("");
-    list.innerHTML = dashboardUi.missionsExpanded ? missionItems + '<button type="button" id="toggleMissionsButton" class="change-assignment-button">ミッションを閉じる</button>' : '<p class="dashboard-summary">現在ミッションは「次のおすすめ」で要約しています。</p><button type="button" id="toggleMissionsButton" class="change-assignment-button">すべてのミッションを見る</button>';
+    const claimable = getClaimableMissions()[0];
+    const collapsedClaim = claimable ? '<div class="mission-item done claimable"><span class="mission-check">✓</span><span class="mission-text">' + escapeHtml(claimable.text) + '</span><span class="mission-state">達成済み・未受け取り</span><div class="mission-claim-block"><span class="mission-reward-row">報酬: +' + formatCurrency(claimable.reward) + '</span><button type="button" class="mission-claim-button" data-claim-mission="' + claimable.id + '">報酬を受け取る</button></div></div>' : '';
+    list.innerHTML = dashboardUi.missionsExpanded ? missionItems + '<button type="button" id="toggleMissionsButton" class="change-assignment-button">ミッションを閉じる</button>' : '<p class="dashboard-summary">現在ミッションは「次のおすすめ」で要約しています。</p>' + collapsedClaim + '<button type="button" id="toggleMissionsButton" class="change-assignment-button">すべてのミッションを見る</button>';
     const toggle = document.getElementById("toggleMissionsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("missionsExpanded"); });
+    list.querySelectorAll("button[data-claim-mission]").forEach(function (button) { button.addEventListener("click", function () { claimMissionReward(button.getAttribute("data-claim-mission")); }); });
   }
 
   function getCurrentMissionStage() {
     return MISSION_STAGES.find(function (stage) {
-      return stage.missions.some(function (mission) { return !mission.done(); });
+      return stage.missions.some(function (mission) { return !mission.done() || !isMissionClaimed(mission.id); });
     }) || MISSION_STAGES[MISSION_STAGES.length - 1];
   }
 
-  function claimCompletedMissions(options) {
-    const syncMode = Boolean(options && options.sync);
-    let claimed = false;
-    let syncedCount = 0;
-    MISSION_STAGES.forEach(function (stage) {
-      stage.missions.forEach(function (mission) {
-        if (mission.done() && !isMissionClaimed(mission.id)) {
-          state.claimedMissions.push(mission.id);
-          state.money += mission.reward;
-          state.totalMoney += mission.reward;
-          if (syncMode) syncedCount += 1;
-          else addLog("success", "ミッション達成: " + mission.text + "。報酬" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
-          claimed = true;
-        }
-      });
-    });
-    if (syncMode && syncedCount > 0) addLog("system", "過去に達成済みのミッションを" + syncedCount + "件同期しました。", "company");
-    if (claimed) {
-      updateCompanyLevel(state.companyLevel, true);
-      saveGame();
-    }
+  function getAllMissions() {
+    return MISSION_STAGES.reduce(function (items, stage) { return items.concat(stage.missions); }, []);
+  }
+
+  function getClaimableMissions() {
+    return getAllMissions().filter(function (mission) { return mission.done() && !isMissionClaimed(mission.id); });
+  }
+
+  function claimMissionReward(missionId) {
+    const mission = getAllMissions().find(function (item) { return item.id === missionId; });
+    if (!mission || !mission.done() || isMissionClaimed(mission.id)) return;
+    state.claimedMissions.push(mission.id);
+    state.money += mission.reward;
+    state.totalMoney += mission.reward;
+    addLog("success", "ミッション報酬を受け取りました: " + mission.text + "。" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
+    saveGame();
+    render();
   }
 
   function isMissionClaimed(missionId) {
@@ -1917,7 +1931,6 @@
       flags.startedLogged = true;
       addLog("success", getProductLogText(product.id, "started", definition.name + "の開発を開始しました。"), product.id);
     }
-    claimCompletedMissions();
     saveGame();
     render();
     scheduleNextTick();
@@ -2160,7 +2173,7 @@
 
 
   function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
-  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.companyLevel = getCompanyLevel(state.totalMoney); }
+  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
   function formatCurrencyPrecise(value) { const number = Math.max(0, safeNumber(value, 0)); return "¥" + (number > 0 && number < 10 ? number.toFixed(1) : formatNumber(number)); }
@@ -2192,7 +2205,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-22").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-25").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
