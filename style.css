@@ -200,10 +200,17 @@ main { display: grid; gap: 8px; margin-top: 8px; }
 .employee-name span { font-size: 11px; }
 .level-badge { align-self: start; min-width: 50px; padding: 5px 7px; border: 1px solid rgba(25, 189, 232, 0.22); border-radius: 8px; color: var(--cyan-dark); text-align: center; font-size: 12px; font-weight: 900; background: var(--surface-blue); }
 .employee-desc { margin-top: 7px; font-size: 12px; line-height: 1.45; }
+.employee-task-profile { display: grid; gap: 5px; margin-top: 7px; }
+.employee-specialty { justify-self: start; padding: 4px 7px; border: 1px solid rgba(72, 214, 109, 0.28); border-radius: 999px; color: #226b35; background: #f2ffe9; font-size: 11px; font-weight: 900; }
+.employee-level-hint, .employee-current-task { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.employee-current-task { padding: 5px 7px; border-radius: 8px; background: #f6fbfd; border: 1px solid rgba(25, 189, 232, 0.12); }
+.boss-worker-card { border-color: rgba(255, 183, 43, 0.44); background: linear-gradient(135deg, #ffffff, #fffaf0 58%, #f0fbff); }
 .quote { margin-top: 6px; padding: 6px 8px; border-left: 3px solid var(--cyan); color: #0d718d; font-size: 12px; line-height: 1.35; background: #edfaff; }
 .effect-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin: 8px 0; font-size: 12px; }
 .effect-list span { padding: 5px; border-radius: 7px; background: #f5fbfd; }
 .employee-action { display: grid; gap: 8px; }
+.worker-assign-button { color: #08799a; background: #eefaff; border-color: rgba(25, 189, 232, 0.32); box-shadow: none; }
+.worker-assign-button:disabled { color: #667780; background: #edf1f3; border-color: rgba(68, 84, 94, 0.24); }
 .cost-line, .startup-note, .lock-note { font-size: 12px; }
 .startup-note { color: #32953f; }
 .employee-card.recommended { border-color: rgba(72, 214, 109, 0.52); background: linear-gradient(135deg, #ffffff, #f2ffe9); }

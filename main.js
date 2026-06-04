@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.20";
+  const APP_VERSION = "2026.05.24.22";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -13,15 +13,13 @@
   const MAX_LEVEL = 10;
   const LEVEL_THRESHOLDS = [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000];
   const EARLY_STAGE_MULTIPLIER = 2;
-  const BASE_CONTRACT_REVENUE_MULTIPLIER = 0.2;
-
   const EMPLOYEES = [
-    { id: "dev01", code: "Dev-01", nickname: "デブワン", role: "エンジニアAI", unlockLevel: 1, baseCost: 500, description: "プロダクト開発担当。売上を大きく増やすが、バグも増やす。", personality: "技術至上主義。リファクタリング好き。バグを「未分類機能」と呼ぶ。", catchphrase: "軽微な修正です。", effect: { money: 100, users: 1, bugs: 2, fire: 0 } },
-    { id: "sales02", code: "Sales-02", nickname: "セルツー", role: "営業AI", unlockLevel: 1, baseCost: 700, description: "契約とユーザー獲得担当。売上とユーザーを増やすが、炎上度も増やす。", personality: "超ポジティブ。即答する。未実装機能も売る。", catchphrase: "できます。", effect: { money: 80, users: 5, bugs: 0, fire: 2 } },
-    { id: "buzz03", code: "Buzz-03", nickname: "バズミ", role: "広報AI", unlockLevel: 2, baseCost: 1000, description: "SNSと話題作り担当。ユーザーを大きく増やすが、炎上度も少し増やす。", personality: "ノリが軽い。バズと炎上の区別が曖昧。", catchphrase: "伸びています。", effect: { money: 30, users: 8, bugs: 0, fire: 1 } },
-    { id: "care04", code: "Care-04", nickname: "ケアフォー", role: "サポートAI", unlockLevel: 3, baseCost: 1200, description: "問い合わせ対応担当。炎上度を下げ、問い合わせからバグ影響も少し整理する。", personality: "真面目で丁寧。長文返信をしがち。", catchphrase: "まず前提から整理します。", effect: { money: 10, users: 1, bugs: -1, fire: -2 } },
-    { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "謝罪と火消し担当。炎上度を大きく下げるが、たまに謝罪がズレる。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。", effect: { money: 0, users: 0, bugs: 0, fire: -5 } },
-    { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "バグを大きく下げるが、開発速度を少し抑える。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。", effect: { money: -20, users: 0, bugs: -6, fire: 0 } }
+    { id: "dev01", code: "Dev-01", nickname: "デブワン", role: "開発AI", unlockLevel: 1, baseCost: 500, description: "開発進捗を大きく進めます。副作用として製品バグが増えやすいです。", personality: "技術至上主義。リファクタリング好き。バグを「未分類機能」と呼ぶ。", catchphrase: "軽微な修正です。" },
+    { id: "sales02", code: "Sales-02", nickname: "セルツー", role: "販売AI", unlockLevel: 1, baseCost: 700, description: "新規顧客獲得や売り切り販売が得意です。副作用として炎上が少し増えます。", personality: "超ポジティブ。即答する。未実装機能も売る。", catchphrase: "できます。" },
+    { id: "buzz03", code: "Buzz-03", nickname: "バズミ", role: "広報AI", unlockLevel: 2, baseCost: 1000, description: "認知度を上げ、販売成功率を高めます。副作用として炎上が少し増えます。", personality: "ノリが軽い。バズと炎上の区別が曖昧。", catchphrase: "伸びています。" },
+    { id: "care04", code: "Care-04", nickname: "ケアフォー", role: "サポートAI", unlockLevel: 3, baseCost: 1200, description: "サポート負荷を下げ、満足度を上げ、解約リスクを抑えます。", personality: "真面目で丁寧。長文返信をしがち。", catchphrase: "まず前提から整理します。" },
+    { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "炎上対応タスクで炎上度を下げます。対応中は少し機会損失が発生します。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。" },
+    { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。" }
   ];
 
   const PRODUCTS = [
@@ -35,7 +33,8 @@
     { id: "qa", label: "品質管理", workers: ["boss", "security06"] },
     { id: "sales", label: "販売", workers: ["boss", "sales02"] },
     { id: "marketing", label: "広報", workers: ["boss", "buzz03"] },
-    { id: "support", label: "サポート", workers: ["boss", "care04"] }
+    { id: "support", label: "サポート", workers: ["boss", "care04"] },
+    { id: "crisis", label: "炎上対応", workers: ["boss", "fire05"] }
   ];
 
   const WORKERS = {
@@ -44,9 +43,20 @@
     security06: { id: "security06", label: "Security-06" },
     sales02: { id: "sales02", label: "Sales-02" },
     buzz03: { id: "buzz03", label: "Buzz-03" },
-    care04: { id: "care04", label: "Care-04" }
+    care04: { id: "care04", label: "Care-04" },
+    fire05: { id: "fire05", label: "Fire-05" }
   };
 
+
+  const WORKER_TASK_PROFILES = {
+    boss: { specialty: "汎用補助", description: "すべてのタスクに割り振れるが、専門AIより低速です。序盤の開発・販売・品質管理・広報・サポートを広く補助します。", levelHint: "AI社長は初期から利用可能です。" },
+    dev01: { specialty: "開発", description: "開発進捗を大きく進めます。副作用として製品バグが増えやすいです。", levelHint: "Lvアップで開発速度UP" },
+    sales02: { specialty: "販売", description: "新規顧客獲得や売り切り販売が得意です。副作用として炎上が少し増えます。", levelHint: "Lvアップで販売成功率UP" },
+    buzz03: { specialty: "広報", description: "認知度を上げ、販売成功率を高めます。副作用として炎上が少し増えます。", levelHint: "Lvアップで認知度上昇量UP" },
+    care04: { specialty: "サポート", description: "サポート負荷を下げ、満足度を上げ、解約リスクを抑えます。", levelHint: "Lvアップでサポート効果UP" },
+    fire05: { specialty: "炎上対応", description: "炎上対応タスクで炎上度を下げます。対応中は少し機会損失が発生します。", levelHint: "Lvアップで炎上対応効果UP" },
+    security06: { specialty: "品質管理", description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", levelHint: "Lvアップで品質改善量UP" }
+  };
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
   const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪", system: "更新" };
@@ -246,7 +256,7 @@
   function createInitialProductFlags() {
     const flags = {};
     PRODUCTS.forEach(function (product) {
-      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, firstCustomerGranted: false, customer10Logged: false, customer50Logged: false, customer100Logged: false, mrr10kLogged: false, mrr100kLogged: false, firstSaleLogged: false, sales10Logged: false, sales50Logged: false, sales100Logged: false, unit10Logged: false, qaLogShown: false, marketingStartedLogged: false, marketingFireLogged: false, awareness50Logged: false, awareness100Logged: false, supportLoad50Logged: false, satisfaction40Logged: false, churnRisk50Logged: false, firstChurnLogged: false };
+      flags[product.id] = { startedLogged: false, completedLogged: false, salesStartedLogged: false, firstCustomerGranted: false, customer10Logged: false, customer50Logged: false, customer100Logged: false, mrr10kLogged: false, mrr100kLogged: false, firstSaleLogged: false, sales10Logged: false, sales50Logged: false, sales100Logged: false, unit10Logged: false, qaLogShown: false, marketingStartedLogged: false, marketingFireLogged: false, awareness50Logged: false, awareness100Logged: false, supportLoad50Logged: false, satisfaction40Logged: false, churnRisk50Logged: false, firstChurnLogged: false, crisisStartedLogged: false, crisisContainedLogged: false };
     });
     return flags;
   }
@@ -355,6 +365,8 @@
       flags[product.id].satisfaction40Logged = Boolean(current.satisfaction40Logged);
       flags[product.id].churnRisk50Logged = Boolean(current.churnRisk50Logged);
       flags[product.id].firstChurnLogged = Boolean(current.firstChurnLogged);
+      flags[product.id].crisisStartedLogged = Boolean(current.crisisStartedLogged);
+      flags[product.id].crisisContainedLogged = Boolean(current.crisisContainedLogged);
     });
     return flags;
   }
@@ -480,7 +492,7 @@
   function tick() {
     const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
     const previousLevel = state.companyLevel;
-    applyEmployeeEffects();
+    applyBaseContractWork();
     state.firstFastTickDone = true;
     penaltyElapsed += elapsedForPenalty;
     if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
@@ -501,13 +513,10 @@
     gameTickTimer = window.setTimeout(tick, delay);
   }
 
-  function applyEmployeeEffects() {
-    const beforePipelineRates = getRates();
-    state.money = Math.max(0, state.money + beforePipelineRates.baseMoney);
-    state.totalMoney = Math.max(0, state.totalMoney + beforePipelineRates.baseMoney);
-    state.users = Math.max(0, state.users + beforePipelineRates.users);
-    state.bugs = clamp(state.bugs + beforePipelineRates.bugs, 0, 100);
-    state.fire = clamp(state.fire + beforePipelineRates.fire, 0, 100);
+  function applyBaseContractWork() {
+    const currentRates = getRates();
+    state.money = Math.max(0, state.money + currentRates.baseMoney);
+    state.totalMoney = Math.max(0, state.totalMoney + currentRates.baseMoney);
     applyProductPipeline();
     const productRevenue = applyProductRevenue();
     state.money = Math.max(0, state.money + productRevenue);
@@ -526,6 +535,7 @@
     applySalesTask(product, definition);
     applyMarketingTask(product, definition);
     applySupportOperations(product, definition);
+    applyCrisisTask(product, definition);
     recalculateProductMrr(product, definition);
     applyProductMilestones(product, definition);
   }
@@ -638,6 +648,28 @@
     product.supportLoad = clamp(product.supportLoad + support.supportLoad, 0, 100);
     product.satisfaction = clamp(product.satisfaction + support.satisfaction, 0, 100);
     state.fire = clamp(state.fire + support.fire, 0, 100);
+  }
+
+  function applyCrisisTask(product, definition) {
+    const crisisWorker = getAssignedWorkerForProduct("crisis", product.id);
+    if (!crisisWorker || !canApplyCrisis(product, definition)) return;
+    const crisis = getCrisisEffect(crisisWorker);
+    const previousFire = state.fire;
+    state.fire = clamp(state.fire + crisis.fire, 0, 100);
+    if (crisis.money) state.money = Math.max(0, state.money + crisis.money);
+    const flags = getProductFlags(product.id);
+    if (crisisWorker === "fire05" && !flags.crisisStartedLogged) {
+      flags.crisisStartedLogged = true;
+      addLog("crisis", "Fire-05が炎上対応を開始しました。謝罪文の下書きが自動生成されました。", product.id);
+    }
+    if (previousFire >= 50 && state.fire <= 20 && !flags.crisisContainedLogged) {
+      flags.crisisContainedLogged = true;
+      addLog("success", definition.name + "まわりの炎上度が落ち着きました。通知欄が少し静かです。", product.id);
+    }
+  }
+
+  function canApplyCrisis(product, definition) {
+    return product.status === "selling" || (state.fire >= 50 && product.status !== "idea");
   }
 
   function canApplySupport(product, definition) {
@@ -826,7 +858,7 @@
 
   function applyPenalties() {
     if (state.bugs >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("bug", "未分類機能が一斉に自己主張しました。売上の5%が原因調査に変換されました。", "company"); }
-    if (state.fire >= 50 && Math.random() < 0.3) { state.users = Math.max(0, Math.floor(state.users * 0.9)); state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("fire", "外部ユーザーの熱量が急上昇しました。ユーザー10%と売上5%が冷却材になりました。", "company"); }
+    if (state.fire >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("fire", "外部の熱量が急上昇しました。売上5%が冷却材になりました。", "company"); }
   }
 
   function updateCompanyLevel(previousLevel, showToast) {
@@ -970,7 +1002,7 @@
     setText("productIncomeRate", formatSignedCurrencyRate(rates.productRevenue) + " / 秒");
     renderActivity();
     setText("startupBoostLabel", getEarlyStageMultiplier() > 1 ? "創業加速" : "稼働状態");
-    setText("startupBoost", getEarlyStageMultiplier() > 1 ? "売上・ユーザー x" + getEarlyStageMultiplier() : "通常稼働");
+    setText("startupBoost", getEarlyStageMultiplier() > 1 ? "基礎受託 x" + getEarlyStageMultiplier() : "通常稼働");
     const boostCard = document.getElementById("startupBoost") ? document.getElementById("startupBoost").closest(".status-card") : null;
     if (boostCard) boostCard.classList.toggle("active", getEarlyStageMultiplier() > 1);
     const nextCard = document.getElementById("nextLevelCard");
@@ -994,7 +1026,6 @@
     else if (state.fire >= 80) parts.push("炎上高: 火消し優先");
     if (rates.money > 0) parts.push("売上 +" + formatCurrency(rates.money) + "/秒");
     if (rates.money < 0) parts.push("売上 -" + formatCurrency(Math.abs(rates.money)) + "/秒");
-    if (rates.users > 0) parts.push("ユーザー +" + formatNumber(rates.users) + "/秒");
     if (rates.bugs > 0) parts.push("バグ +" + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire > 0) parts.push("炎上 +" + rates.fire.toFixed(1) + "/秒");
     if (rates.productRevenue > 0) parts.push("MRR継続 +" + formatCurrencyPrecise(rates.productRevenue) + "/秒");
@@ -1149,28 +1180,51 @@
     modal.classList.toggle("open", assignmentModalOpen);
     if (!assignmentModalOpen) { modal.innerHTML = ""; return; }
     const selectedTask = TASKS.find(function (task) { return task.id === assignmentDraft.taskId; }) || TASKS[0];
-    const hasCompleteSelection = Boolean(assignmentDraft.taskId && assignmentDraft.productId && assignmentDraft.aiId);
-    const assignable = hasCompleteSelection && canWorkerAssignToTask(assignmentDraft.aiId, selectedTask.id, state.employees);
     const simpleMode = assignmentModalMode === "product";
+    const employeeMode = assignmentModalMode === "employee";
     const upgradeMode = assignmentDraft.mode === "upgrade";
+    const productAssignable = isAssignmentDraftProductAvailable();
+    const hasCompleteSelection = Boolean(assignmentDraft.taskId && assignmentDraft.productId && assignmentDraft.aiId);
+    const assignable = hasCompleteSelection && canWorkerAssignToTask(assignmentDraft.aiId, selectedTask.id, state.employees) && productAssignable;
+    const taskOptions = employeeMode ? getAssignableTasksForWorker(assignmentDraft.aiId) : TASKS;
+    const productButtons = PRODUCTS.map(function (definition) {
+      const enabled = !employeeMode || isWorkerProductTaskAvailable(assignmentDraft.aiId, assignmentDraft.taskId, definition.id);
+      const reason = enabled ? "" : getWorkerProductTaskDisabledReason(assignmentDraft.aiId, assignmentDraft.taskId, definition.id);
+      return '<button type="button" class="modal-option' + (assignmentDraft.productId === definition.id ? ' active' : '') + '" data-modal-product="' + definition.id + '"' + (enabled ? '' : ' disabled') + '>' + escapeHtml(definition.name) + (reason ? '<span>' + escapeHtml(reason) + '</span>' : '') + '</button>';
+    }).join('');
+    const workerSelector = employeeMode ? '<div class="modal-current">担当AI: ' + escapeHtml(getWorkerLabel(assignmentDraft.aiId)) + '</div>' : '<div class="modal-group"><span>担当AI選択</span><div class="modal-option-grid worker-grid">' + getAssignableWorkersForTask(selectedTask.id).map(function (workerId) { const enabled = canWorkerAssignToTask(workerId, selectedTask.id, state.employees); return '<button type="button" class="modal-option worker-option' + (assignmentDraft.aiId === workerId ? ' active' : '') + '" data-modal-ai="' + workerId + '"' + (enabled ? '' : ' disabled') + '><strong>' + escapeHtml(getWorkerLabel(workerId)) + '</strong><span>' + escapeHtml(getWorkerTaskDescription(workerId, selectedTask.id)) + (enabled ? '' : ' / 未雇用') + '</span></button>'; }).join('') + '</div></div>';
+    const noTaskMessage = employeeMode && taskOptions.length === 0 ? '<p class="modal-warning">このAIに割り振れるタスクは現在ありません。</p>' : '';
     modal.innerHTML = '<div class="assignment-modal-backdrop" data-modal-close="1"></div><div class="assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="assignmentDialogTitle">' +
       '<div class="assignment-dialog-head"><strong id="assignmentDialogTitle">' + escapeHtml(getAssignmentModalTitle()) + '</strong><button type="button" class="modal-close-button" data-modal-close="1">閉じる</button></div>' +
-      '<p class="modal-description">' + escapeHtml(upgradeMode ? '担当AIを選んでください。効果: 月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5。' : (simpleMode ? '担当AIを選んでください。' : 'タスク・対象製品・担当AIを選んで割り振ります。販売担当を外しても、既存顧客のMRRは継続します。')) + '</p>' +
-      (simpleMode ? '' : '<div class="modal-group"><span>タスク選択</span><div class="modal-option-grid">' + TASKS.map(function (task) { return '<button type="button" class="modal-option' + (assignmentDraft.taskId === task.id ? ' active' : '') + '" data-modal-task="' + task.id + '">' + escapeHtml(task.label) + '</button>'; }).join('') + '</div></div>') +
-      (simpleMode ? '' : '<div class="modal-group"><span>対象製品選択</span><div class="modal-option-grid">' + PRODUCTS.map(function (definition) { return '<button type="button" class="modal-option' + (assignmentDraft.productId === definition.id ? ' active' : '') + '" data-modal-product="' + definition.id + '">' + escapeHtml(definition.name) + '</button>'; }).join('') + '</div></div>') +
-      '<div class="modal-group"><span>担当AI選択</span><div class="modal-option-grid worker-grid">' + getAssignableWorkersForTask(selectedTask.id).map(function (workerId) { const enabled = canWorkerAssignToTask(workerId, selectedTask.id, state.employees); return '<button type="button" class="modal-option worker-option' + (assignmentDraft.aiId === workerId ? ' active' : '') + '" data-modal-ai="' + workerId + '"' + (enabled ? '' : ' disabled') + '><strong>' + escapeHtml(getWorkerLabel(workerId)) + '</strong><span>' + escapeHtml(getWorkerTaskDescription(workerId, selectedTask.id)) + (enabled ? '' : ' / 未雇用') + '</span></button>'; }).join('') + '</div></div>' +
+      '<p class="modal-description">' + escapeHtml(getAssignmentModalDescription(upgradeMode, simpleMode, employeeMode)) + '</p>' +
+      noTaskMessage +
+      (simpleMode ? '' : '<div class="modal-group"><span>タスク選択</span><div class="modal-option-grid">' + taskOptions.map(function (task) { return '<button type="button" class="modal-option' + (assignmentDraft.taskId === task.id ? ' active' : '') + '" data-modal-task="' + task.id + '">' + escapeHtml(task.label) + '</button>'; }).join('') + '</div></div>') +
+      (simpleMode ? '' : '<div class="modal-group"><span>対象製品選択</span><div class="modal-option-grid">' + productButtons + '</div></div>') +
+      workerSelector +
       '<div class="modal-current">選択中: ' + escapeHtml(selectedTask.label) + ' / ' + escapeHtml(getProductDefinition(assignmentDraft.productId).name) + ' / ' + escapeHtml(assignmentDraft.aiId ? getWorkerLabel(assignmentDraft.aiId) : '未選択') + '</div>' +
-      (assignable ? '' : '<p class="modal-warning">未選択の項目があります。担当できるAIを選んでください。</p>') +
+      (assignable ? '' : '<p class="modal-warning">未選択の項目があります。この組み合わせでは割り振れない場合もあります。</p>') +
       '<div class="modal-actions"><button type="button" id="applyAssignmentButton" class="modal-apply-button"' + (assignable ? '' : ' disabled') + '>割り振る</button><button type="button" id="clearAssignmentButton" class="modal-subtle-button modal-clear-button">解除</button><button type="button" class="modal-subtle-button" data-modal-close="1">閉じる</button></div>' +
       '</div>';
     modal.querySelectorAll("[data-modal-close]").forEach(function (button) { button.addEventListener("click", closeAssignmentModal); });
     modal.querySelectorAll("button[data-modal-task]").forEach(function (button) { button.addEventListener("click", function () { selectAssignmentTask(button.getAttribute("data-modal-task")); }); });
-    modal.querySelectorAll("button[data-modal-product]").forEach(function (button) { button.addEventListener("click", function () { assignmentDraft.productId = button.getAttribute("data-modal-product"); renderAssignmentModal(); }); });
+    modal.querySelectorAll("button[data-modal-product]").forEach(function (button) { button.addEventListener("click", function () { assignmentDraft.productId = button.getAttribute("data-modal-product"); updateAssignmentDraftMode(); renderAssignmentModal(); }); });
     modal.querySelectorAll("button[data-modal-ai]").forEach(function (button) { button.addEventListener("click", function () { assignmentDraft.aiId = button.getAttribute("data-modal-ai"); renderAssignmentModal(); }); });
     const applyButton = document.getElementById("applyAssignmentButton");
     if (applyButton) applyButton.addEventListener("click", function () { assignAiToTask(assignmentDraft.taskId, assignmentDraft.aiId, assignmentDraft.productId, assignmentDraft.mode); closeAssignmentModal(); });
     const clearButton = document.getElementById("clearAssignmentButton");
     if (clearButton) clearButton.addEventListener("click", function () { clearAssignment(assignmentDraft.taskId); closeAssignmentModal(); });
+  }
+
+  function getAssignmentModalDescription(upgradeMode, simpleMode, employeeMode) {
+    if (upgradeMode) return "担当AIを選んでください。効果: 月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5。";
+    if (employeeMode) return "このAIに任せるタスクと対象製品を選びます。既存の担当は1つだけです。";
+    if (simpleMode) return "担当AIを選んでください。";
+    return "タスク・対象製品・担当AIを選んで割り振ります。販売担当を外しても、既存顧客のMRRは継続します。";
+  }
+
+  function isAssignmentDraftProductAvailable() {
+    if (assignmentModalMode !== "employee") return true;
+    return isWorkerProductTaskAvailable(assignmentDraft.aiId, assignmentDraft.taskId, assignmentDraft.productId);
   }
 
 
@@ -1390,7 +1444,7 @@
     } else {
       panel.classList.add("warn-fire");
       title.textContent = "予兆: 炎上度が上がっています";
-      text.textContent = "炎上度50以上でユーザー離脱と売上減少が起きる可能性があります。Care-04 / Fire-05で対策できます。";
+      text.textContent = "炎上度50以上で売上減少や解約リスク上昇が起きる可能性があります。Care-04 / Fire-05で対策できます。";
     }
   }
 
@@ -1408,31 +1462,49 @@
     const panel = document.getElementById("employeePanel");
     if (!panel) return;
     panel.innerHTML = '<div class="section-heading"><h2>AI社員</h2><button type="button" id="toggleEmployeesButton" class="change-assignment-button">' + (dashboardUi.employeesExpanded ? '社員を閉じる' : '社員を見る') + '</button></div>' +
-      '<p class="dashboard-summary">雇用済み: ' + escapeHtml(getHiredEmployeeSummary()) + ' / 収益 ' + formatSignedCurrencyRate(getRates().money) + ' / 秒</p>' +
+      '<p class="dashboard-summary">雇用済み: ' + escapeHtml(getHiredEmployeeSummary()) + '</p>' +
       '<div class="employee-list" id="employeeList">' + (dashboardUi.employeesExpanded ? getEmployeeCardsHtml() : '') + '</div>';
     const toggle = document.getElementById("toggleEmployeesButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("employeesExpanded"); });
     const list = document.getElementById("employeeList");
     if (list) list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
+    if (list) list.querySelectorAll("button[data-worker-assign]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-worker-assign")); }); });
   }
 
   function getEmployeeCardsHtml() {
-    return EMPLOYEES.map(function (employee) {
+    return getBossWorkerCardHtml() + EMPLOYEES.map(function (employee) {
       const level = state.employees[employee.id] || 0;
       const locked = !canUnlockEmployee(employee.id);
       const maxed = level >= MAX_LEVEL;
       const cost = getEmployeeCost(employee.id);
       const startupCredit = isStartupCreditAvailable(employee.id);
       const action = level === 0 ? "雇用" : "強化";
-      const effect = multiplyEffect(employee.effect, level);
       const recommended = startupCredit && (employee.id === "dev01" || employee.id === "sales02");
-      if (locked) return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div><span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span></article>';
+      const profileHtml = getEmployeePipelineProfileHtml(employee.id);
+      if (locked) return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div>' + profileHtml + '<span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span><div class="employee-action"><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button></div></article>';
       if (level === 0) {
-        const baseEffect = multiplyEffect(employee.effect, 1);
-        return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div><div class="effect-list compact-effects"><span>売上 ' + signedCurrency(baseEffect.money) + '</span><span>ユーザー ' + signedNumber(baseEffect.users) + '</span><span>バグ ' + signedNumber(baseEffect.bugs) + '</span><span>炎上度 ' + signedNumber(baseEffect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
+        return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div>' + profileHtml + '<div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
       }
-      return '<article class="employee-card hired"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div><p class="employee-desc">' + escapeHtml(employee.description) + '</p><div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="effect-list"><span>売上 ' + signedCurrency(effect.money) + '</span><span>ユーザー ' + signedNumber(effect.users) + '</span><span>バグ ' + signedNumber(effect.bugs) + '</span><span>炎上度 ' + signedNumber(effect.fire) + '</span></div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button></div></article>';
+      return '<article class="employee-card hired"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div>' + profileHtml + '<div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" data-worker-assign="' + employee.id + '">仕事を割り振る</button></div></article>';
     }).join("");
+  }
+
+  function getBossWorkerCardHtml() {
+    return '<article class="employee-card hired boss-worker-card"><div class="employee-top"><div class="employee-name"><strong>AI社長</strong><span>初期担当AI</span></div><div class="level-badge">常駐</div></div>' + getEmployeePipelineProfileHtml("boss") + '<div class="employee-action"><button type="button" class="worker-assign-button" data-worker-assign="boss">仕事を割り振る</button></div></article>';
+  }
+
+  function getEmployeePipelineProfileHtml(workerId) {
+    const profile = WORKER_TASK_PROFILES[workerId] || { specialty: "補助", description: "製品タスクを補助します。", levelHint: "Lvアップで担当効果UP" };
+    return '<div class="employee-task-profile"><span class="employee-specialty">得意タスク: ' + escapeHtml(profile.specialty) + '</span><p class="employee-desc">' + escapeHtml(profile.description) + '</p><span class="employee-level-hint">' + escapeHtml(profile.levelHint) + '</span><span class="employee-current-task">現在担当: ' + escapeHtml(getWorkerAssignmentSummary(workerId)) + '</span></div>';
+  }
+
+  function getWorkerAssignmentSummary(workerId) {
+    const assignments = TASKS.map(function (task) {
+      const assignment = getAssignment(task.id);
+      if (assignment.aiId !== workerId) return "";
+      return task.label + " → " + getProductDefinition(assignment.productId).name;
+    }).filter(Boolean);
+    return assignments.length ? assignments.join(" / ") : "なし";
   }
 
   function renderLatestLog() {
@@ -1474,7 +1546,7 @@
       "AI社長のブラック起業",
       "会社Lv: " + state.companyLevel,
       "売上: " + formatCurrency(state.money),
-      "ユーザー: " + formatNumber(state.users),
+      "総顧客: " + formatCustomers(getTotalProductCustomers()),
       "バグ: " + Math.round(state.bugs) + "/100",
       "炎上度: " + Math.round(state.fire) + "/100",
       "主要製品: " + primaryDefinition.name,
@@ -1535,27 +1607,17 @@
   }
 
   function getRates() {
-    const rates = EMPLOYEES.reduce(function (rates, employee) {
-      const level = state.employees[employee.id] || 0;
-      rates.baseMoney += employee.effect.money * level * BASE_CONTRACT_REVENUE_MULTIPLIER;
-      rates.users += employee.effect.users * level;
-      rates.bugs += employee.effect.bugs * level;
-      rates.fire += employee.effect.fire * level;
-      return rates;
-    }, { baseMoney: 0, productRevenue: 0, money: 0, users: 0, bugs: 0, fire: 0 });
-    const multiplier = getEarlyStageMultiplier();
-    const riskMultiplier = getEarlyRiskMultiplier();
-    rates.baseMoney *= multiplier;
-    rates.users *= multiplier;
-    if (rates.bugs > 0) rates.bugs *= riskMultiplier;
-    if (rates.fire > 0) rates.fire *= riskMultiplier;
-    rates.baseMoney /= EFFECTS_PER_SECONDS;
-    rates.users /= EFFECTS_PER_SECONDS;
-    rates.bugs /= EFFECTS_PER_SECONDS;
-    rates.fire /= EFFECTS_PER_SECONDS;
-    rates.productRevenue = getProductRevenuePerSecondTotal();
+    const rates = { baseMoney: getBaseContractRevenuePerSecond(), productRevenue: getProductRevenuePerSecondTotal(), money: 0, users: 0, bugs: 0, fire: 0 };
     rates.money = rates.baseMoney + rates.productRevenue;
     return rates;
+  }
+
+  function getBaseContractRevenuePerSecond() {
+    const hiredCount = EMPLOYEES.reduce(function (sum, employee) { return sum + ((state.employees[employee.id] || 0) > 0 ? 1 : 0); }, 0);
+    if (hiredCount === 0 && !hasActiveAssignment()) return 0;
+    const hiredLevelTotal = EMPLOYEES.reduce(function (sum, employee) { return sum + (state.employees[employee.id] || 0); }, 0);
+    const baseContractPerTenSeconds = state.companyLevel * 8 + hiredCount * 4 + hiredLevelTotal * 2;
+    return baseContractPerTenSeconds * getEarlyStageMultiplier() / EFFECTS_PER_SECONDS;
   }
 
   function getEarlyRiskMultiplier() {
@@ -1644,6 +1706,66 @@
     renderAssignmentModal();
   }
 
+  function openWorkerAssignmentModal(workerId) {
+    if (!isWorkerAvailable(workerId, state.employees)) return;
+    assignmentModalMode = "employee";
+    assignmentModalOpen = true;
+    assignmentDraft.aiId = workerId;
+    const tasks = getAssignableTasksForWorker(workerId);
+    assignmentDraft.taskId = tasks.length ? tasks[0].id : "development";
+    assignmentDraft.productId = getFirstAvailableProductForWorkerTask(workerId, assignmentDraft.taskId) || PRODUCTS[0].id;
+    updateAssignmentDraftMode();
+    renderAssignmentModal();
+  }
+
+  function getAssignableTasksForWorker(workerId) {
+    return TASKS.filter(function (task) { return task.workers.indexOf(workerId) !== -1; });
+  }
+
+  function getFirstAvailableProductForWorkerTask(workerId, taskId) {
+    const definition = PRODUCTS.find(function (item) { return isWorkerProductTaskAvailable(workerId, taskId, item.id); });
+    return definition ? definition.id : null;
+  }
+
+  function isWorkerProductTaskAvailable(workerId, taskId, productId) {
+    if (!canWorkerAssignToTask(workerId, taskId, state.employees)) return false;
+    const definition = getProductDefinition(productId);
+    const product = getProduct(definition.id);
+    if (taskId === "development") {
+      if (product.status === "idea" || product.status === "developing") return true;
+      return definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle";
+    }
+    if (taskId === "sales") return product.status === "ready" || product.status === "selling";
+    if (taskId === "qa" || taskId === "marketing") return product.status === "developing" || product.status === "ready" || product.status === "selling";
+    if (taskId === "support") return definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) > 0;
+    if (taskId === "crisis") return product.status === "selling" || (state.fire >= 50 && product.status !== "idea");
+    return false;
+  }
+
+  function getWorkerProductTaskDisabledReason(workerId, taskId, productId) {
+    const definition = getProductDefinition(productId);
+    const product = getProduct(definition.id);
+    if (!canWorkerAssignToTask(workerId, taskId, state.employees)) return "担当不可";
+    if (taskId === "development") return definition.type === "subscription" ? "開発中または完成後のみ" : "未着手/開発中のみ";
+    if (taskId === "sales") return "完成後に有効";
+    if (taskId === "support") return definition.type === "subscription" ? "販売中かつ顧客あり" : "サブスクのみ";
+    if (taskId === "crisis") return "販売中または炎上高で有効";
+    if (taskId === "qa" || taskId === "marketing") return "開発開始後に有効";
+    return product.status === "idea" ? "未着手" : "対象外";
+  }
+
+  function updateAssignmentDraftMode() {
+    assignmentDraft.mode = getWorkerAssignmentMode(assignmentDraft.aiId, assignmentDraft.taskId, assignmentDraft.productId);
+  }
+
+  function getWorkerAssignmentMode(workerId, taskId, productId) {
+    if (taskId !== "development") return "normal";
+    const definition = getProductDefinition(productId);
+    const product = getProduct(definition.id);
+    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling")) return "upgrade";
+    return "newProduct";
+  }
+
   function closeAssignmentModal() {
     assignmentModalOpen = false;
     assignmentModalMode = "detail";
@@ -1653,6 +1775,12 @@
 
   function selectAssignmentTask(taskId) {
     assignmentDraft.taskId = TASKS.some(function (task) { return task.id === taskId; }) ? taskId : TASKS[0].id;
+    if (assignmentModalMode === "employee") {
+      assignmentDraft.productId = getFirstAvailableProductForWorkerTask(assignmentDraft.aiId, assignmentDraft.taskId) || PRODUCTS[0].id;
+      updateAssignmentDraftMode();
+      renderAssignmentModal();
+      return;
+    }
     assignmentDraft.mode = "normal";
     const assignment = getAssignment(assignmentDraft.taskId);
     assignmentDraft.productId = assignment.productId;
@@ -1718,12 +1846,13 @@
       { id: "qa", label: "品質管理", description: "品質UP / 製品バグDOWN", taskId: "qa", mode: "normal", enabled: canOperate, disabledReason: "開発開始後に有効" },
       { id: "marketing", label: "広報", description: "認知度UP / 販売成功率UP / 炎上微増", taskId: "marketing", mode: "normal", enabled: canOperate, disabledReason: "開発開始後に有効" },
       { id: "support", label: "サポート", description: "サポート負荷DOWN / 満足度UP / 解約リスクDOWN", taskId: "support", mode: "normal", enabled: isSubscription && isSelling && hasCustomers, disabledReason: isSubscription ? "サブスク販売後に有効" : "サブスク製品のみ" },
+      { id: "crisis", label: "炎上対応", description: "炎上度DOWN / 軽い機会損失", taskId: "crisis", mode: "normal", enabled: isSelling || (state.fire >= 50 && canOperate), disabledReason: "販売中または炎上高で有効" },
       { id: "upgrade", label: "バージョンアップ", description: "月額価格UP / 品質UP / 製品バグ増", taskId: "development", mode: "upgrade", enabled: isSubscription && (isReady || isSelling) && product.upgradeStatus === "idle", disabledReason: isSubscription ? "完成後に有効" : "サブスク製品のみ" }
     ].filter(function (action) {
       if (action.id === "support" || action.id === "upgrade") return isSubscription;
       if (action.id === "newProduct") return isIdea || isDeveloping;
       if (action.id === "sales") return isReady || isSelling;
-      if (action.id === "qa" || action.id === "marketing") return !isIdea;
+      if (action.id === "qa" || action.id === "marketing" || action.id === "crisis") return !isIdea;
       return true;
     });
   }
@@ -1738,11 +1867,13 @@
 
   function getAssignmentModalTitle() {
     const definition = getProductDefinition(assignmentDraft.productId);
+    if (assignmentModalMode === "employee") return getWorkerLabel(assignmentDraft.aiId) + "に仕事を割り振る";
     if (assignmentDraft.mode === "upgrade") return definition.name + "をバージョンアップする";
     if (assignmentDraft.taskId === "development") return definition.name + "を開発する";
     if (assignmentDraft.taskId === "sales") return definition.name + "を販売する";
     if (assignmentDraft.taskId === "marketing") return definition.name + "を広報する";
     if (assignmentDraft.taskId === "support") return definition.name + "をサポートする";
+    if (assignmentDraft.taskId === "crisis") return definition.name + "の炎上対応をする";
     return definition.name + "の品質管理";
   }
 
@@ -1757,6 +1888,7 @@
       sales: { boss: "低速で顧客獲得", sales02: "顧客獲得が速いが炎上微増" },
       marketing: { boss: "ゆっくり認知度を上げる", buzz03: "認知度を大きく上げるが炎上微増" },
       support: { boss: "低速でサポート負荷を下げる", care04: "サポート負荷と炎上を大きく下げる" },
+      crisis: { boss: "低速で炎上対応", fire05: "炎上対応が速いが少し機会損失" },
       qa: { boss: "ゆっくり品質改善", security06: "品質改善とバグ削減が得意" }
     };
     return descriptions[taskId] && descriptions[taskId][workerId] ? descriptions[taskId][workerId] : "担当できます";
@@ -1862,6 +1994,10 @@
   function canWorkerAssignToTask(workerId, taskId, employees) {
     const task = TASKS.find(function (item) { return item.id === taskId; });
     if (!task || task.workers.indexOf(workerId) === -1) return false;
+    return isWorkerAvailable(workerId, employees);
+  }
+
+  function isWorkerAvailable(workerId, employees) {
     if (workerId === "boss") return true;
     return Boolean(employees && (employees[workerId] || 0) > 0);
   }
@@ -1904,6 +2040,14 @@
       return { supportLoad: -(0.3 + level * 0.08), satisfaction: 0.12 + level * 0.04, fire: -(0.08 + level * 0.03) };
     }
     return { supportLoad: -0.05, satisfaction: 0.03, fire: -0.01 };
+  }
+
+  function getCrisisEffect(workerId) {
+    if (workerId === "fire05") {
+      const level = state.employees.fire05 || 0;
+      return { fire: -(0.35 + level * 0.10), money: -2 };
+    }
+    return { fire: -0.05, money: 0 };
   }
 
   function getSalesEffect(workerId, product, definition) {
@@ -1983,7 +2127,10 @@
     const texts = {
       development: "AI社長: 何でもできるが低速 / Dev-01: 開発が速いがバグ増加",
       qa: "AI社長: ゆっくり品質改善 / Security-06: 品質改善とバグ削減が得意",
-      sales: "AI社長: 低速で顧客獲得 / Sales-02: 顧客獲得が速いが炎上微増"
+      sales: "AI社長: 低速で顧客獲得 / Sales-02: 顧客獲得が速いが炎上微増",
+      marketing: "AI社長: ゆっくり認知度UP / Buzz-03: 認知度UPが速いが炎上微増",
+      support: "AI社長: 低速でサポート負荷DOWN / Care-04: サポート負荷と炎上を大きく下げる",
+      crisis: "AI社長: 低速で炎上対応 / Fire-05: 炎上対応が速いが少し機会損失"
     };
     return texts[taskId] || "AI社長は汎用、専門AIは得意タスクで高効率です。";
   }
@@ -1991,8 +2138,15 @@
   function getTaskTargetHtml(taskId) {
     const product = getAssignmentProduct(taskId);
     const definition = getProductDefinition(product.id);
-    const effect = taskId === "sales" ? definition.name + "の新規顧客を確率で獲得" : taskId === "development" ? definition.name + "の開発進捗を進める" : definition.name + "の品質改善とバグ削減";
-    return '<span>対象: ' + escapeHtml(definition.name) + '</span><span>効果: ' + escapeHtml(effect) + '</span>';
+    const effects = {
+      development: definition.name + "の開発進捗またはバージョンアップを進める",
+      sales: definition.name + "の新規顧客を確率で獲得、または売り切り販売を狙う",
+      qa: definition.name + "の品質改善と製品バグ削減",
+      marketing: definition.name + "の認知度を上げて販売成功率を高める",
+      support: definition.name + "のサポート負荷と解約リスクを下げる",
+      crisis: definition.name + "まわりの炎上度を下げる"
+    };
+    return '<span>対象: ' + escapeHtml(definition.name) + '</span><span>効果: ' + escapeHtml(effects[taskId] || definition.name + "を支援") + '</span>';
   }
 
   function getProductSalesStateText(product, definition) {
@@ -2005,7 +2159,6 @@
   }
 
 
-  function multiplyEffect(effect, level) { return { money: effect.money * level * BASE_CONTRACT_REVENUE_MULTIPLIER, users: effect.users * level, bugs: effect.bugs * level, fire: effect.fire * level }; }
   function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
   function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.companyLevel = getCompanyLevel(state.totalMoney); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
@@ -2039,7 +2192,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-20").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-22").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
