@@ -465,3 +465,58 @@ button.share {
 .company-expansion-panel[hidden] { display: none; }
 .company-expansion-panel { border-color: rgba(72, 214, 109, 0.42); background: linear-gradient(135deg, #ffffff, #f2ffe9); }
 .company-expansion-panel button { min-height: 40px; }
+
+.decision-panel {
+  border-color: rgba(25, 189, 232, 0.28);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(239, 252, 255, 0.96));
+}
+.decision-body {
+  display: grid;
+  gap: 8px;
+}
+.decision-body p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.55;
+}
+.decision-impact-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #475569;
+  font-size: 0.9rem;
+}
+.decision-impact-list li {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.9);
+  padding: 8px 10px;
+}
+.decision-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+.decision-approve-button,
+.decision-reject-button {
+  min-height: 44px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.decision-approve-button {
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  background: #bbf7d0;
+  color: #14532d;
+}
+.decision-reject-button {
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  background: #fff;
+  color: #1d4ed8;
+}
+@media (max-width: 420px) {
+  .decision-actions { grid-template-columns: 1fr; }
+}

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.30";
+  const APP_VERSION = "2026.05.24.31";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
   const FIRST_TICK_MS = 1000;
@@ -60,6 +60,51 @@
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
   const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪", system: "更新" };
+  const DECISION_EVENT_COOLDOWN_SECONDS = 45;
+  const DECISION_EVENT_RETRY_SECONDS = 12;
+  const DECISION_EVENT_ROLL_CHANCE = 0.08;
+  const DECISION_EVENTS = [
+    {
+      id: "sales_big_contract",
+      label: "大型契約の相談",
+      workerId: "sales02",
+      message: "Sales-02「大型契約の話があります。ただし納期は昨日です。」",
+      approveImpact: "承認: 顧客または即時売上UP / 製品バグ+5 / 炎上+5",
+      rejectImpact: "却下: 炎上-1。無理な約束はしません。"
+    },
+    {
+      id: "buzz_bold_ad",
+      label: "攻めた広告案",
+      workerId: "buzz03",
+      message: "Buzz-03「かなり攻めた広告案があります。燃えるかもしれませんが、伸びます。」",
+      approveImpact: "承認: 認知度+20 / 炎上+12",
+      rejectImpact: "却下: 認知度+3。無難な表現で出します。"
+    },
+    {
+      id: "security_quality_pause",
+      label: "品質停止提案",
+      workerId: "security06",
+      message: "Security-06「一時的に販売を止めて品質改善しますか？」",
+      approveImpact: "承認: 製品バグ-20 / 品質+10 / 販売担当を解除",
+      rejectImpact: "却下: 製品バグ+5。リスクを抱えて続行します。"
+    },
+    {
+      id: "care_customer_priority",
+      label: "顧客対応優先",
+      workerId: "care04",
+      message: "Care-04「今は顧客対応を優先した方がよさそうです。」",
+      approveImpact: "承認: 満足度+15 / サポート負荷-15 / 対応費用発生",
+      rejectImpact: "却下: 解約リスク+5"
+    },
+    {
+      id: "fire05_crisis_statement",
+      label: "謝罪文の判断",
+      workerId: "fire05",
+      message: "Fire-05「今ならまだ謝罪文で済みます。」",
+      approveImpact: "承認: 炎上-25 / 対応費用発生",
+      rejectImpact: "却下: 炎上+8"
+    }
+  ];
 
   const MISSION_STAGES = [
     {
@@ -224,6 +269,8 @@
       firstHireHelpShown: false,
       firstFastTickDone: false,
       claimedMissions: [],
+      pendingDecisionEvent: null,
+      decisionEventCooldown: DECISION_EVENT_RETRY_SECONDS,
       lastSavedAt: Date.now()
     };
     INITIAL_LOGS.slice().reverse().forEach(function (text, index) {
@@ -300,6 +347,8 @@
       firstHireHelpShown: Boolean(saved.firstHireHelpShown),
       firstFastTickDone: Boolean(saved.firstFastTickDone),
       claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [],
+      pendingDecisionEvent: normalizeDecisionEvent(saved.pendingDecisionEvent),
+      decisionEventCooldown: clamp(Math.floor(safeNumber(saved.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
@@ -516,6 +565,7 @@
   function tick() {
     const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
     applyBaseContractWork();
+    applyDecisionEventGeneration();
     state.firstFastTickDone = true;
     penaltyElapsed += elapsedForPenalty;
     if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
@@ -1008,6 +1058,7 @@
     renderOnboarding();
     renderRiskPanel();
     renderNextRecommendationPanel();
+    renderDecisionPanel();
     renderCompanyExpansionPanel();
     renderPrimaryProductPanel();
     renderProductPanel();
@@ -1087,6 +1138,177 @@
     panel.innerHTML = '<div class="section-heading"><h2>次のおすすめ</h2><span>次の一手</span></div><p class="next-recommendation-text">' + escapeHtml(getNextRecommendationText()) + '</p>';
   }
 
+  function renderDecisionPanel() {
+    const panel = document.getElementById("decisionPanel");
+    if (!panel) return;
+    const event = normalizeDecisionEvent(state.pendingDecisionEvent);
+    state.pendingDecisionEvent = event;
+    if (!event) {
+      panel.hidden = true;
+      panel.innerHTML = "";
+      return;
+    }
+    const definition = getDecisionEventDefinition(event.id);
+    const productDefinition = getProductDefinition(event.productId);
+    panel.hidden = false;
+    panel.innerHTML = '<div class="section-heading"><h2>社長判断</h2><span>' + escapeHtml(productDefinition.name) + '</span></div>' +
+      '<div class="decision-body"><strong>' + escapeHtml(definition.label) + '</strong><p>' + escapeHtml(definition.message) + '</p>' +
+      '<ul class="decision-impact-list"><li>' + escapeHtml(definition.approveImpact) + '</li><li>' + escapeHtml(definition.rejectImpact) + '</li></ul></div>' +
+      '<div class="decision-actions"><button type="button" id="approveDecisionButton" class="decision-approve-button">承認する</button><button type="button" id="rejectDecisionButton" class="decision-reject-button">却下する</button></div>';
+    const approveButton = document.getElementById("approveDecisionButton");
+    const rejectButton = document.getElementById("rejectDecisionButton");
+    if (approveButton) approveButton.addEventListener("click", function () { applyDecisionEventChoice("approve"); });
+    if (rejectButton) rejectButton.addEventListener("click", function () { applyDecisionEventChoice("reject"); });
+  }
+
+  function getDecisionEventDefinition(eventId) {
+    return DECISION_EVENTS.find(function (event) { return event.id === eventId; }) || null;
+  }
+
+  function normalizeDecisionEvent(event) {
+    if (!event || typeof event !== "object") return null;
+    const definition = getDecisionEventDefinition(event.id);
+    if (!definition) return null;
+    const productId = getProductDefinition(event.productId).id;
+    return { id: definition.id, productId: productId, createdAt: safeNumber(event.createdAt, Date.now()) };
+  }
+
+  function applyDecisionEventGeneration() {
+    state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent);
+    if (state.pendingDecisionEvent) return;
+    state.decisionEventCooldown = Math.max(0, Math.floor(safeNumber(state.decisionEventCooldown, 0)) - 1);
+    if (state.decisionEventCooldown > 0) return;
+    const candidates = getDecisionEventCandidates();
+    if (!candidates.length) {
+      state.decisionEventCooldown = DECISION_EVENT_RETRY_SECONDS;
+      return;
+    }
+    if (Math.random() >= DECISION_EVENT_ROLL_CHANCE) return;
+    const candidate = candidates[0];
+    state.pendingDecisionEvent = { id: candidate.id, productId: candidate.productId, createdAt: Date.now() };
+    state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
+  }
+
+  function getDecisionEventCandidates() {
+    const candidates = [];
+    if (state.fire >= 50 && isWorkerAvailable("fire05", state.employees)) {
+      const productId = getDecisionProductForFire();
+      if (productId) candidates.push({ id: "fire05_crisis_statement", productId: productId, priority: 100 });
+    }
+    PRODUCTS.forEach(function (definition) {
+      const product = getProduct(definition.id);
+      if (isWorkerAvailable("care04", state.employees) && definition.type === "subscription" && product.status === "selling" && (product.churnRisk >= 35 || product.supportLoad >= 45)) candidates.push({ id: "care_customer_priority", productId: definition.id, priority: 90 });
+      if (isWorkerAvailable("security06", state.employees) && product.status !== "idea" && (product.bugs >= 35 || getAssignedWorkersForProduct("qa", definition.id).indexOf("security06") !== -1)) candidates.push({ id: "security_quality_pause", productId: definition.id, priority: 80 });
+      if (getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1 && ["ready", "selling"].indexOf(product.status) !== -1) candidates.push({ id: "sales_big_contract", productId: definition.id, priority: 70 });
+      if (getAssignedWorkersForProduct("marketing", definition.id).indexOf("buzz03") !== -1 && product.status !== "idea") candidates.push({ id: "buzz_bold_ad", productId: definition.id, priority: 60 });
+    });
+    return candidates.sort(function (a, b) { return b.priority - a.priority; });
+  }
+
+  function getDecisionProductForFire() {
+    const active = PRODUCTS.find(function (definition) { return getProduct(definition.id).status === "selling"; });
+    if (active) return active.id;
+    const primary = getPrimaryProductDefinition();
+    return primary ? primary.id : PRODUCTS[0].id;
+  }
+
+  function applyDecisionEventChoice(choice) {
+    const event = normalizeDecisionEvent(state.pendingDecisionEvent);
+    if (!event || (choice !== "approve" && choice !== "reject")) return false;
+    const definition = getDecisionEventDefinition(event.id);
+    const productDefinition = getProductDefinition(event.productId);
+    const product = getProduct(productDefinition.id);
+    if (choice === "approve") applyDecisionApproval(definition.id, product, productDefinition);
+    else applyDecisionRejection(definition.id, product, productDefinition);
+    recalculateProductMrr(product, productDefinition);
+    applyProductMilestones(product, productDefinition);
+    state.pendingDecisionEvent = null;
+    state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
+    saveGame();
+    render();
+    scheduleNextTick();
+    return true;
+  }
+
+  function applyDecisionApproval(eventId, product, definition) {
+    if (eventId === "sales_big_contract") {
+      if (definition.type === "oneShot") {
+        const units = 3;
+        const revenue = safeNumber(definition.price, 0) * units;
+        product.status = product.status === "ready" ? "selling" : product.status;
+        product.unitsSold = getProductUnitsSold(product) + units;
+        product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
+        state.money = Math.max(0, state.money + revenue);
+        state.totalMoney = Math.max(0, state.totalMoney + revenue);
+        addLog("success", definition.name + "の大型導入が通りました。即時売上 " + formatCurrency(revenue) + " を獲得しました。", "sales02");
+      } else {
+        product.status = "selling";
+        product.customers = getProductCustomers(product) + 2;
+        addLog("success", definition.name + "の大型契約を承認しました。顧客が2社増えました。", "sales02");
+      }
+      product.bugs = clamp(product.bugs + 5, 0, 100);
+      state.fire = clamp(state.fire + 5, 0, 100);
+      return;
+    }
+    if (eventId === "buzz_bold_ad") {
+      product.awareness = clamp(product.awareness + 20, 0, 100);
+      state.fire = clamp(state.fire + 12, 0, 100);
+      addLog("fire", definition.name + "の攻めた広告を承認しました。認知度と通知欄が同時に伸びています。", "buzz03");
+      return;
+    }
+    if (eventId === "security_quality_pause") {
+      product.bugs = clamp(product.bugs - 20, 0, 100);
+      product.quality = clamp(product.quality + 10, 0, 100);
+      clearProductAssignmentWithoutRender("sales", definition.id);
+      addLog("support", definition.name + "の品質停止提案を承認しました。販売担当を一時解除し、品質を立て直しています。", "security06");
+      return;
+    }
+    if (eventId === "care_customer_priority") {
+      product.satisfaction = clamp(product.satisfaction + 15, 0, 100);
+      product.supportLoad = clamp(product.supportLoad - 15, 0, 100);
+      state.money = Math.max(0, state.money - 500);
+      addLog("support", definition.name + "の顧客対応を優先しました。短期費用と引き換えに運用が落ち着きました。", "care04");
+      return;
+    }
+    if (eventId === "fire05_crisis_statement") {
+      state.fire = clamp(state.fire - 25, 0, 100);
+      state.money = Math.max(0, state.money - 500);
+      addLog("crisis", "Fire-05の謝罪文を承認しました。炎上度が大きく下がりました。", "fire05");
+    }
+  }
+
+  function applyDecisionRejection(eventId, product, definition) {
+    if (eventId === "sales_big_contract") {
+      state.fire = clamp(state.fire - 1, 0, 100);
+      addLog("normal", definition.name + "の無茶な大型契約を見送りました。Sales-02は少しだけ静かです。", "sales02");
+      return;
+    }
+    if (eventId === "buzz_bold_ad") {
+      product.awareness = clamp(product.awareness + 3, 0, 100);
+      addLog("normal", definition.name + "の攻めた広告案を抑えました。無難な告知で少しだけ認知度が上がりました。", "buzz03");
+      return;
+    }
+    if (eventId === "security_quality_pause") {
+      product.bugs = clamp(product.bugs + 5, 0, 100);
+      addLog("bug", definition.name + "の品質停止提案を却下しました。未分類機能が少し増えました。", "security06");
+      return;
+    }
+    if (eventId === "care_customer_priority") {
+      product.churnRisk = clamp(product.churnRisk + 5, 0, 100);
+      addLog("support", definition.name + "の顧客対応優先を見送りました。解約リスクが少し上がりました。", "care04");
+      return;
+    }
+    if (eventId === "fire05_crisis_statement") {
+      state.fire = clamp(state.fire + 8, 0, 100);
+      addLog("fire", "Fire-05の謝罪文を保留しました。通知欄の熱量が上がっています。", "fire05");
+    }
+  }
+
+  function clearProductAssignmentWithoutRender(taskId, productId) {
+    const assignment = getProductAssignment(taskId, productId);
+    setProductAssignmentEntry(taskId, productId, { aiIds: [], mode: assignment.mode });
+  }
+
   function renderCompanyExpansionPanel() {
     const panel = document.getElementById("companyExpansionPanel");
     if (!panel) return;
@@ -1137,13 +1359,36 @@
   }
 
   function getIdleWorkerRecommendationText() {
-    if (isWorkerIdle("dev01") && PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return (product.status === "idea" || product.status === "developing" || product.upgradeStatus === "upgrading") && !getAssignedWorkersForProduct("development", definition.id).length; })) return "Dev-01が空いています。未完成製品やvNext開発に割り振りましょう。";
-    if (isWorkerIdle("sales02") && PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return ["ready", "selling"].indexOf(product.status) !== -1 && !getAssignedWorkersForProduct("sales", definition.id).length; })) return "Sales-02が空いています。販売担当のいない製品に割り振りましょう。";
-    if (isWorkerIdle("buzz03") && PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 55 && !getAssignedWorkersForProduct("marketing", definition.id).length; })) return "Buzz-03が空いています。認知度の低い製品を広報しましょう。";
-    if (isWorkerIdle("care04") && PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.status === "selling" && (product.supportLoad >= 25 || product.churnRisk >= 25) && !getAssignedWorkersForProduct("support", definition.id).length; })) return "Care-04が空いています。解約リスクのある製品をサポートしましょう。";
-    if (isWorkerIdle("security06") && PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.bugs >= 20 || product.quality < 75) && !getAssignedWorkersForProduct("qa", definition.id).length; })) return "Security-06が空いています。バグの多い製品を品質管理しましょう。";
+    if (isWorkerIdle("dev01")) {
+      const target = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return (product.status === "idea" || product.status === "developing" || product.upgradeStatus === "upgrading") && !getAssignedWorkersForProduct("development", definition.id).length; });
+      if (target) {
+        const product = getProduct(target.id);
+        if (product.upgradeStatus === "upgrading") return "Dev-01が空いています。" + target.name + "のv" + (getProductVersion(product) + 1) + "開発に割り振りましょう。";
+        return "Dev-01が空いています。" + target.name + "の開発に割り振りましょう。";
+      }
+    }
+    if (isWorkerIdle("sales02")) {
+      const target = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return ["ready", "selling"].indexOf(product.status) !== -1 && !getAssignedWorkersForProduct("sales", definition.id).length; });
+      if (target) return "Sales-02が空いています。" + target.name + "の販売に割り振りましょう。";
+    }
+    if (isWorkerIdle("buzz03")) {
+      const target = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 55 && !getAssignedWorkersForProduct("marketing", definition.id).length; });
+      if (target) return "Buzz-03が空いています。" + target.name + "を広報して認知度を上げましょう。";
+    }
+    if (isWorkerIdle("care04")) {
+      const target = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.status === "selling" && (product.supportLoad >= 25 || product.churnRisk >= 25) && !getAssignedWorkersForProduct("support", definition.id).length; });
+      if (target) return "Care-04が空いています。" + target.name + "をサポートして解約リスクを抑えましょう。";
+    }
+    if (isWorkerIdle("security06")) {
+      const target = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.bugs >= 20 || product.quality < 75) && !getAssignedWorkersForProduct("qa", definition.id).length; });
+      if (target) return "Security-06が空いています。" + target.name + "を品質管理してバグを下げましょう。";
+    }
     if (isWorkerIdle("fire05") && state.fire >= 40) return "Fire-05が空いています。炎上度が高い時は炎上対応に回しましょう。";
-    if (isWorkerIdle("boss")) return "AI社長が空いています。販売・広報・サポートの補助に回せます。";
+    if (isWorkerIdle("boss")) {
+      const assistTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (getAssignedWorkersForProduct("sales", definition.id).length || getAssignedWorkersForProduct("marketing", definition.id).length || getAssignedWorkersForProduct("support", definition.id).length) && getProductAssignment("sales", definition.id).aiIds.indexOf("boss") === -1 && getProductAssignment("marketing", definition.id).aiIds.indexOf("boss") === -1 && getProductAssignment("support", definition.id).aiIds.indexOf("boss") === -1; });
+      if (assistTarget) return "AI社長が空いています。" + assistTarget.name + "の販売・広報・サポートを補助できます。";
+      return "AI社長が空いています。販売・広報・サポートの補助に回せます。";
+    }
     return "";
   }
 
@@ -2458,7 +2703,7 @@
 
 
   function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
-  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
+  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent); state.decisionEventCooldown = clamp(Math.floor(safeNumber(state.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
   function formatCurrencyPrecise(value) { const number = Math.max(0, safeNumber(value, 0)); return "¥" + (number > 0 && number < 10 ? number.toFixed(1) : formatNumber(number)); }
@@ -2490,7 +2735,7 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-30").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-31").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
