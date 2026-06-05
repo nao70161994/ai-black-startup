@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.35";
+  const APP_VERSION = "2026.05.24.36";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
@@ -14,6 +14,7 @@
   const MAX_LEVEL = 10;
   const LEVEL_THRESHOLDS = [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000];
   const EARLY_STAGE_MULTIPLIER = 2;
+  // === EMPLOYEES ===
   const EMPLOYEES = [
     { id: "dev01", code: "Dev-01", nickname: "デブワン", role: "開発AI", unlockLevel: 1, baseCost: 500, description: "開発進捗を大きく進めます。副作用として製品バグが増えやすいです。", personality: "技術至上主義。リファクタリング好き。バグを「未分類機能」と呼ぶ。", catchphrase: "軽微な修正です。" },
     { id: "sales02", code: "Sales-02", nickname: "セルツー", role: "販売AI", unlockLevel: 1, baseCost: 700, description: "新規顧客獲得や売り切り販売が得意です。副作用として炎上が少し増えます。", personality: "超ポジティブ。即答する。未実装機能も売る。", catchphrase: "できます。" },
@@ -23,12 +24,14 @@
     { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。" }
   ];
 
+  // === PRODUCTS ===
   const PRODUCTS = [
     { id: "dailyReportAi", name: "AI日報メーカー", type: "subscription", monthlyPrice: 500, developmentRequired: 100, demand: 0.8, risk: 0.6, initialQuality: 60 },
     { id: "meetingMinutesAi", name: "自動議事録AI", type: "subscription", monthlyPrice: 1200, developmentRequired: 180, demand: 1.0, risk: 1.0, initialQuality: 55 },
     { id: "slideKitAi", name: "AIスライド生成キット", type: "oneShot", price: 9800, developmentRequired: 160, demand: 1.2, risk: 1.0, initialQuality: 55 }
   ];
 
+  // === TASKS ===
   const TASKS = [
     { id: "development", label: "開発", workers: ["boss", "dev01"] },
     { id: "qa", label: "品質管理", workers: ["boss", "security06"] },
@@ -64,6 +67,7 @@
   const DECISION_EVENT_COOLDOWN_SECONDS = 45;
   const DECISION_EVENT_RETRY_SECONDS = 12;
   const DECISION_EVENT_ROLL_CHANCE = 0.08;
+  // === DECISION_EVENTS ===
   const DECISION_EVENTS = [
     {
       id: "sales_big_contract",
@@ -173,9 +177,52 @@
       approveImpact: "承認: 顧客または販売数UP / 炎上+8 / 製品バグ+5",
       rejectImpact: "却下: 炎上-1。怪しい案件を見送りました。",
       riskLevel: "warning"
+    },
+    {
+      id: "free_trial_offer",
+      label: "無料トライアル提案",
+      workerId: "sales02",
+      message: "Sales-02「無料トライアルを出せば導入社が増えます。サポートは少し増えます。」",
+      approveImpact: "承認: 顧客+1 / 認知度+10 / サポート負荷+5",
+      rejectImpact: "却下: 変化なし。通常販売を続けます。"
+    },
+    {
+      id: "vip_customer_support",
+      label: "VIP顧客対応",
+      workerId: "care04",
+      message: "Care-04「大事な導入先を個別対応しましょう。短期費用はかかります。」",
+      approveImpact: "承認: 満足度+10 / 解約リスク-5 / 費用-¥700",
+      rejectImpact: "却下: 満足度-3"
+    },
+    {
+      id: "sns_fire_response",
+      label: "SNS火消し案",
+      workerId: "fire05",
+      message: "Fire-05「SNSの熱量を今なら抑えられます。早めに火消ししますか？」",
+      approveImpact: "承認: 炎上-15 / 費用-¥400",
+      rejectImpact: "却下: 炎上+6",
+      riskLevel: "warning"
+    },
+    {
+      id: "quality_audit",
+      label: "品質監査",
+      workerId: "security06",
+      message: "Security-06「軽い品質監査を入れますか？短期費用で事故を減らせます。」",
+      approveImpact: "承認: 製品バグ-12 / 品質+5 / 費用-¥500",
+      rejectImpact: "却下: 製品バグ+3"
+    },
+    {
+      id: "outsourcing_offer",
+      label: "外注提案",
+      workerId: "boss",
+      message: "AI社長「外注で進捗を買えます。品質保証はこれからです。」",
+      approveImpact: "承認: 開発進捗UP / 製品バグ+6 / 費用-¥1.2K",
+      rejectImpact: "却下: 変化なし。内製を続けます。",
+      riskLevel: "warning"
     }
   ];
 
+  // === MISSIONS ===
   const MISSION_STAGES = [
     {
       id: "startup",
@@ -239,17 +286,30 @@
     { id: "total_mrr_10k", productId: "dailyReportAi", text: "総MRR ¥10K/月を達成する", done: function () { return getTotalProductMrr() >= 10000; } }
   ];
 
+  // === ACHIEVEMENTS ===
   const ACHIEVEMENTS = [
-    { id: "first_customer", title: "初顧客獲得", description: "いずれかのサブスク製品で顧客を1社獲得", done: function () { return getTotalProductCustomers() >= 1; } },
-    { id: "total_mrr_10k", title: "MRR ¥10K/月", description: "総MRRを¥10K/月まで伸ばす", done: function () { return getTotalProductMrr() >= 10000; } },
-    { id: "slide_10_sales", title: "売り切り10本", description: "AIスライド生成キットを10本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 10; } },
-    { id: "first_v2", title: "初v2到達", description: "サブスク製品を初めてv2へアップデート", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 2; }); } },
-    { id: "first_churn", title: "初解約", description: "サブスク顧客が初めて解約", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductFlags(definition.id).firstChurnLogged; }); } },
-    { id: "first_fire_50", title: "炎上50突破", description: "炎上度が50を超える", done: function () { return state.fire >= 50; } },
-    { id: "all_ai_hired", title: "全AI雇用", description: "専門AIを全員雇用", done: function () { return EMPLOYEES.every(function (employee) { return (state.employees[employee.id] || 0) > 0; }); } },
-    { id: "first_decision_approved", title: "初承認", description: "社長判断を初めて承認", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) >= 1; } },
-    { id: "first_decision_rejected", title: "初却下", description: "社長判断を初めて却下", done: function () { return safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 1; } },
-    { id: "two_ai_assignment", title: "2AI同時担当", description: "1つの仕事にAIを2体割り振る", done: function () { return TASKS.some(function (task) { return PRODUCTS.some(function (definition) { return getAssignedAiIds(task.id, definition.id).length >= 2; }); }); } }
+    { id: "first_customer", category: "顧客", title: "初顧客獲得", description: "いずれかのサブスク製品で顧客を1社獲得", done: function () { return getTotalProductCustomers() >= 1; } },
+    { id: "customers_50", category: "顧客", title: "総顧客50社", description: "サブスク総顧客を50社まで伸ばす", done: function () { return getTotalProductCustomers() >= 50; } },
+    { id: "customers_100", category: "顧客", title: "総顧客100社", description: "サブスク総顧客を100社まで伸ばす", done: function () { return getTotalProductCustomers() >= 100; } },
+    { id: "total_mrr_10k", category: "経営", title: "MRR ¥10K/月", description: "総MRRを¥10K/月まで伸ばす", done: function () { return getTotalProductMrr() >= 10000; } },
+    { id: "total_mrr_50k", category: "経営", title: "MRR ¥50K/月", description: "総MRRを¥50K/月まで伸ばす", done: function () { return getTotalProductMrr() >= 50000; } },
+    { id: "total_mrr_100k", category: "経営", title: "MRR ¥100K/月", description: "総MRRを¥100K/月まで伸ばす", done: function () { return getTotalProductMrr() >= 100000; } },
+    { id: "slide_10_sales", category: "製品", title: "売り切り10本", description: "AIスライド生成キットを10本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 10; } },
+    { id: "all_products_selling", category: "製品", title: "全製品販売開始", description: "3製品すべてを販売中にする", done: function () { return PRODUCTS.every(function (definition) { return getProduct(definition.id).status === "selling"; }); } },
+    { id: "first_v2", category: "製品", title: "初v2到達", description: "サブスク製品を初めてv2へアップデート", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 2; }); } },
+    { id: "version_5", category: "製品", title: "v5到達", description: "いずれかのサブスク製品をv5へ育てる", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 5; }); } },
+    { id: "version_10", category: "製品", title: "v10到達", description: "いずれかのサブスク製品をv10へ育てる", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 10; }); } },
+    { id: "first_churn", category: "トラブル", title: "初解約", description: "サブスク顧客が初めて解約", done: function () { return state.churnCount >= 1 || PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductFlags(definition.id).firstChurnLogged; }); } },
+    { id: "churn_10", category: "トラブル", title: "解約10件", description: "累計10件の解約を経験する", done: function () { return state.churnCount >= 10; } },
+    { id: "first_fire_50", category: "トラブル", title: "炎上50突破", description: "炎上度が50を超える", done: function () { return state.fire >= 50; } },
+    { id: "fire_100", category: "トラブル", title: "炎上100", description: "炎上度が100に到達", done: function () { return state.fire >= 100; } },
+    { id: "all_ai_hired", category: "AI", title: "全AI雇用", description: "専門AIを全員雇用", done: function () { return EMPLOYEES.every(function (employee) { return (state.employees[employee.id] || 0) > 0; }); } },
+    { id: "first_decision_approved", category: "社長判断", title: "初承認", description: "社長判断を初めて承認", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) >= 1; } },
+    { id: "first_decision_rejected", category: "社長判断", title: "初却下", description: "社長判断を初めて却下", done: function () { return safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 1; } },
+    { id: "decisions_10", category: "社長判断", title: "社長判断10回", description: "承認/却下を合計10回選ぶ", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) + safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 10; } },
+    { id: "approvals_10", category: "社長判断", title: "承認10回", description: "社長判断を10回承認", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) >= 10; } },
+    { id: "rejections_10", category: "社長判断", title: "却下10回", description: "社長判断を10回却下", done: function () { return safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 10; } },
+    { id: "two_ai_assignment", category: "AI", title: "2AI同時担当", description: "1つの仕事にAIを2体割り振る", done: function () { return TASKS.some(function (task) { return PRODUCTS.some(function (definition) { return getAssignedAiIds(task.id, definition.id).length >= 2; }); }); } }
   ];
 
   const PRODUCT_LOG_TEXTS = {
@@ -354,6 +414,7 @@
       claimedMissions: [],
       achievements: createInitialAchievements(),
       decisionStats: { approved: 0, rejected: 0 },
+      churnCount: 0,
       pendingDecisionEvent: null,
       decisionEventCooldown: DECISION_EVENT_RETRY_SECONDS,
       lastSavedAt: Date.now()
@@ -463,6 +524,7 @@
       claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [],
       achievements: normalizeAchievements(saved.achievements),
       decisionStats: normalizeDecisionStats(saved.decisionStats),
+      churnCount: Math.max(0, Math.floor(safeNumber(saved.churnCount, 0))),
       pendingDecisionEvent: normalizeDecisionEvent(saved.pendingDecisionEvent),
       decisionEventCooldown: clamp(Math.floor(safeNumber(saved.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
@@ -680,6 +742,7 @@
     window.setTimeout(function () { addLog("success", "創業加速プロトコルを起動しました。会社Lv1の間、売上計算が少し速くなります。", "company"); renderLatestLog(); renderLogs(); }, 5200);
   }
 
+  // === TICK ===
   function tick() {
     const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
     applyBaseContractWork();
@@ -866,9 +929,9 @@
       flags.crisisStartedLogged = true;
       addLog("crisis", "Fire-05が炎上対応を開始しました。謝罪文の下書きが自動生成されました。", product.id);
     }
-    if (previousFire >= 50 && state.fire <= 20 && !flags.crisisContainedLogged) {
+    if (previousFire >= 50 && state.fire < 50 && !flags.crisisContainedLogged) {
       flags.crisisContainedLogged = true;
-      addLog("success", definition.name + "まわりの炎上度が落ち着きました。通知欄が少し静かです。", product.id);
+      addLog("success", "Fire-05の対応で" + definition.name + "まわりの炎上が鎮火し始めました。", product.id);
     }
   }
 
@@ -887,7 +950,9 @@
   }
 
   function updateChurnRisk(product, definition) {
-    const risk = Math.max(0, 70 - product.satisfaction) * 0.55 + product.supportLoad * 0.28 + product.bugs * 0.22 + state.fire * 0.15;
+    const crisisWorkers = getAssignedWorkersForProduct("crisis", product.id);
+    const crisisMitigation = crisisWorkers.indexOf("fire05") !== -1 ? 6 : (crisisWorkers.length ? 2 : 0);
+    const risk = Math.max(0, 70 - product.satisfaction) * 0.55 + product.supportLoad * 0.28 + product.bugs * 0.22 + state.fire * 0.15 - crisisMitigation;
     product.churnRisk = clamp(risk, 0, 100);
   }
 
@@ -896,6 +961,7 @@
     const churnChance = clamp(product.churnRisk / 1000, 0, 0.05);
     if (Math.random() >= churnChance) return;
     product.customers = Math.max(0, getProductCustomers(product) - 1);
+    state.churnCount = Math.max(0, Math.floor(safeNumber(state.churnCount, 0))) + 1;
     recalculateProductMrr(product, definition);
     const flags = getProductFlags(product.id);
     if (!flags.firstChurnLogged) {
@@ -1172,6 +1238,7 @@
     randomLogTimer = window.setTimeout(addRandomReportLog, 10000 + Math.floor(Math.random() * 20000));
   }
 
+  // === RENDER ===
   function render() {
     sanitizeRuntimeState();
     renderStatus();
@@ -1258,7 +1325,89 @@
   function renderNextRecommendationPanel() {
     const panel = document.getElementById("nextRecommendationPanel");
     if (!panel) return;
-    panel.innerHTML = '<div class="section-heading"><h2>次のおすすめ</h2><span>次の一手</span></div><p class="next-recommendation-text">' + escapeHtml(getNextRecommendationText()) + '</p>';
+    const recommendation = getNextRecommendation();
+    const actionHtml = recommendation.ctaLabel ? '<div class="next-recommendation-action-row"><button type="button" class="next-recommendation-button" data-recommendation-action="' + escapeHtml(recommendation.action) + '" data-recommendation-product="' + escapeHtml(recommendation.productId || '') + '" data-recommendation-task="' + escapeHtml(recommendation.taskId || '') + '" data-recommendation-mode="' + escapeHtml(recommendation.mode || 'normal') + '" data-recommendation-worker="' + escapeHtml(recommendation.workerId || '') + '" data-recommendation-target="' + escapeHtml(recommendation.targetId || '') + '">' + escapeHtml(recommendation.ctaLabel) + '</button></div>' : '';
+    const pathHtml = recommendation.path ? '<p class="next-recommendation-path">押す場所: ' + escapeHtml(recommendation.path) + '</p>' : '';
+    panel.innerHTML = '<div class="section-heading"><h2>次のおすすめ</h2><span>次の一手</span></div><p class="next-recommendation-text">' + escapeHtml(recommendation.text) + '</p>' + pathHtml + actionHtml;
+    const buttons = panel.querySelectorAll ? panel.querySelectorAll("button[data-recommendation-action]") : [];
+    const button = buttons[0];
+    if (button) button.addEventListener("click", function () { handleRecommendationAction(button); });
+  }
+
+  function createRecommendation(text, options) {
+    const base = { text: text, ctaLabel: "", action: "", productId: "", taskId: "", mode: "normal", workerId: "", targetId: "", path: "" };
+    return Object.assign(base, options || {});
+  }
+
+  function handleRecommendationAction(button) {
+    const action = button.getAttribute("data-recommendation-action") || "";
+    const productId = button.getAttribute("data-recommendation-product") || "";
+    const workerId = button.getAttribute("data-recommendation-worker") || "";
+    const targetId = button.getAttribute("data-recommendation-target") || "";
+    if (action === "decision") { scrollToElement("decisionPanel"); return; }
+    if (action === "missions") { dashboardUi.missionsExpanded = true; renderMissions(); scrollToElement("missionPanel"); return; }
+    if (action === "company") { expandCompanyLevel(); return; }
+    if (action === "product" && productId) { openProductActionMenu(productId); return; }
+    if (action === "employees") { dashboardUi.employeesExpanded = true; renderEmployees(); scrollToElement("employeePanel"); return; }
+    if (action === "worker" && workerId) { openWorkerAssignmentModal(workerId); return; }
+    if (targetId) scrollToElement(targetId);
+  }
+
+  function scrollToElement(elementId) {
+    const element = document.getElementById(elementId);
+    if (element && element.scrollIntoView) element.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function getNextRecommendation() {
+    const pendingDecision = normalizeDecisionEvent(state.pendingDecisionEvent);
+    if (pendingDecision) {
+      const decision = getDecisionEventDefinition(pendingDecision.id);
+      const product = getProductDefinition(pendingDecision.productId);
+      return createRecommendation("社長判断を確認しましょう: " + product.name + " / " + (decision ? decision.label : "提案あり"), { ctaLabel: "社長判断を見る", action: "decision", targetId: "decisionPanel", path: "社長判断カード → 承認/却下" });
+    }
+    if (getClaimableMissions().length > 0) return createRecommendation("達成済みミッションの報酬を受け取りましょう。", { ctaLabel: "ミッションを見る", action: "missions", targetId: "missionPanel", path: "現在のミッション → 報酬を受け取る" });
+    if (canExpandCompany()) return createRecommendation("会社を拡張してLvを上げましょう。", { ctaLabel: "会社を拡張する", action: "company", path: "会社Lvアップ可能 → 会社を拡張する" });
+    const churnHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.churnRisk >= 45; });
+    const supportHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.supportLoad >= 50; });
+    if (churnHeavy) return createRecommendation("解約リスクが高い" + churnHeavy.name + "をサポートしましょう。", { ctaLabel: "操作を開く", action: "product", productId: churnHeavy.id, path: "製品一覧 → " + churnHeavy.name + " → 操作 → サポート" });
+    if (supportHeavy) return createRecommendation("Care-04を" + supportHeavy.name + "のサポートに割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: supportHeavy.id, path: "製品一覧 → " + supportHeavy.name + " → 操作 → サポート" });
+    if (state.fire >= 70) {
+      if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return createRecommendation("炎上が高いのでFire-05を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Fire-05 → 雇用" });
+      const crisisTarget = PRODUCTS.find(function (definition) { return canAssignTaskToProduct("crisis", definition.id); }) || getPrimaryProductDefinition();
+      return createRecommendation("Fire-05を炎上対応へ割り振りましょう。Care-04はサポート面から火消しを補助できます。", { ctaLabel: "操作を開く", action: "product", productId: crisisTarget.id, path: "製品一覧 → " + crisisTarget.name + " → 操作 → 炎上対応" });
+    }
+    if (getDashboardBugLevel() >= 70) {
+      if (state.companyLevel >= 5 && (state.employees.security06 || 0) <= 0) return createRecommendation("バグが高いのでSecurity-06を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Security-06 → 雇用" });
+      const qaTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea"; }) || getPrimaryProductDefinition();
+      return createRecommendation("バグが高いのでSecurity-06を品質管理へ割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: qaTarget.id, path: "製品一覧 → " + qaTarget.name + " → 操作 → 品質管理" });
+    }
+    const buggyProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.bugs >= 45 && !getAssignedWorkersForProduct("qa", definition.id).length; });
+    if (buggyProduct) return createRecommendation("製品バグが高い" + buggyProduct.name + "を品質管理しましょう。", { ctaLabel: "操作を開く", action: "product", productId: buggyProduct.id, path: "製品一覧 → " + buggyProduct.name + " → 操作 → 品質管理" });
+    const pausedUpgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.upgradeStatus === "upgrading" && !getAssignedWorkersForProduct("development", definition.id).length; });
+    if (pausedUpgrade) return createRecommendation(pausedUpgrade.name + "のvNext開発が止まっています。AI社長かDev-01を割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: pausedUpgrade.id, path: "製品一覧 → " + pausedUpgrade.name + " → 操作 → vNext開発担当" });
+    const developing = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status === "developing" && !getAssignedWorkersForProduct("development", definition.id).length; });
+    if (developing) return createRecommendation((isWorkerIdle("dev01") ? "Dev-01が空いています。" : "") + developing.name + "の開発に割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: developing.id, path: "製品一覧 → " + developing.name + " → 操作 → 開発担当" });
+    const ready = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return ["ready", "selling"].indexOf(product.status) !== -1 && !getAssignedWorkersForProduct("sales", definition.id).length; });
+    if (ready) return createRecommendation((isWorkerIdle("sales02") ? "Sales-02が空いています。" : "") + ready.name + "の販売に割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: ready.id, path: "製品一覧 → " + ready.name + " → 操作 → 販売担当" });
+    const lowAwarenessWithSales = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 50 && getAssignedWorkersForProduct("sales", definition.id).length && !getAssignedWorkersForProduct("marketing", definition.id).length; });
+    if (lowAwarenessWithSales) return createRecommendation(lowAwarenessWithSales.name + "は販売中ですが認知度が低めです。Buzz-03で広報しましょう。", { ctaLabel: "操作を開く", action: "product", productId: lowAwarenessWithSales.id, path: "製品一覧 → " + lowAwarenessWithSales.name + " → 操作 → 広報" });
+    const nextIdea = PRODUCTS.find(function (definition) { return getProduct(definition.id).status === "idea"; });
+    if (nextIdea) return createRecommendation(nextIdea.name + "の開発を始めましょう。", { ctaLabel: "操作を開く", action: "product", productId: nextIdea.id, path: "製品一覧 → " + nextIdea.name + " → 操作 → 開発する" });
+    const openSlotRecommendation = getOpenSlotRecommendationText();
+    if (openSlotRecommendation) return createRecommendation(openSlotRecommendation, { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → 仕事を割り振る" });
+    const idleWorkerRecommendation = getIdleWorkerRecommendationText();
+    if (idleWorkerRecommendation) return createRecommendation(idleWorkerRecommendation, { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → 仕事を割り振る" });
+    const lowAwareness = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 50 && !getAssignedWorkersForProduct("marketing", definition.id).length; });
+    if (lowAwareness) return createRecommendation(lowAwareness.name + "を広報して認知度を上げましょう。", { ctaLabel: "操作を開く", action: "product", productId: lowAwareness.id, path: "製品一覧 → " + lowAwareness.name + " → 操作 → 広報" });
+    const upgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle"; });
+    if (upgrade) return createRecommendation(upgrade.name + "のバージョンアップを検討しましょう。", { ctaLabel: "操作を開く", action: "product", productId: upgrade.id, path: "製品一覧 → " + upgrade.name + " → 操作 → バージョンアップ" });
+    const lowQuality = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.quality < 70 || product.bugs >= 30); });
+    if (lowQuality) return createRecommendation(lowQuality.name + "を品質管理してバグを下げましょう。", { ctaLabel: "操作を開く", action: "product", productId: lowQuality.id, path: "製品一覧 → " + lowQuality.name + " → 操作 → 品質管理" });
+    return createRecommendation("製品目標を確認し、主力製品の販売・広報・品質管理を回しましょう。", { ctaLabel: "製品一覧を開く", action: "product", productId: getPrimaryProductDefinition().id, path: "製品ポートフォリオ → 操作" });
+  }
+
+  function getNextRecommendationText() {
+    return getNextRecommendation().text;
   }
 
   function renderDecisionPanel() {
@@ -1320,15 +1469,23 @@
       const productId = getDecisionProductForFire();
       if (productId) candidates.push({ id: "fire05_crisis_statement", productId: productId, priority: 100 });
     }
+    if (state.fire >= 40 && isWorkerAvailable("fire05", state.employees)) {
+      const productId = getDecisionProductForFire();
+      if (productId) candidates.push({ id: "sns_fire_response", productId: productId, priority: 78 });
+    }
     PRODUCTS.forEach(function (definition) {
       const product = getProduct(definition.id);
       if (isWorkerAvailable("care04", state.employees) && definition.type === "subscription" && product.status === "selling" && (product.churnRisk >= 35 || product.supportLoad >= 45)) candidates.push({ id: "care_customer_priority", productId: definition.id, priority: 90 });
+      if (isWorkerAvailable("care04", state.employees) && definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) >= 5 && (product.satisfaction < 85 || product.churnRisk >= 20)) candidates.push({ id: "vip_customer_support", productId: definition.id, priority: 76 });
       if (isWorkerAvailable("security06", state.employees) && product.bugs >= 40 && product.status !== "idea") candidates.push({ id: "emergency_quality_fix", productId: definition.id, priority: 85 });
       if (isWorkerAvailable("security06", state.employees) && product.status !== "idea" && (product.bugs >= 35 || getAssignedWorkersForProduct("qa", definition.id).indexOf("security06") !== -1)) candidates.push({ id: "security_quality_pause", productId: definition.id, priority: 80 });
+      if (isWorkerAvailable("security06", state.employees) && product.status !== "idea" && (product.bugs >= 20 || product.quality <= 75)) candidates.push({ id: "quality_audit", productId: definition.id, priority: 74 });
       if (definition.type === "subscription" && isWorkerAvailable("dev01", state.employees) && product.upgradeStatus === "upgrading" && product.upgradeProgress >= 50) candidates.push({ id: "vnext_fast_track", productId: definition.id, priority: 75 });
+      if ((product.status === "developing" || product.upgradeStatus === "upgrading") && state.money >= 1200) candidates.push({ id: "outsourcing_offer", productId: definition.id, priority: 58 });
       if (definition.type === "oneShot" && product.status === "selling" && getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1) candidates.push({ id: "one_shot_bulk_sale", productId: definition.id, priority: 72 });
       if (definition.type === "subscription" && getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1 && ["ready", "selling"].indexOf(product.status) !== -1) candidates.push({ id: "sales_big_contract", productId: definition.id, priority: 70 });
       if (definition.type === "subscription" && getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1 && product.status === "selling" && getProductCustomers(product) >= 5 && product.satisfaction >= 50 && product.churnRisk < 50) candidates.push({ id: "subscription_price_review", productId: definition.id, priority: 65 });
+      if (definition.type === "subscription" && isWorkerAvailable("sales02", state.employees) && ["ready", "selling"].indexOf(product.status) !== -1 && product.awareness >= 20 && getProductCustomers(product) < 50) candidates.push({ id: "free_trial_offer", productId: definition.id, priority: 57 });
       if (isWorkerAvailable("buzz03", state.employees) && product.status !== "idea" && (getAssignedWorkersForProduct("marketing", definition.id).indexOf("buzz03") !== -1 || product.awareness >= 30)) candidates.push({ id: "competitive_campaign", productId: definition.id, priority: 63 });
       if (isWorkerAvailable("security06", state.employees) && product.status !== "idea" && (product.bugs >= 25 || product.quality <= 60)) candidates.push({ id: "tech_debt_repayment", productId: definition.id, priority: 62 });
       if (isWorkerAvailable("care04", state.employees) && definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) >= 3 && product.satisfaction < 85) candidates.push({ id: "customer_interview", productId: definition.id, priority: 61 });
@@ -1495,6 +1652,48 @@
       }
       product.bugs = clamp(product.bugs + 5, 0, 100);
       state.fire = clamp(state.fire + 8, 0, 100);
+      return;
+    }
+    if (eventId === "free_trial_offer") {
+      product.status = "selling";
+      product.customers = getProductCustomers(product) + 1;
+      product.awareness = clamp(product.awareness + 10, 0, 100);
+      product.supportLoad = clamp(product.supportLoad + 5, 0, 100);
+      addLog("success", definition.name + "の無料トライアルを承認しました。導入社は増えましたが、サポート窓口も少し忙しくなりました。", "sales02");
+      return;
+    }
+    if (eventId === "vip_customer_support") {
+      product.satisfaction = clamp(product.satisfaction + 10, 0, 100);
+      product.churnRisk = clamp(product.churnRisk - 5, 0, 100);
+      state.money = Math.max(0, state.money - 700);
+      addLog("support", definition.name + "のVIP顧客対応を承認しました。費用はかかりましたが、解約リスクを少し抑えました。", "care04");
+      return;
+    }
+    if (eventId === "sns_fire_response") {
+      state.fire = clamp(state.fire - 15, 0, 100);
+      state.money = Math.max(0, state.money - 400);
+      addLog("crisis", "Fire-05のSNS火消し案を承認しました。通知欄の温度が少し下がりました。", "fire05");
+      return;
+    }
+    if (eventId === "quality_audit") {
+      product.bugs = clamp(product.bugs - 12, 0, 100);
+      product.quality = clamp(product.quality + 5, 0, 100);
+      state.money = Math.max(0, state.money - 500);
+      addLog("support", definition.name + "の品質監査を承認しました。製品バグが少し整理されました。", "security06");
+      return;
+    }
+    if (eventId === "outsourcing_offer") {
+      state.money = Math.max(0, state.money - 1200);
+      product.bugs = clamp(product.bugs + 6, 0, 100);
+      if (product.upgradeStatus === "upgrading") {
+        product.upgradeProgress = clamp(product.upgradeProgress + 18, 0, 100);
+        if (product.upgradeProgress >= 100) completeSubscriptionUpgrade(product, definition);
+      } else {
+        product.status = product.status === "idea" ? "developing" : product.status;
+        product.progress = clamp(product.progress + 25, 0, definition.developmentRequired);
+        if (product.progress >= definition.developmentRequired) completeNewProductDevelopment(product, definition);
+      }
+      addLog("bug", definition.name + "の外注提案を承認しました。進捗は買えましたが、製品バグも少し増えました。", "boss");
     }
   }
 
@@ -1559,6 +1758,29 @@
     if (eventId === "mystery_big_deal") {
       state.fire = clamp(state.fire - 1, 0, 100);
       addLog("normal", definition.name + "の謎の大型案件を見送りました。怪しい急成長を避けました。", "sales02");
+      return;
+    }
+    if (eventId === "free_trial_offer") {
+      addLog("normal", definition.name + "の無料トライアルを見送りました。通常販売を続けます。", "sales02");
+      return;
+    }
+    if (eventId === "vip_customer_support") {
+      product.satisfaction = clamp(product.satisfaction - 3, 0, 100);
+      addLog("support", definition.name + "のVIP顧客対応を見送りました。満足度が少し下がりました。", "care04");
+      return;
+    }
+    if (eventId === "sns_fire_response") {
+      state.fire = clamp(state.fire + 6, 0, 100);
+      addLog("fire", "Fire-05のSNS火消し案を保留しました。通知欄が少し熱くなりました。", "fire05");
+      return;
+    }
+    if (eventId === "quality_audit") {
+      product.bugs = clamp(product.bugs + 3, 0, 100);
+      addLog("bug", definition.name + "の品質監査を見送りました。製品バグが少し積み上がりました。", "security06");
+      return;
+    }
+    if (eventId === "outsourcing_offer") {
+      addLog("normal", definition.name + "の外注提案を見送りました。内製で進めます。", "boss");
     }
   }
 
@@ -1583,58 +1805,6 @@
       '<button type="button" id="expandCompanyButton" class="modal-apply-button">会社を拡張する</button>';
     const button = document.getElementById("expandCompanyButton");
     if (button) button.addEventListener("click", expandCompanyLevel);
-  }
-
-  function getNextRecommendationText() {
-    const pendingDecision = normalizeDecisionEvent(state.pendingDecisionEvent);
-    if (pendingDecision) {
-      const decision = getDecisionEventDefinition(pendingDecision.id);
-      const product = getProductDefinition(pendingDecision.productId);
-      return "社長判断を確認しましょう: " + product.name + " / " + (decision ? decision.label : "提案あり");
-    }
-    if (getClaimableMissions().length > 0) return "達成済みミッションの報酬を受け取りましょう。";
-    if (canExpandCompany()) return "会社を拡張してLvを上げましょう。";
-    const churnHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.churnRisk >= 45; });
-    const supportHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.supportLoad >= 50; });
-    if (churnHeavy) return "解約リスクが高い" + churnHeavy.name + "をサポートしましょう。";
-    if (supportHeavy) return "Care-04を" + supportHeavy.name + "のサポートに割り振りましょう。";
-    if (state.fire >= 70) {
-      if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return "炎上が高いのでFire-05を雇用しましょう。";
-      return "Fire-05を炎上対応へ割り振りましょう。Care-04はサポート面から火消しを補助できます。";
-    }
-    if (getDashboardBugLevel() >= 70) {
-      if (state.companyLevel >= 5 && (state.employees.security06 || 0) <= 0) return "バグが高いのでSecurity-06を雇用しましょう。";
-      return "バグが高いのでSecurity-06を品質管理へ割り振りましょう。";
-    }
-    const buggyProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.bugs >= 45 && !getAssignedWorkersForProduct("qa", definition.id).length; });
-    if (buggyProduct) return "製品バグが高い" + buggyProduct.name + "を品質管理しましょう。";
-    const pausedUpgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.upgradeStatus === "upgrading" && !getAssignedWorkersForProduct("development", definition.id).length; });
-    if (pausedUpgrade) return pausedUpgrade.name + "のvNext開発が止まっています。AI社長かDev-01を割り振りましょう。";
-    const developing = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status === "developing" && !getAssignedWorkersForProduct("development", definition.id).length; });
-    if (developing) {
-      if (isWorkerIdle("dev01")) return "Dev-01が空いています。" + developing.name + "の開発に割り振りましょう。";
-      return developing.name + "を開発対象にして、AI社長かDev-01を割り振りましょう。";
-    }
-    const ready = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return ["ready", "selling"].indexOf(product.status) !== -1 && !getAssignedWorkersForProduct("sales", definition.id).length; });
-    if (ready) {
-      if (isWorkerIdle("sales02")) return "Sales-02が空いています。" + ready.name + "の販売に割り振りましょう。";
-      return ready.name + "に販売担当を割り振りましょう。";
-    }
-    const lowAwarenessWithSales = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 50 && getAssignedWorkersForProduct("sales", definition.id).length && !getAssignedWorkersForProduct("marketing", definition.id).length; });
-    if (lowAwarenessWithSales) return lowAwarenessWithSales.name + "は販売中ですが認知度が低めです。Buzz-03で広報しましょう。";
-    const nextIdea = PRODUCTS.find(function (definition) { return getProduct(definition.id).status === "idea"; });
-    if (nextIdea) return nextIdea.name + "の開発を始めましょう。";
-    const openSlotRecommendation = getOpenSlotRecommendationText();
-    if (openSlotRecommendation) return openSlotRecommendation;
-    const idleWorkerRecommendation = getIdleWorkerRecommendationText();
-    if (idleWorkerRecommendation) return idleWorkerRecommendation;
-    const lowAwareness = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.awareness < 50 && !getAssignedWorkersForProduct("marketing", definition.id).length; });
-    if (lowAwareness) return lowAwareness.name + "を広報して認知度を上げましょう。";
-    const upgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && (product.status === "ready" || product.status === "selling") && product.upgradeStatus === "idle"; });
-    if (upgrade) return upgrade.name + "のバージョンアップを検討しましょう。";
-    const lowQuality = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.quality < 70 || product.bugs >= 30); });
-    if (lowQuality) return lowQuality.name + "を品質管理してバグを下げましょう。";
-    return "製品目標を確認し、主力製品の販売・広報・品質管理を回しましょう。";
   }
 
   function getOpenSlotRecommendationText() {
@@ -2168,7 +2338,7 @@
       '<p class="dashboard-summary">解除済み: ' + unlockedCount + '/' + ACHIEVEMENTS.length + '</p>' +
       '<div class="achievement-list">' + (visible.length ? visible.map(function (achievement) {
         const unlocked = getAchievementRecord(achievement.id).unlocked;
-        return '<article class="achievement-item' + (unlocked ? ' unlocked' : '') + '"><strong>' + escapeHtml(unlocked ? '✓ ' + achievement.title : '○ ' + achievement.title) + '</strong><span>' + escapeHtml(achievement.description) + '</span></article>';
+        return '<article class="achievement-item' + (unlocked ? ' unlocked' : '') + '"><em class="achievement-category">' + escapeHtml(achievement.category || '実績') + '</em><strong>' + escapeHtml(unlocked ? '✓ ' + achievement.title : '○ ' + achievement.title) + '</strong><span>' + escapeHtml(achievement.description) + '</span></article>';
       }).join('') : '<p class="dashboard-summary">まだ解除済み実績はありません。製品を動かすと増えていきます。</p>') + '</div>';
     const toggle = document.getElementById("toggleAchievementsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("achievementsExpanded"); });
@@ -2326,6 +2496,11 @@
       '<button type="button" data-debug-action="unlockAllAi">全AI解放</button>' +
       '<button type="button" data-debug-action="completeProducts">全製品完成</button>' +
       '<button type="button" data-debug-action="decisionNow">社長判断を即発生</button>' +
+      '<button type="button" data-debug-action="scenario10min">10分テスト状態</button>' +
+      '<button type="button" data-debug-action="mrrBoost">MRR確認 顧客+20</button>' +
+      '<button type="button" data-debug-action="vnextReady">vNext 90%</button>' +
+      '<button type="button" data-debug-action="crisisScenario">炎上/解約テスト</button>' +
+      '<button type="button" data-debug-action="unlockAchievements">全実績解除</button>' +
       '<button type="button" data-debug-action="dumpSave">saveをconsole出力</button>' +
       '</div>';
     panel.querySelectorAll("button[data-debug-action]").forEach(function (button) {
@@ -2333,6 +2508,7 @@
     });
   }
 
+  // === DEBUG ===
   function applyDebugAction(action) {
     if (!isDebugMode()) return false;
     if (action === "money100k") {
@@ -2374,6 +2550,50 @@
       } else {
         addLog("system", "デバッグ: 発生条件を満たす社長判断がありません。", "company");
       }
+    } else if (action === "scenario10min") {
+      state.money += 100000;
+      state.totalMoney += 100000;
+      EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
+      const daily = getProduct("dailyReportAi");
+      daily.status = "selling";
+      daily.progress = getProductDefinition("dailyReportAi").developmentRequired;
+      daily.customers = Math.max(getProductCustomers(daily), 8);
+      daily.awareness = Math.max(daily.awareness, 45);
+      const meeting = getProduct("meetingMinutesAi");
+      meeting.status = "developing";
+      meeting.progress = Math.max(meeting.progress, 120);
+      const slide = getProduct("slideKitAi");
+      slide.status = "ready";
+      slide.progress = getProductDefinition("slideKitAi").developmentRequired;
+      addLog("system", "デバッグ: 10分プレイテスト状態を作りました。", "company");
+    } else if (action === "mrrBoost") {
+      PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }).forEach(function (definition) {
+        const product = getProduct(definition.id);
+        product.status = "selling";
+        product.customers = getProductCustomers(product) + 20;
+        recalculateProductMrr(product, definition);
+      });
+      addLog("system", "デバッグ: サブスク顧客を増やしてMRR確認状態にしました。", "company");
+    } else if (action === "vnextReady") {
+      const definition = PRODUCTS.find(function (item) { return item.type === "subscription"; }) || PRODUCTS[0];
+      const product = getProduct(definition.id);
+      product.status = "selling";
+      product.upgradeStatus = "upgrading";
+      product.upgradeProgress = 90;
+      addLog("system", "デバッグ: " + definition.name + "のvNextを90%にしました。", definition.id);
+    } else if (action === "crisisScenario") {
+      state.fire = 85;
+      const definition = getProductDefinition("dailyReportAi");
+      const product = getProduct(definition.id);
+      product.status = "selling";
+      product.customers = Math.max(getProductCustomers(product), 10);
+      product.supportLoad = 70;
+      product.satisfaction = 35;
+      product.churnRisk = 65;
+      addLog("system", "デバッグ: 炎上/解約リスクのテスト状態を作りました。", definition.id);
+    } else if (action === "unlockAchievements") {
+      ACHIEVEMENTS.forEach(function (achievement) { state.achievements[achievement.id] = { unlocked: true, unlockedAt: Date.now() }; });
+      addLog("system", "デバッグ: 全実績を解除しました。", "company");
     } else if (action === "dumpSave") {
       console.log("AI_BLACK_STARTUP_SAVE", JSON.stringify(state));
       addLog("system", "デバッグ: save内容をconsoleへ出力しました。", "company");
@@ -2403,7 +2623,7 @@
 
   function shareGameStatus() {
     const text = createShareText();
-    const shareData = { title: "AI社長のブラック起業", text: text, url: PUBLIC_URL };
+    const shareData = { title: "AI社長のブラック起業", text: text };
     if (navigator.share) {
       navigator.share(shareData).then(function () {
         addLog("success", "現在の経営状況を共有しました。投資家の通知欄が少し明るくなりました。", "company");
@@ -3213,7 +3433,7 @@
 
 
   function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
-  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.achievements = normalizeAchievements(state.achievements); state.decisionStats = normalizeDecisionStats(state.decisionStats); state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent); state.decisionEventCooldown = clamp(Math.floor(safeNumber(state.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
+  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.achievements = normalizeAchievements(state.achievements); state.decisionStats = normalizeDecisionStats(state.decisionStats); state.churnCount = Math.max(0, Math.floor(safeNumber(state.churnCount, 0))); state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent); state.decisionEventCooldown = clamp(Math.floor(safeNumber(state.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
   function formatCurrencyPrecise(value) { const number = Math.max(0, safeNumber(value, 0)); return "¥" + (number > 0 && number < 10 ? number.toFixed(1) : formatNumber(number)); }
@@ -3253,7 +3473,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-35").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-36").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

@@ -10,25 +10,25 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.35"' in index
-    assert 'style.css?v=20260524-35' in index
-    assert 'main.js?v=20260524-35' in index
-    assert 'manifest.webmanifest?v=20260524-35' in index
-    assert 'icon.svg?v=20260524-35' in index
-    assert 'ogp.png?v=20260524-35' in index
-    assert 'icon-512.png?v=20260524-35' in index
+    assert 'content="2026.05.24.36"' in index
+    assert 'style.css?v=20260524-36' in index
+    assert 'main.js?v=20260524-36' in index
+    assert 'manifest.webmanifest?v=20260524-36' in index
+    assert 'icon.svg?v=20260524-36' in index
+    assert 'ogp.png?v=20260524-36' in index
+    assert 'icon-512.png?v=20260524-36' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.35"' in main
-    assert 'const APP_VERSION = "2026.05.24.35"' in sw
-    assert 'sw.js?v=20260524-35' in main
+    assert 'const APP_VERSION = "2026.05.24.36"' in main
+    assert 'const APP_VERSION = "2026.05.24.36"' in sw
+    assert 'sw.js?v=20260524-36' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-35"
+    assert manifest["start_url"] == "./index.html?v=20260524-36"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-35" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-36" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -56,11 +56,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-35" in sw
-    assert "icon.svg?v=20260524-35" in sw
-    assert "ogp.svg?v=20260524-35" in sw
-    assert "ogp.png?v=20260524-35" in sw
-    assert "icon-512.png?v=20260524-35" in sw
+    assert "manifest.webmanifest?v=20260524-36" in sw
+    assert "icon.svg?v=20260524-36" in sw
+    assert "ogp.svg?v=20260524-36" in sw
+    assert "ogp.png?v=20260524-36" in sw
+    assert "icon-512.png?v=20260524-36" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -199,7 +199,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.35"
+    assert output["save"]["appVersion"] == "2026.05.24.36"
 
 
 def test_security06_visible_at_company_level_5():
@@ -722,10 +722,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.35"' in index
-    assert 'main.js?v=20260524-35' in index
-    assert 'sw.js?v=20260524-35' in main
-    assert 'const APP_VERSION = "2026.05.24.35"' in sw
+    assert 'content="2026.05.24.36"' in index
+    assert 'main.js?v=20260524-36' in index
+    assert 'sw.js?v=20260524-36' in main
+    assert 'const APP_VERSION = "2026.05.24.36"' in sw
 
 
 
@@ -2631,7 +2631,8 @@ def test_share_text_and_web_share_include_public_url():
     share_start = main.index("function createShareText()")
     share_end = main.index("function shareGameStatus()", share_start)
     assert "PUBLIC_URL" in main[share_start:share_end]
-    assert 'url: PUBLIC_URL' in main
+    share_block = main[share_end:main.index("function copyShareText", share_end)]
+    assert 'url: PUBLIC_URL' not in share_block
 
 
 def test_beta2_decision_events_and_weighted_selector_are_present():
@@ -2784,7 +2785,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-35" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-36" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -2941,3 +2942,106 @@ def test_release_qa_meta_and_readme_for_beta34_are_present():
     assert "GitHub Pagesでは、Pagesの公開元" in readme
     assert "PWA/Service Workerの確認は `file://` ではなく" in readme
     assert "?debug=1" in readme
+
+
+def test_next_recommendation_renders_cta_for_sales_assignment():
+    output = run_browser_smoke({
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "ready", "progress": 100}},
+        "assignments": {},
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission"],
+    })
+
+    assert "Sales-02" in output["recommendationHtml"]
+    assert "AI日報メーカー" in output["recommendationHtml"]
+    assert "data-recommendation-action=\"product\"" in output["recommendationHtml"]
+    assert "押す場所" in output["recommendationHtml"]
+    assert "操作 → 販売担当" in output["recommendationHtml"]
+
+
+def test_next_recommendation_cta_prioritizes_pending_decision():
+    output = run_browser_smoke({
+        "pendingDecisionEvent": {"id": "care_customer_priority", "productId": "dailyReportAi", "createdAt": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 5, "churnRisk": 80}},
+    })
+
+    assert "社長判断を確認しましょう" in output["recommendationHtml"]
+    assert "data-recommendation-action=\"decision\"" in output["recommendationHtml"]
+    assert "社長判断を見る" in output["recommendationHtml"]
+
+
+def test_beta4_decision_events_are_defined_and_free_trial_changes_state():
+    main = (ROOT / "main.js").read_text()
+    for event_id in ["free_trial_offer", "vip_customer_support", "sns_fire_response", "quality_audit", "outsourcing_offer"]:
+        assert f'id: "{event_id}"' in main
+
+    output = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 2, "awareness": 25, "supportLoad": 0}},
+        "pendingDecisionEvent": {"id": "free_trial_offer", "productId": "dailyReportAi", "createdAt": 1},
+    }, "window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+
+    assert output["save"]["pendingDecisionEvent"] is None
+    assert product["customers"] == 3
+    assert product["awareness"] >= 35
+    assert product["supportLoad"] >= 5
+
+
+def test_extended_achievements_have_categories_and_unlock_by_state():
+    main = (ROOT / "main.js").read_text()
+    assert 'category: "経営"' in main
+    assert 'id: "total_mrr_50k"' in main
+    assert 'id: "customers_100"' in main
+    assert 'id: "version_10"' in main
+
+    output = run_game_action_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 100, "version": 1}},
+        "achievements": {},
+    }, "window.__testApi.applyAchievements(false); window.__testApi.saveGame();")
+
+    assert output["save"]["achievements"]["total_mrr_50k"]["unlocked"] is True
+    assert output["save"]["achievements"]["customers_100"]["unlocked"] is True
+    assert "achievement-category" in output["achievementHtml"]
+
+
+def test_fire05_crisis_reduces_fire_and_mitigates_churn_risk():
+    output = run_game_action_smoke({
+        "fire": 80,
+        "employees": {"fire05": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 5, "satisfaction": 40, "supportLoad": 60, "bugs": 30, "churnRisk": 90}},
+        "assignments": {"crisis": {"productAssignments": {"dailyReportAi": {"aiIds": ["fire05"]}}}},
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+
+    assert output["save"]["fire"] < 80
+    assert product["churnRisk"] < 80
+    assert product_assignment(output["save"]["assignments"], "crisis", "dailyReportAi")["aiIds"] == ["fire05"]
+
+
+def test_debug_playtest_scenarios_are_guarded_and_available_with_debug_query():
+    blocked = run_game_action_smoke({"money": 0}, "window.__testApi.applyDebugAction('scenario10min'); window.__testApi.saveGame();")
+    allowed = run_game_action_smoke({"money": 0, "__locationSearch": "?debug=1"}, "window.__testApi.applyDebugAction('scenario10min'); window.__testApi.saveGame();")
+
+    assert blocked["save"]["money"] == 0
+    assert allowed["save"]["money"] >= 100000
+    assert allowed["save"]["products"]["dailyReportAi"]["status"] == "selling"
+    assert allowed["save"]["products"]["meetingMinutesAi"]["status"] == "developing"
+    assert "10分テスト状態" in allowed["debugHtml"]
+    assert "vNext 90%" in allowed["debugHtml"]
+
+
+def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+    sw = (ROOT / "sw.js").read_text()
+    readme = (ROOT / "README.md").read_text()
+
+    assert 'content="2026.05.24.36"' in index
+    assert 'property="og:image:type" content="image/png"' in index
+    assert 'const APP_VERSION = "2026.05.24.36"' in main
+    assert 'const APP_VERSION = "2026.05.24.36"' in sw
+    assert 'sw.js?v=20260524-36' in main
+    assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
+    assert 'v0.4へ向けた設計メモ' in readme
+    assert '製品別炎上' in readme

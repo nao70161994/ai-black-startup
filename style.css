@@ -316,6 +316,9 @@ button.share {
 .primary-product-card em { display: block; width: fit-content; margin-top: 6px; padding: 4px 7px; border-radius: 999px; color: #07506a; background: #eefaff; border: 1px solid rgba(25, 189, 232, 0.18); font-size: 11px; font-style: normal; line-height: 1.25; }
 .next-recommendation-panel { border-color: rgba(255, 183, 43, 0.34); background: linear-gradient(135deg, #ffffff, #fff8df); }
 .next-recommendation-text { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.45; }
+.next-recommendation-path { margin: 6px 0 0; color: #8a5b00; font-size: 11px; line-height: 1.35; }
+.next-recommendation-action-row { display: flex; margin-top: 8px; }
+.next-recommendation-button { min-height: 38px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255, 183, 43, 0.4); background: linear-gradient(180deg, #fff7cf, #ffd66f); color: #5f3b00; font-weight: 800; box-shadow: 0 8px 18px rgba(255, 183, 43, 0.18); }
 .activity-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .activity-head span { min-width: 42px; padding: 3px 7px; border-radius: 999px; color: #07506a; background: #eefaff; border: 1px solid rgba(25, 189, 232, 0.18); font-size: 10px; text-align: center; }
 .activity-latest { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
@@ -534,6 +537,7 @@ button.share {
 .achievement-list { display: grid; gap: 6px; }
 .achievement-item { display: grid; gap: 3px; padding: 7px 8px; border: 1px solid rgba(25, 189, 232, 0.14); border-radius: 8px; background: #ffffff; }
 .achievement-item strong { color: var(--ink); font-size: 12px; }
+.achievement-category { width: fit-content; padding: 2px 6px; border-radius: 999px; color: #07506a; background: #eefaff; border: 1px solid rgba(25, 189, 232, 0.16); font-size: 10px; font-weight: 800; }
 .achievement-item span { color: var(--muted); font-size: 11px; line-height: 1.35; }
 .achievement-item.unlocked { border-color: rgba(72, 214, 109, 0.36); background: #f4fff0; }
 .achievement-item.unlocked strong { color: #226b35; }
