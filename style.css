@@ -51,9 +51,9 @@ button:disabled {
   box-shadow: none;
 }
 button.danger {
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 10px;
-  color: #9b2f46;
+  color: #8f2c42;
   border: 1px solid rgba(255, 107, 138, 0.42);
   background: #fff7f9;
   box-shadow: none;
@@ -222,6 +222,14 @@ main { display: grid; gap: 8px; margin-top: 8px; }
 .employee-card.recommended { border-color: rgba(72, 214, 109, 0.52); background: linear-gradient(135deg, #ffffff, #f2ffe9); }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 9px; }
+
+.actions button.danger {
+  grid-column: 1 / -1;
+  justify-self: end;
+  width: auto;
+  min-width: 118px;
+  border-style: dashed;
+}
 .onboarding-panel { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 10px; background: #ffffff; }
 .onboarding-panel.hidden, [hidden] { display: none !important; }
 .onboarding-panel strong { color: var(--ink); font-size: 14px; }
@@ -345,7 +353,8 @@ button.share {
 .assignment-summary-list { display: grid; gap: 6px; }
 .assignment-summary-item { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid rgba(25, 189, 232, 0.18); border-radius: 8px; background: #ffffff; }
 .assignment-summary-item span { color: var(--muted); font-size: 11px; }
-.assignment-summary-item strong { color: var(--ink); font-size: 13px; line-height: 1.25; }
+.assignment-summary-item strong { display: grid; gap: 2px; color: var(--ink); font-size: 13px; line-height: 1.25; }
+.assignment-work-line { color: var(--ink); font-size: 12px; line-height: 1.25; }
 .change-assignment-button { width: auto; min-height: 34px; padding: 0 11px; border-radius: 8px; font-size: 12px; }
 .assignment-row { display: grid; gap: 7px; padding: 8px; border: 1px solid rgba(25, 189, 232, 0.18); border-radius: 9px; background: #ffffff; }
 .assignment-row strong { color: var(--ink); font-size: 13px; }
@@ -374,7 +383,9 @@ button.share {
 .assignment-dialog-head strong { color: var(--ink); font-size: 17px; }
 .modal-close-button { width: auto; min-height: 40px; padding: 0 14px; border-radius: 9px; color: #07506a; background: #eefaff; box-shadow: none; }
 .modal-group { display: grid; gap: 7px; }
-.modal-group > span, .modal-current, .modal-description, .modal-warning { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.modal-group > span, .modal-current, .modal-description, .modal-warning, .modal-help { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.modal-help { margin: 0; }
+.selected-workers { color: var(--ink); font-weight: 700; }
 .modal-description { margin: 0; padding: 8px 9px; border-radius: 8px; color: #07506a; background: #eefaff; }
 .modal-warning { margin: 0; padding: 7px 9px; border-radius: 8px; color: #5e3f00; background: #fff8df; border: 1px solid rgba(255, 183, 43, 0.28); }
 .modal-option-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }

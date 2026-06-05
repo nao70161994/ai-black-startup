@@ -1,15 +1,15 @@
 "use strict";
 
-const APP_VERSION = "2026.05.24.25";
+const APP_VERSION = "2026.05.24.30";
 const CACHE_NAME = "ai-black-startup-" + APP_VERSION;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./manifest.webmanifest?v=20260524-25",
-  "./icon.svg?v=20260524-25",
-  "./ogp.svg?v=20260524-25",
-  "./style.css?v=20260524-25",
-  "./main.js?v=20260524-25"
+  "./manifest.webmanifest?v=20260524-30",
+  "./icon.svg?v=20260524-30",
+  "./ogp.svg?v=20260524-30",
+  "./style.css?v=20260524-30",
+  "./main.js?v=20260524-30"
 ];
 
 self.addEventListener("install", function (event) {
