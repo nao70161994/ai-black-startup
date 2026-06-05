@@ -10,21 +10,21 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.31"' in index
-    assert 'style.css?v=20260524-31' in index
-    assert 'main.js?v=20260524-31' in index
-    assert 'manifest.webmanifest?v=20260524-31' in index
-    assert 'icon.svg?v=20260524-31' in index
-    assert 'ogp.svg?v=20260524-31' in index
+    assert 'content="2026.05.24.32"' in index
+    assert 'style.css?v=20260524-32' in index
+    assert 'main.js?v=20260524-32' in index
+    assert 'manifest.webmanifest?v=20260524-32' in index
+    assert 'icon.svg?v=20260524-32' in index
+    assert 'ogp.svg?v=20260524-32' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.31"' in main
-    assert 'const APP_VERSION = "2026.05.24.31"' in sw
-    assert 'sw.js?v=20260524-31' in main
+    assert 'const APP_VERSION = "2026.05.24.32"' in main
+    assert 'const APP_VERSION = "2026.05.24.32"' in sw
+    assert 'sw.js?v=20260524-32' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-31"
+    assert manifest["start_url"] == "./index.html?v=20260524-32"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
 
@@ -39,9 +39,9 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-31" in sw
-    assert "icon.svg?v=20260524-31" in sw
-    assert "ogp.svg?v=20260524-31" in sw
+    assert "manifest.webmanifest?v=20260524-32" in sw
+    assert "icon.svg?v=20260524-32" in sw
+    assert "ogp.svg?v=20260524-32" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -170,7 +170,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.31"
+    assert output["save"]["appVersion"] == "2026.05.24.32"
 
 
 def test_security06_visible_at_company_level_5():
@@ -690,10 +690,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.31"' in index
-    assert 'main.js?v=20260524-31' in index
-    assert 'sw.js?v=20260524-31' in main
-    assert 'const APP_VERSION = "2026.05.24.31"' in sw
+    assert 'content="2026.05.24.32"' in index
+    assert 'main.js?v=20260524-32' in index
+    assert 'sw.js?v=20260524-32' in main
+    assert 'const APP_VERSION = "2026.05.24.32"' in sw
 
 
 
@@ -1561,7 +1561,13 @@ def test_next_recommendation_prioritizes_churn_and_support_before_fire_and_bugs(
         "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 0, "fire05": 1, "security06": 1},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "quality": 40, "bugs": 30, "awareness": 60, "customers": 8, "version": 1, "supportLoad": 90, "satisfaction": 20, "churnRisk": 80}},
         "logs": [],
-        "claimedMissions": [],
+        "claimedMissions": [
+            "daily_report_developing", "assign_daily_development", "daily_report_ready_mission",
+            "assign_daily_sales", "daily_first_customer", "daily_mrr_500",
+            "meeting_developing", "meeting_ready_mission", "total_mrr_10k_mission",
+            "slide_developing", "slide_ready_mission", "slide_first_sale_mission",
+            "daily_v2_mission", "meeting_v2_mission", "any_product_quality_70"
+        ],
         "lastSavedAt": 9999999999999,
     })
 
@@ -1581,7 +1587,13 @@ def test_next_recommendation_promotes_care04_for_high_support_load():
         "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 1, "fire05": 0, "security06": 1},
         "products": {"meetingMinutesAi": {"id": "meetingMinutesAi", "status": "selling", "progress": 180, "quality": 70, "bugs": 5, "awareness": 60, "customers": 10, "version": 1, "supportLoad": 70, "satisfaction": 60, "churnRisk": 20}},
         "logs": [],
-        "claimedMissions": [],
+        "claimedMissions": [
+            "daily_report_developing", "assign_daily_development", "daily_report_ready_mission",
+            "assign_daily_sales", "daily_first_customer", "daily_mrr_500",
+            "meeting_developing", "meeting_ready_mission", "total_mrr_10k_mission",
+            "slide_developing", "slide_ready_mission", "slide_first_sale_mission",
+            "daily_v2_mission", "meeting_v2_mission", "any_product_quality_70"
+        ],
         "lastSavedAt": 9999999999999,
     })
 
@@ -2513,3 +2525,142 @@ def test_next_recommendation_names_idle_sales_target_product():
     })
 
     assert "Sales-02が空いています。AI日報メーカーの販売に割り振りましょう。" in output["recommendationHtml"]
+
+
+
+def test_share_text_and_web_share_include_public_url():
+    main = (ROOT / "main.js").read_text()
+
+    assert 'const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/"' in main
+    assert '"公開URL: " + PUBLIC_URL' in main
+    assert 'url: PUBLIC_URL' in main
+
+
+def test_beta2_decision_events_and_weighted_selector_are_present():
+    main = (ROOT / "main.js").read_text()
+
+    for event_id in [
+        "subscription_price_review",
+        "emergency_quality_fix",
+        "one_shot_bulk_sale",
+        "vnext_fast_track",
+    ]:
+        assert event_id in main
+    assert "function selectDecisionEventCandidate(candidates)" in main
+    assert "Math.random() * totalPriority" in main
+    assert "費用-¥500" in main
+    assert "費用-¥700" in main
+
+
+def test_one_shot_bulk_sale_decision_approval_changes_state():
+    output = run_game_action_smoke({
+        "money": 1000,
+        "totalMoney": 1000,
+        "fire": 0,
+        "products": {"slideKitAi": {"id": "slideKitAi", "status": "selling", "progress": 160, "unitsSold": 2, "lifetimeRevenue": 19600, "quality": 55, "bugs": 0, "awareness": 40}},
+        "pendingDecisionEvent": {"id": "one_shot_bulk_sale", "productId": "slideKitAi", "createdAt": 1},
+        "decisionEventCooldown": 0,
+    }, "window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
+
+    product = output["save"]["products"]["slideKitAi"]
+    assert output["save"]["pendingDecisionEvent"] is None
+    assert product["unitsSold"] == 5
+    assert product["lifetimeRevenue"] == 49000
+    assert output["save"]["money"] == 30400
+    assert output["save"]["totalMoney"] == 30400
+    assert output["save"]["fire"] == 5
+
+
+def test_pending_decision_is_top_recommendation():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 1000000,
+        "companyLevel": 5,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 1, "fire05": 1, "security06": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "supportLoad": 90, "satisfaction": 20, "churnRisk": 80}},
+        "pendingDecisionEvent": {"id": "care_customer_priority", "productId": "dailyReportAi", "createdAt": 1},
+        "claimedMissions": [],
+    })
+
+    assert "社長判断を確認しましょう: AI日報メーカー / 顧客対応優先" in output["recommendationHtml"]
+
+
+def test_initial_recommendation_prefers_product_development_before_idle_ai():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "companyLevel": 1,
+        "employees": {},
+        "products": {},
+        "claimedMissions": [],
+    })
+
+    assert "AI日報メーカーの開発を始めましょう。" in output["recommendationHtml"]
+    assert "AI社長が空いています" not in output["recommendationHtml"]
+
+
+def test_primary_product_card_has_direct_action_and_detail_buttons():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "companyLevel": 1,
+        "employees": {},
+        "products": {},
+        "claimedMissions": [],
+    })
+
+    assert 'data-primary-product-menu="dailyReportAi"' in output["primaryProductHtml"]
+    assert 'data-primary-product-detail="dailyReportAi"' in output["primaryProductHtml"]
+    assert "primary-product-actions" in output["primaryProductHtml"]
+
+
+def test_product_action_menu_categories_are_rendered():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "function renderProductActionMenuList(actions, productId)" in main
+    assert "成長" in main
+    assert "収益" in main
+    assert "運用" in main
+    assert "product-action-menu-heading" in css
+
+
+def test_fire_pressure_reduces_sales_chance_structure():
+    main = (ROOT / "main.js").read_text()
+
+    assert "function getFireSalesPressureFactor()" in main
+    assert "const fireFactor = getFireSalesPressureFactor();" in main
+    assert "definition.demand * fireFactor" in main
+
+
+def test_mixed_legacy_save_migration_keeps_beta2_fields_safe():
+    output = run_browser_smoke({
+        "money": 0,
+        "totalMoney": 0,
+        "companyLevel": 5,
+        "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 1, "fire05": 1, "security06": 1},
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 2.8, "mrr": 9999, "upgradeStatus": "upgrading", "supportLoad": 999, "satisfaction": -10, "churnRisk": 999},
+            "slideKitAi": {"id": "slideKitAi", "status": "ready", "upgradeStatus": "upgrading", "unitsSold": 3.7, "lifetimeRevenue": 29400},
+        },
+        "assignments": {
+            "development": {"productId": "dailyReportAi", "aiId": "dev01", "mode": "upgrade"},
+            "sales": {"productId": "missingProduct", "aiIds": ["sales02", "boss", "buzz03"]},
+            "support": "care04",
+            "crisis": {"productId": "dailyReportAi", "aiId": "fire05"},
+        },
+        "pendingDecisionEvent": {"id": "missing", "productId": "dailyReportAi"},
+    })
+
+    save = output["save"]
+    assert save["pendingDecisionEvent"] is None
+    assert save["products"]["dailyReportAi"]["customers"] == 2
+    assert save["products"]["dailyReportAi"]["mrr"] == 1000
+    assert save["products"]["dailyReportAi"]["supportLoad"] == 100
+    assert save["products"]["dailyReportAi"]["satisfaction"] == 0
+    assert save["products"]["dailyReportAi"]["churnRisk"] == 100
+    assert save["products"]["slideKitAi"]["upgradeStatus"] == "idle"
+    assert save["products"]["slideKitAi"]["unitsSold"] == 3
+    assert len(product_assignment(save["assignments"], "sales", "dailyReportAi")["aiIds"]) <= 2
+    assert "productAssignments" in save["assignments"]["support"]
+    assert "productAssignments" in save["assignments"]["crisis"]
