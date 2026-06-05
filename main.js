@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.32";
+  const APP_VERSION = "2026.05.24.33";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
@@ -128,7 +128,7 @@
       label: "売り切り大口販売",
       workerId: "sales02",
       message: "Sales-02「AIスライド生成キットをまとめ買いしたい会社があります。導入理由は勢いです。」",
-      approveImpact: "承認: 販売数+3 / 即時売上UP / 炎上+5",
+      approveImpact: "承認: 販売数+1 / 即時売上UP / 炎上+8",
       rejectImpact: "却下: 炎上-1。落ち着いた販売に戻します。",
       riskLevel: "warning"
     },
@@ -868,7 +868,7 @@
     product.sellingSeconds += 1;
     product.oneShotSalesPityCounter += 1;
 
-    const pityLimit = workerId === "sales02" ? 25 : 40;
+    const pityLimit = workerId === "sales02" ? 55 : 80;
     if (Math.random() < sales.saleChance || product.oneShotSalesPityCounter >= pityLimit) {
       addOneShotSale(product, definition, flags);
       product.oneShotSalesPityCounter = 0;
@@ -1116,7 +1116,7 @@
     setText("totalMoney", formatCurrency(state.totalMoney));
     setText("users", formatCustomers(getTotalProductCustomers()));
     setText("totalMrrDashboard", formatCurrency(getTotalProductMrr()) + "/月");
-    setText("bugs", Math.round(state.bugs) + " / 100");
+    setText("bugs", Math.round(getDashboardBugLevel()) + " / 100");
     setText("fire", Math.round(state.fire) + " / 100");
     setText("nextLevel", state.companyLevel >= MAX_LEVEL ? "最大Lv" : (canExpandCompany() ? "拡張可能" : "あと" + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney))));
     setText("nextUnlock", getNextUnlockText());
@@ -1138,14 +1138,15 @@
     const panel = document.getElementById("activityPanel");
     if (!element) return;
     const rates = getRates();
-    if (panel) panel.classList.toggle("danger", state.bugs >= 80 || state.fire >= 80);
+    if (panel) panel.classList.toggle("danger", getDashboardBugLevel() >= 80 || state.fire >= 80);
     if (!hasAnyEmployee() && !hasActiveAssignment()) {
       element.textContent = "AI社員の起動待ちです。まず無料雇用かAI社長のタスク割り振りを使いましょう。";
       return;
     }
     const parts = [];
-    if (state.bugs >= 100) parts.push("バグ100: 事故イベント発生注意 / " + getBugMitigationText());
-    else if (state.bugs >= 80) parts.push("バグ高: " + getBugMitigationText());
+    const dashboardBugLevel = getDashboardBugLevel();
+    if (dashboardBugLevel >= 100) parts.push("バグ100: 事故イベント発生注意 / " + getBugMitigationText());
+    else if (dashboardBugLevel >= 80) parts.push("バグ高: " + getBugMitigationText());
     if (state.fire >= 100) parts.push("炎上100: 離脱イベント注意");
     else if (state.fire >= 80) parts.push("炎上高: 火消し優先");
     if (rates.money > 0) parts.push("売上 +" + formatCurrency(rates.money) + "/秒");
@@ -1192,8 +1193,8 @@
     panel.classList.toggle("decision-warning", definition.riskLevel === "warning");
     panel.innerHTML = '<div class="section-heading"><h2>社長判断</h2><span>' + escapeHtml(productDefinition.name) + '</span></div>' +
       '<div class="decision-body"><strong>' + escapeHtml(definition.label) + '</strong><p>' + escapeHtml(definition.message) + '</p>' +
-      '<ul class="decision-impact-list"><li>' + escapeHtml(definition.approveImpact) + '</li><li>' + escapeHtml(definition.rejectImpact) + '</li></ul></div>' +
-      '<div class="decision-actions"><button type="button" id="approveDecisionButton" class="decision-approve-button">承認する</button><button type="button" id="rejectDecisionButton" class="decision-reject-button">却下する</button></div>';
+      '<span class="decision-impact-heading">影響</span><ul class="decision-impact-list"><li>' + escapeHtml(definition.approveImpact) + '</li><li>' + escapeHtml(definition.rejectImpact) + '</li></ul></div>' +
+      '<div class="decision-actions"><button type="button" id="approveDecisionButton" class="decision-approve-button' + (definition.riskLevel === "warning" ? ' decision-risk-button' : '') + '">承認する</button><button type="button" id="rejectDecisionButton" class="decision-reject-button">却下する</button></div>';
     const approveButton = document.getElementById("approveDecisionButton");
     const rejectButton = document.getElementById("rejectDecisionButton");
     if (approveButton) approveButton.addEventListener("click", function () { applyDecisionEventChoice("approve"); });
@@ -1286,7 +1287,7 @@
   function applyDecisionApproval(eventId, product, definition) {
     if (eventId === "sales_big_contract") {
       if (definition.type === "oneShot") {
-        const units = 3;
+        const units = 1;
         const revenue = safeNumber(definition.price, 0) * units;
         product.status = product.status === "ready" ? "selling" : product.status;
         product.unitsSold = getProductUnitsSold(product) + units;
@@ -1344,13 +1345,13 @@
       return;
     }
     if (eventId === "one_shot_bulk_sale") {
-      const units = 3;
+      const units = 1;
       const revenue = safeNumber(definition.price, 0) * units;
       product.unitsSold = getProductUnitsSold(product) + units;
       product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
       state.money = Math.max(0, state.money + revenue);
       state.totalMoney = Math.max(0, state.totalMoney + revenue);
-      state.fire = clamp(state.fire + 5, 0, 100);
+      state.fire = clamp(state.fire + 8, 0, 100);
       addLog("success", definition.name + "のまとめ買いを承認しました。" + units + "本分の即時売上 " + formatCurrency(revenue) + " を獲得しました。", "sales02");
       return;
     }
@@ -1424,8 +1425,10 @@
     }
     panel.hidden = false;
     const nextLevel = state.companyLevel + 1;
+    const unlockText = getNextUnlockText();
     panel.innerHTML = '<div class="section-heading"><h2>会社Lvアップ可能</h2><span>次: 会社Lv' + nextLevel + '</span></div>' +
       '<p class="dashboard-summary">条件達成: 累計売上 ' + formatCurrency(LEVEL_THRESHOLDS[nextLevel - 1]) + '</p>' +
+      (unlockText ? '<p class="company-unlock-preview">解放予定: ' + escapeHtml(unlockText) + '</p>' : '') +
       '<button type="button" id="expandCompanyButton" class="modal-apply-button">会社を拡張する</button>';
     const button = document.getElementById("expandCompanyButton");
     if (button) button.addEventListener("click", expandCompanyLevel);
@@ -1448,7 +1451,7 @@
       if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return "炎上が高いのでFire-05を雇用しましょう。";
       return "Fire-05を炎上対応へ割り振りましょう。Care-04はサポート面から火消しを補助できます。";
     }
-    if (state.bugs >= 70) {
+    if (getDashboardBugLevel() >= 70) {
       if (state.companyLevel >= 5 && (state.employees.security06 || 0) <= 0) return "バグが高いのでSecurity-06を雇用しましょう。";
       return "バグが高いのでSecurity-06を品質管理へ割り振りましょう。";
     }
@@ -1631,6 +1634,14 @@
     return PRODUCTS.reduce(function (sum, definition) { return definition.type === "oneShot" ? sum + safeNumber(getProduct(definition.id).lifetimeRevenue, 0) : sum; }, 0);
   }
 
+  function getProductBugLevel() {
+    return PRODUCTS.reduce(function (max, definition) { return Math.max(max, safeNumber(getProduct(definition.id).bugs, 0)); }, 0);
+  }
+
+  function getDashboardBugLevel() {
+    return clamp(Math.max(safeNumber(state.bugs, 0), getProductBugLevel()), 0, 100);
+  }
+
   function getHiredEmployeeSummary() {
     const roles = { dev01: "開発", sales02: "販売", buzz03: "広報", care04: "サポート", fire05: "炎上対応", security06: "品質管理" };
     const hired = EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.code + " Lv" + (state.employees[employee.id] || 0) + " " + (roles[employee.id] || employee.role); });
@@ -1663,11 +1674,11 @@
     const selectedAssignment = getProductAssignment(selectedTask.id, assignmentDraft.productId);
     const currentAiIds = selectedAssignment.aiIds;
     const selectedAiIds = assignmentDraft.aiIds;
-    const selectionValid = selectedAiIds.length <= 2 && selectedAiIds.every(function (workerId) { return canWorkerAssignToTask(workerId, selectedTask.id, state.employees); });
+    const selectionValid = selectedAiIds.length > 0 && selectedAiIds.length <= 2 && selectedAiIds.every(function (workerId) { return canWorkerAssignToTask(workerId, selectedTask.id, state.employees); });
     const assignable = Boolean(assignmentDraft.taskId && assignmentDraft.productId) && productAssignable && selectionValid;
     const taskOptions = employeeMode ? getAssignableTasksForWorker(assignmentDraft.aiId) : TASKS;
     const productButtons = PRODUCTS.map(function (definition) {
-      const enabled = !employeeMode || isWorkerProductTaskAvailable(assignmentDraft.aiId, assignmentDraft.taskId, definition.id);
+      const enabled = employeeMode ? isWorkerProductTaskAvailable(assignmentDraft.aiId, assignmentDraft.taskId, definition.id) : canAssignTaskToProduct(assignmentDraft.taskId, definition.id);
       const reason = enabled ? "" : getWorkerProductTaskDisabledReason(assignmentDraft.aiId, assignmentDraft.taskId, definition.id);
       return '<button type="button" class="modal-option' + (assignmentDraft.productId === definition.id ? ' active' : '') + '" data-modal-product="' + definition.id + '"' + (enabled ? '' : ' disabled') + '>' + escapeHtml(definition.name) + (reason ? '<span>' + escapeHtml(reason) + '</span>' : '') + '</button>';
     }).join('');
@@ -1689,7 +1700,7 @@
       '<div class="modal-current selected-workers">選択中: ' + escapeHtml(getWorkerGroupLabel(selectedAiIds) || 'なし') + '（' + selectedAiIds.length + '/2）</div>';
     const workerSelector = currentWorkersHtml + '<div class="modal-group"><span>担当AIを選択 最大2体</span><div class="modal-option-grid worker-grid">' + workerButtons + '</div></div>';
     const noTaskMessage = employeeMode && taskOptions.length === 0 ? '<p class="modal-warning">このAIに割り振れるタスクは現在ありません。</p>' : '';
-    const warningText = !productAssignable ? 'この製品では選択中のタスクを使えません。' : (!selectionValid ? '選択中AIに担当できないAIが含まれています。' : '');
+    const warningText = !productAssignable ? 'この製品では選択中のタスクを使えません。' : (!selectionValid ? (selectedAiIds.length === 0 ? '担当AIを1体以上選んでください。' : '選択中AIに担当できないAIが含まれています。') : '');
     modal.innerHTML = '<div class="assignment-modal-backdrop" data-modal-close="1"></div><div class="assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="assignmentDialogTitle">' +
       '<div class="assignment-dialog-head"><strong id="assignmentDialogTitle">' + escapeHtml(getAssignmentModalTitle()) + '</strong><button type="button" class="modal-close-button" data-modal-close="1">閉じる</button></div>' +
       '<p class="modal-description">' + escapeHtml(getAssignmentModalDescription(upgradeMode, simpleMode, employeeMode)) + '</p>' +
@@ -1766,8 +1777,9 @@
   }
 
   function isAssignmentDraftProductAvailable() {
+    if (!canAssignTaskToProduct(assignmentDraft.taskId, assignmentDraft.productId)) return false;
     if (assignmentModalMode !== "employee") return true;
-    return isWorkerProductTaskAvailable(assignmentDraft.aiId, assignmentDraft.taskId, assignmentDraft.productId);
+    return canWorkerAssignToTask(assignmentDraft.aiId, assignmentDraft.taskId, state.employees);
   }
 
 
@@ -2111,7 +2123,7 @@
       "会社Lv: " + state.companyLevel,
       "売上: " + formatCurrency(state.money),
       "総顧客: " + formatCustomers(getTotalProductCustomers()),
-      "バグ: " + Math.round(state.bugs) + "/100",
+      "バグ: " + Math.round(getDashboardBugLevel()) + "/100",
       "炎上度: " + Math.round(state.fire) + "/100",
       "主要製品: " + primaryDefinition.name,
       "主要製品状態: " + getProductStatusLabel(primaryProduct.status),
@@ -2305,8 +2317,13 @@
     return definition ? definition.id : null;
   }
 
-  function isWorkerProductTaskAvailable(workerId, taskId, productId) {
-    if (!canWorkerAssignToTask(workerId, taskId, state.employees)) return false;
+  function getFirstAvailableProductForTask(taskId) {
+    const definition = PRODUCTS.find(function (item) { return canAssignTaskToProduct(taskId, item.id); });
+    return definition ? definition.id : PRODUCTS[0].id;
+  }
+
+  function canAssignTaskToProduct(taskId, productId) {
+    if (!TASKS.some(function (task) { return task.id === taskId; })) return false;
     const definition = getProductDefinition(productId);
     const product = getProduct(definition.id);
     if (taskId === "development") {
@@ -2318,6 +2335,10 @@
     if (taskId === "support") return definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) > 0;
     if (taskId === "crisis") return product.status === "selling" || (state.fire >= 50 && product.status !== "idea");
     return false;
+  }
+
+  function isWorkerProductTaskAvailable(workerId, taskId, productId) {
+    return canWorkerAssignToTask(workerId, taskId, state.employees) && canAssignTaskToProduct(taskId, productId);
   }
 
   function getWorkerProductTaskDisabledReason(workerId, taskId, productId) {
@@ -2361,11 +2382,12 @@
       renderAssignmentModal();
       return;
     }
-    assignmentDraft.mode = "normal";
     const assignment = getAssignment(assignmentDraft.taskId);
-    assignmentDraft.productId = assignment.productId;
+    assignmentDraft.productId = canAssignTaskToProduct(assignmentDraft.taskId, assignment.productId) ? assignment.productId : getFirstAvailableProductForTask(assignmentDraft.taskId);
     assignmentDraft.aiId = assignment.aiIds[0] || null;
     assignmentDraft.aiIds = assignment.aiIds.slice(0, 2);
+    updateAssignmentDraftMode();
+    refreshAssignmentDraftAiIds();
     renderAssignmentModal();
   }
 
@@ -2630,8 +2652,11 @@
   function setTaskAis(taskId, productId, aiIds, mode) {
     if (!TASKS.some(function (task) { return task.id === taskId; })) return false;
     const normalizedProductId = getProductDefinition(productId).id;
+    if (!canAssignTaskToProduct(taskId, normalizedProductId)) return false;
     state.assignments = normalizeAssignments(state.assignments, state.employees);
-    const assignmentMode = taskId === "development" ? (mode === "upgrade" ? "upgrade" : "newProduct") : "normal";
+    const targetDefinition = getProductDefinition(normalizedProductId);
+    const targetProduct = getProduct(targetDefinition.id);
+    const assignmentMode = taskId === "development" ? ((mode === "upgrade" || (targetDefinition.type === "subscription" && (targetProduct.status === "ready" || targetProduct.status === "selling"))) ? "upgrade" : "newProduct") : "normal";
     const selectedAiIds = [];
     (aiIds || []).forEach(function (aiId) {
       if (!aiId || selectedAiIds.indexOf(aiId) !== -1 || selectedAiIds.length >= 2) return;
@@ -2654,7 +2679,9 @@
     if (!TASKS.some(function (task) { return task.id === taskId; })) return false;
     const normalizedProductId = getProductDefinition(productId).id;
     const current = getProductAssignment(taskId, normalizedProductId);
-    const assignmentMode = taskId === "development" ? ((mode || "normal") === "upgrade" ? "upgrade" : "newProduct") : "normal";
+    const targetDefinition = getProductDefinition(normalizedProductId);
+    const targetProduct = getProduct(targetDefinition.id);
+    const assignmentMode = taskId === "development" ? (((mode || "normal") === "upgrade" || (targetDefinition.type === "subscription" && (targetProduct.status === "ready" || targetProduct.status === "selling"))) ? "upgrade" : "newProduct") : "normal";
     const aiIds = current.aiIds.slice(0, 2);
     if (aiId && aiIds.indexOf(aiId) === -1) {
       if (aiIds.length >= 2) return false;
@@ -2775,10 +2802,10 @@
     const fireFactor = getFireSalesPressureFactor();
     if (workerId === "sales02") {
       const level = state.employees.sales02 || 0;
-      const baseChance = 0.05 + level * 0.008;
-      return { saleChance: clamp(baseChance * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.30), awareness: 0.12, fire: 0.03 };
+      const baseChance = 0.035 + level * 0.006;
+      return { saleChance: clamp(baseChance * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.22), awareness: 0.12, fire: 0.03 };
     }
-    return { saleChance: clamp(0.015 * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.30), awareness: 0.06, fire: 0 };
+    return { saleChance: clamp(0.01 * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.22), awareness: 0.06, fire: 0 };
   }
 
   function getProduct(productId) { return state.products[productId] || createInitialProducts()[productId] || createInitialProducts()[PRODUCTS[0].id]; }
@@ -2915,7 +2942,15 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("sw.js?v=20260524-32").then(function (registration) {
+    let reloadingForNewServiceWorker = false;
+    if (navigator.serviceWorker.addEventListener) {
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (reloadingForNewServiceWorker) return;
+        reloadingForNewServiceWorker = true;
+        if (window.location && window.location.reload) window.location.reload();
+      });
+    }
+    navigator.serviceWorker.register("sw.js?v=20260524-33").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

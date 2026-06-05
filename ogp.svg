@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">AI社長のブラック起業</title>
-  <desc id="desc">明るいポップな近未来UI風の共有画像。AI社長ロボの顔とゲームタイトルを表示しています。</desc>
+  <desc id="desc">明るいポップな近未来UI風の共有画像。AI社長ロボの顔と製品パイプライン経営ゲームのタイトルを表示しています。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#effbff"/>
@@ -56,15 +56,15 @@
     <text x="0" y="218" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="92" font-weight="900" fill="#0aaed6">ブラック起業</text>
 
     <rect x="0" y="262" width="610" height="64" rx="32" fill="#ff69bb"/>
-    <text x="28" y="304" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="800" fill="#ffffff">社長も社員もAI。誰も止めないブラック起業。</text>
+    <text x="28" y="304" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="800" fill="#ffffff">製品を作り、MRRと即時売上を伸ばす。</text>
   </g>
 
   <g transform="translate(126 500)">
     <rect x="0" y="0" width="148" height="44" rx="22" fill="#d8ff5f"/>
-    <text x="24" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#111827">売上 ↑</text>
+    <text x="24" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#111827">MRR ↑</text>
     <rect x="166" y="0" width="148" height="44" rx="22" fill="#ffec4d"/>
-    <text x="190" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#111827">バグ ↑</text>
+    <text x="190" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#111827">即売上 ↑</text>
     <rect x="332" y="0" width="148" height="44" rx="22" fill="#ff69bb"/>
-    <text x="356" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#ffffff">炎上 ↑</text>
+    <text x="356" y="30" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#ffffff">顧客 ↑</text>
   </g>
 </svg>
