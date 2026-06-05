@@ -528,3 +528,16 @@ button.share {
 .decision-impact-heading { display: inline-flex; margin-top: 6px; color: #475569; font-size: 0.78rem; font-weight: 800; }
 .decision-risk-button { border-color: rgba(244, 114, 182, 0.42); background: linear-gradient(180deg, #ffe3ef, #ffb5d2); color: #5b102c; }
 .company-unlock-preview { margin: -3px 0 6px; color: #07506a; font-size: 0.86rem; font-weight: 700; }
+
+/* v0.3 beta.4 polish: achievements and debug QA */
+.achievement-panel { background: linear-gradient(135deg, #ffffff, #f7fff1); }
+.achievement-list { display: grid; gap: 6px; }
+.achievement-item { display: grid; gap: 3px; padding: 7px 8px; border: 1px solid rgba(25, 189, 232, 0.14); border-radius: 8px; background: #ffffff; }
+.achievement-item strong { color: var(--ink); font-size: 12px; }
+.achievement-item span { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.achievement-item.unlocked { border-color: rgba(72, 214, 109, 0.36); background: #f4fff0; }
+.achievement-item.unlocked strong { color: #226b35; }
+.debug-panel { border-color: rgba(255, 107, 138, 0.38); background: #fff7f9; }
+.debug-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.debug-actions button { min-height: 42px; color: #8f2c42; border-color: rgba(255, 107, 138, 0.34); background: #ffffff; box-shadow: none; font-size: 12px; }
+@media (max-width: 380px) { .debug-actions { grid-template-columns: 1fr; } }

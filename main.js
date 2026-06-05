@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.33";
+  const APP_VERSION = "2026.05.24.34";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
@@ -140,6 +140,39 @@
       approveImpact: "承認: vNext進捗+25 / 製品バグ+8 / 品質-3",
       rejectImpact: "却下: 変化なし。通常ペースを維持します。",
       riskLevel: "warning"
+    },
+    {
+      id: "competitive_campaign",
+      label: "競合対抗キャンペーン",
+      workerId: "buzz03",
+      message: "Buzz-03「競合が伸びています。こちらもキャンペーンで話題を取りにいきますか？」",
+      approveImpact: "承認: 認知度+15 / 費用-¥800 / 炎上+3",
+      rejectImpact: "却下: 変化なし。通常運用を続けます。"
+    },
+    {
+      id: "tech_debt_repayment",
+      label: "技術的負債返済",
+      workerId: "security06",
+      message: "Security-06「今なら技術的負債を少し返せます。短期費用は必要です。」",
+      approveImpact: "承認: 製品バグ-15 / 品質+8 / 費用-¥600",
+      rejectImpact: "却下: 製品バグ+3"
+    },
+    {
+      id: "customer_interview",
+      label: "顧客インタビュー",
+      workerId: "care04",
+      message: "Care-04「導入先に話を聞きませんか？少し手間ですが、満足度の手がかりになります。」",
+      approveImpact: "承認: 満足度+8 / 認知度+3 / サポート負荷+3",
+      rejectImpact: "却下: 変化なし。問い合わせを待ちます。"
+    },
+    {
+      id: "mystery_big_deal",
+      label: "謎の大型案件",
+      workerId: "sales02",
+      message: "Sales-02「用途はまだ不明ですが、大型案件です。受けますか？」",
+      approveImpact: "承認: 顧客または販売数UP / 炎上+8 / 製品バグ+5",
+      rejectImpact: "却下: 炎上-1。怪しい案件を見送りました。",
+      riskLevel: "warning"
     }
   ];
 
@@ -204,6 +237,19 @@
     { id: "daily_report_v2", productId: "dailyReportAi", text: "AI日報メーカーをv2にする", done: function () { return getProductVersion(getProduct("dailyReportAi")) >= 2; } },
     { id: "meeting_minutes_v2", productId: "meetingMinutesAi", text: "自動議事録AIをv2にする", done: function () { return getProductVersion(getProduct("meetingMinutesAi")) >= 2; } },
     { id: "total_mrr_10k", productId: "dailyReportAi", text: "総MRR ¥10K/月を達成する", done: function () { return getTotalProductMrr() >= 10000; } }
+  ];
+
+  const ACHIEVEMENTS = [
+    { id: "first_customer", title: "初顧客獲得", description: "いずれかのサブスク製品で顧客を1社獲得", done: function () { return getTotalProductCustomers() >= 1; } },
+    { id: "total_mrr_10k", title: "MRR ¥10K/月", description: "総MRRを¥10K/月まで伸ばす", done: function () { return getTotalProductMrr() >= 10000; } },
+    { id: "slide_10_sales", title: "売り切り10本", description: "AIスライド生成キットを10本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 10; } },
+    { id: "first_v2", title: "初v2到達", description: "サブスク製品を初めてv2へアップデート", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 2; }); } },
+    { id: "first_churn", title: "初解約", description: "サブスク顧客が初めて解約", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductFlags(definition.id).firstChurnLogged; }); } },
+    { id: "first_fire_50", title: "炎上50突破", description: "炎上度が50を超える", done: function () { return state.fire >= 50; } },
+    { id: "all_ai_hired", title: "全AI雇用", description: "専門AIを全員雇用", done: function () { return EMPLOYEES.every(function (employee) { return (state.employees[employee.id] || 0) > 0; }); } },
+    { id: "first_decision_approved", title: "初承認", description: "社長判断を初めて承認", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) >= 1; } },
+    { id: "first_decision_rejected", title: "初却下", description: "社長判断を初めて却下", done: function () { return safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 1; } },
+    { id: "two_ai_assignment", title: "2AI同時担当", description: "1つの仕事にAIを2体割り振る", done: function () { return TASKS.some(function (task) { return PRODUCTS.some(function (definition) { return getAssignedAiIds(task.id, definition.id).length >= 2; }); }); } }
   ];
 
   const PRODUCT_LOG_TEXTS = {
@@ -278,7 +324,7 @@
   let productDetailProductId = PRODUCTS[0].id;
   let productActionMenuOpen = false;
   let productActionMenuProductId = PRODUCTS[0].id;
-  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false };
+  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false };
 
   function buildReportLogs(source) {
     return Object.keys(source).flatMap(function (employeeId) {
@@ -306,6 +352,8 @@
       firstHireHelpShown: false,
       firstFastTickDone: false,
       claimedMissions: [],
+      achievements: createInitialAchievements(),
+      decisionStats: { approved: 0, rejected: 0 },
       pendingDecisionEvent: null,
       decisionEventCooldown: DECISION_EVENT_RETRY_SECONDS,
       lastSavedAt: Date.now()
@@ -351,11 +399,40 @@
     return flags;
   }
 
+
+  function createInitialAchievements() {
+    const achievements = {};
+    ACHIEVEMENTS.forEach(function (achievement) {
+      achievements[achievement.id] = { unlocked: false, unlockedAt: 0 };
+    });
+    return achievements;
+  }
+
+  function normalizeAchievements(savedAchievements) {
+    const achievements = createInitialAchievements();
+    const source = savedAchievements && typeof savedAchievements === "object" ? savedAchievements : {};
+    ACHIEVEMENTS.forEach(function (achievement) {
+      const saved = source[achievement.id];
+      if (saved === true) achievements[achievement.id] = { unlocked: true, unlockedAt: 0 };
+      else if (saved && typeof saved === "object") achievements[achievement.id] = { unlocked: Boolean(saved.unlocked), unlockedAt: Math.max(0, safeNumber(saved.unlockedAt, 0)) };
+    });
+    return achievements;
+  }
+
+  function normalizeDecisionStats(savedStats) {
+    const source = savedStats && typeof savedStats === "object" ? savedStats : {};
+    return {
+      approved: Math.max(0, Math.floor(safeNumber(source.approved, 0))),
+      rejected: Math.max(0, Math.floor(safeNumber(source.rejected, 0)))
+    };
+  }
+
   function loadGame() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) { state = createInitialState(); return; }
       state = normalizeState(JSON.parse(raw));
+      applyAchievements(true);
       calculateOfflineReward();
       saveGame();
     } catch (error) {
@@ -384,6 +461,8 @@
       firstHireHelpShown: Boolean(saved.firstHireHelpShown),
       firstFastTickDone: Boolean(saved.firstFastTickDone),
       claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [],
+      achievements: normalizeAchievements(saved.achievements),
+      decisionStats: normalizeDecisionStats(saved.decisionStats),
       pendingDecisionEvent: normalizeDecisionEvent(saved.pendingDecisionEvent),
       decisionEventCooldown: clamp(Math.floor(safeNumber(saved.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
@@ -463,6 +542,7 @@
   }
 
   function normalizeAssignments(savedAssignments, employees) {
+    // Save migration is more tolerant than runtime assignment so old saves keep booting.
     const assignments = createInitialAssignments();
     const source = savedAssignments && typeof savedAssignments === "object" ? savedAssignments : {};
     const usedWorkers = [];
@@ -588,6 +668,7 @@
       showFirstHireHelp(employee);
       scheduleNextTick();
     }
+    applyAchievements(false);
     saveGame();
     render();
   }
@@ -603,6 +684,7 @@
     const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
     applyBaseContractWork();
     applyDecisionEventGeneration();
+    applyAchievements(false);
     state.firstFastTickDone = true;
     penaltyElapsed += elapsedForPenalty;
     if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
@@ -1001,6 +1083,7 @@
     const unlocked = EMPLOYEES.filter(function (employee) { return employee.unlockLevel === nextLevel; });
     const suffix = unlocked.length ? " / " + unlocked.map(function (employee) { return employee.code + "解放"; }).join("・") : "";
     showLevelToast("会社Lv " + nextLevel + " 到達" + suffix);
+    applyAchievements(false);
     saveGame();
     render();
   }
@@ -1103,9 +1186,11 @@
     renderProductActionMenuModal();
     renderAssignments();
     renderProductObjectives();
+    renderAchievements();
     renderMissions();
     renderOffice();
     renderEmployees();
+    renderDebugPanel();
     renderLatestLog();
     renderLogs();
   }
@@ -1244,6 +1329,10 @@
       if (definition.type === "oneShot" && product.status === "selling" && getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1) candidates.push({ id: "one_shot_bulk_sale", productId: definition.id, priority: 72 });
       if (definition.type === "subscription" && getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1 && ["ready", "selling"].indexOf(product.status) !== -1) candidates.push({ id: "sales_big_contract", productId: definition.id, priority: 70 });
       if (definition.type === "subscription" && getAssignedWorkersForProduct("sales", definition.id).indexOf("sales02") !== -1 && product.status === "selling" && getProductCustomers(product) >= 5 && product.satisfaction >= 50 && product.churnRisk < 50) candidates.push({ id: "subscription_price_review", productId: definition.id, priority: 65 });
+      if (isWorkerAvailable("buzz03", state.employees) && product.status !== "idea" && (getAssignedWorkersForProduct("marketing", definition.id).indexOf("buzz03") !== -1 || product.awareness >= 30)) candidates.push({ id: "competitive_campaign", productId: definition.id, priority: 63 });
+      if (isWorkerAvailable("security06", state.employees) && product.status !== "idea" && (product.bugs >= 25 || product.quality <= 60)) candidates.push({ id: "tech_debt_repayment", productId: definition.id, priority: 62 });
+      if (isWorkerAvailable("care04", state.employees) && definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) >= 3 && product.satisfaction < 85) candidates.push({ id: "customer_interview", productId: definition.id, priority: 61 });
+      if (isWorkerAvailable("sales02", state.employees) && product.status === "selling") candidates.push({ id: "mystery_big_deal", productId: definition.id, priority: 59 });
       if (getAssignedWorkersForProduct("marketing", definition.id).indexOf("buzz03") !== -1 && product.status !== "idea") candidates.push({ id: "buzz_bold_ad", productId: definition.id, priority: 60 });
     });
     return candidates.sort(function (a, b) { return b.priority - a.priority; });
@@ -1272,12 +1361,19 @@
     const definition = getDecisionEventDefinition(event.id);
     const productDefinition = getProductDefinition(event.productId);
     const product = getProduct(productDefinition.id);
-    if (choice === "approve") applyDecisionApproval(definition.id, product, productDefinition);
-    else applyDecisionRejection(definition.id, product, productDefinition);
+    state.decisionStats = normalizeDecisionStats(state.decisionStats);
+    if (choice === "approve") {
+      state.decisionStats.approved += 1;
+      applyDecisionApproval(definition.id, product, productDefinition);
+    } else {
+      state.decisionStats.rejected += 1;
+      applyDecisionRejection(definition.id, product, productDefinition);
+    }
     recalculateProductMrr(product, productDefinition);
     applyProductMilestones(product, productDefinition);
     state.pendingDecisionEvent = null;
     state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
+    applyAchievements(false);
     saveGame();
     render();
     scheduleNextTick();
@@ -1361,6 +1457,44 @@
       product.quality = clamp(product.quality - 3, 0, 100);
       addLog("bug", definition.name + "のvNext前倒しを承認しました。進捗は伸びましたが、軽微な副作用も増えました。", "dev01");
       if (product.upgradeProgress >= 100) completeSubscriptionUpgrade(product, definition);
+      return;
+    }
+    if (eventId === "competitive_campaign") {
+      product.awareness = clamp(product.awareness + 15, 0, 100);
+      state.money = Math.max(0, state.money - 800);
+      state.fire = clamp(state.fire + 3, 0, 100);
+      addLog("fire", definition.name + "の競合対抗キャンペーンを承認しました。認知度は伸びましたが、通知欄も少し温まりました。", "buzz03");
+      return;
+    }
+    if (eventId === "tech_debt_repayment") {
+      product.bugs = clamp(product.bugs - 15, 0, 100);
+      product.quality = clamp(product.quality + 8, 0, 100);
+      state.money = Math.max(0, state.money - 600);
+      addLog("support", definition.name + "の技術的負債返済を承認しました。短期費用で製品が少し落ち着きました。", "security06");
+      return;
+    }
+    if (eventId === "customer_interview") {
+      product.satisfaction = clamp(product.satisfaction + 8, 0, 100);
+      product.awareness = clamp(product.awareness + 3, 0, 100);
+      product.supportLoad = clamp(product.supportLoad + 3, 0, 100);
+      addLog("support", definition.name + "の顧客インタビューを承認しました。手間は増えましたが、導入先の声が見えてきました。", "care04");
+      return;
+    }
+    if (eventId === "mystery_big_deal") {
+      if (definition.type === "oneShot") {
+        const units = 2;
+        const revenue = safeNumber(definition.price, 0) * units;
+        product.unitsSold = getProductUnitsSold(product) + units;
+        product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
+        state.money = Math.max(0, state.money + revenue);
+        state.totalMoney = Math.max(0, state.totalMoney + revenue);
+        addLog("success", definition.name + "の謎の大型案件を受けました。" + units + "本分の即時売上 " + formatCurrency(revenue) + " を獲得しました。", "sales02");
+      } else {
+        product.customers = getProductCustomers(product) + 1;
+        addLog("success", definition.name + "の謎の大型案件を受けました。顧客が1社増えました。", "sales02");
+      }
+      product.bugs = clamp(product.bugs + 5, 0, 100);
+      state.fire = clamp(state.fire + 8, 0, 100);
     }
   }
 
@@ -1407,12 +1541,29 @@
     }
     if (eventId === "vnext_fast_track") {
       addLog("normal", definition.name + "のvNext前倒しを見送りました。通常ペースで開発を続けます。", "dev01");
+      return;
+    }
+    if (eventId === "competitive_campaign") {
+      addLog("normal", definition.name + "の競合対抗キャンペーンを見送りました。通常運用を続けます。", "buzz03");
+      return;
+    }
+    if (eventId === "tech_debt_repayment") {
+      product.bugs = clamp(product.bugs + 3, 0, 100);
+      addLog("bug", definition.name + "の技術的負債返済を見送りました。製品バグが少し積み上がりました。", "security06");
+      return;
+    }
+    if (eventId === "customer_interview") {
+      addLog("normal", definition.name + "の顧客インタビューを見送りました。問い合わせを待つ方針です。", "care04");
+      return;
+    }
+    if (eventId === "mystery_big_deal") {
+      state.fire = clamp(state.fire - 1, 0, 100);
+      addLog("normal", definition.name + "の謎の大型案件を見送りました。怪しい急成長を避けました。", "sales02");
     }
   }
 
   function clearProductAssignmentWithoutRender(taskId, productId) {
-    const assignment = getProductAssignment(taskId, productId);
-    setProductAssignmentEntry(taskId, productId, { aiIds: [], mode: assignment.mode });
+    clearTaskProductAssignment(taskId, productId);
   }
 
   function renderCompanyExpansionPanel() {
@@ -1978,12 +2129,49 @@
     state.money += mission.reward;
     state.totalMoney += mission.reward;
     addLog("success", "ミッション報酬を受け取りました: " + mission.text + "。" + formatCurrency(mission.reward) + "を売上に計上しました。", "company");
+    applyAchievements(false);
     saveGame();
     render();
   }
 
   function isMissionClaimed(missionId) {
     return state.claimedMissions.indexOf(missionId) !== -1;
+  }
+
+
+  function applyAchievements(silent) {
+    state.achievements = normalizeAchievements(state.achievements);
+    ACHIEVEMENTS.forEach(function (achievement) {
+      const record = state.achievements[achievement.id];
+      if (record && record.unlocked) return;
+      if (!achievement.done()) return;
+      state.achievements[achievement.id] = { unlocked: true, unlockedAt: Date.now() };
+      if (!silent) addLog("success", "実績解除: " + achievement.title + "。" + achievement.description, "company");
+    });
+  }
+
+  function getAchievementRecord(achievementId) {
+    state.achievements = normalizeAchievements(state.achievements);
+    return state.achievements[achievementId] || { unlocked: false, unlockedAt: 0 };
+  }
+
+  function getUnlockedAchievementCount() {
+    return ACHIEVEMENTS.filter(function (achievement) { return getAchievementRecord(achievement.id).unlocked; }).length;
+  }
+
+  function renderAchievements() {
+    const panel = document.getElementById("achievementPanel");
+    if (!panel) return;
+    const unlockedCount = getUnlockedAchievementCount();
+    const visible = dashboardUi.achievementsExpanded ? ACHIEVEMENTS : ACHIEVEMENTS.filter(function (achievement) { return getAchievementRecord(achievement.id).unlocked; }).slice(0, 2);
+    panel.innerHTML = '<div class="section-heading"><h2>実績</h2><button type="button" id="toggleAchievementsButton" class="change-assignment-button">' + (dashboardUi.achievementsExpanded ? '実績を閉じる' : '実績を見る') + '</button></div>' +
+      '<p class="dashboard-summary">解除済み: ' + unlockedCount + '/' + ACHIEVEMENTS.length + '</p>' +
+      '<div class="achievement-list">' + (visible.length ? visible.map(function (achievement) {
+        const unlocked = getAchievementRecord(achievement.id).unlocked;
+        return '<article class="achievement-item' + (unlocked ? ' unlocked' : '') + '"><strong>' + escapeHtml(unlocked ? '✓ ' + achievement.title : '○ ' + achievement.title) + '</strong><span>' + escapeHtml(achievement.description) + '</span></article>';
+      }).join('') : '<p class="dashboard-summary">まだ解除済み実績はありません。製品を動かすと増えていきます。</p>') + '</div>';
+    const toggle = document.getElementById("toggleAchievementsButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("achievementsExpanded"); });
   }
 
   function getBugMitigationText() {
@@ -2112,6 +2300,91 @@
       const ageClass = index >= 5 ? ' old-log' : '';
       return '<article class="log-item log-' + type + ageClass + (log.boot ? ' boot-log' : '') + '"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></article>';
     }).join("");
+  }
+
+  function isDebugMode() {
+    const search = window.location && typeof window.location.search === "string" ? window.location.search : (typeof location !== "undefined" && typeof location.search === "string" ? location.search : "");
+    return /(?:\?|&)debug=1(?:&|$)/.test(search);
+  }
+
+  function renderDebugPanel() {
+    const panel = document.getElementById("debugPanel");
+    if (!panel) return;
+    if (!isDebugMode()) {
+      panel.hidden = true;
+      panel.innerHTML = "";
+      return;
+    }
+    panel.hidden = false;
+    panel.innerHTML = '<div class="section-heading"><h2>開発用デバッグ</h2><span>?debug=1</span></div>' +
+      '<p class="dashboard-summary">通常プレイでは非表示です。プレイテスト用の危険操作です。</p>' +
+      '<div class="debug-actions">' +
+      '<button type="button" data-debug-action="money100k">売上 +100K</button>' +
+      '<button type="button" data-debug-action="customers5">主力サブスク 顧客+5</button>' +
+      '<button type="button" data-debug-action="fire50">炎上 +50</button>' +
+      '<button type="button" data-debug-action="bugs50">主力製品 バグ+50</button>' +
+      '<button type="button" data-debug-action="unlockAllAi">全AI解放</button>' +
+      '<button type="button" data-debug-action="completeProducts">全製品完成</button>' +
+      '<button type="button" data-debug-action="decisionNow">社長判断を即発生</button>' +
+      '<button type="button" data-debug-action="dumpSave">saveをconsole出力</button>' +
+      '</div>';
+    panel.querySelectorAll("button[data-debug-action]").forEach(function (button) {
+      button.addEventListener("click", function () { applyDebugAction(button.getAttribute("data-debug-action")); });
+    });
+  }
+
+  function applyDebugAction(action) {
+    if (!isDebugMode()) return false;
+    if (action === "money100k") {
+      state.money += 100000;
+      state.totalMoney += 100000;
+      addLog("system", "デバッグ: 売上を+100Kしました。", "company");
+    } else if (action === "customers5") {
+      const definition = PRODUCTS.find(function (item) { return item.type === "subscription"; }) || PRODUCTS[0];
+      const product = getProduct(definition.id);
+      product.status = product.status === "idea" ? "selling" : product.status;
+      product.customers = getProductCustomers(product) + 5;
+      recalculateProductMrr(product, definition);
+      addLog("system", "デバッグ: " + definition.name + "の顧客を+5しました。", definition.id);
+    } else if (action === "fire50") {
+      state.fire = clamp(state.fire + 50, 0, 100);
+      addLog("system", "デバッグ: 炎上度を+50しました。", "company");
+    } else if (action === "bugs50") {
+      const definition = getPrimaryProductDefinition();
+      const product = getProduct(definition.id);
+      product.bugs = clamp(product.bugs + 50, 0, 100);
+      state.bugs = clamp(state.bugs + 50, 0, 100);
+      addLog("system", "デバッグ: " + definition.name + "の製品バグを+50しました。", definition.id);
+    } else if (action === "unlockAllAi") {
+      EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
+      addLog("system", "デバッグ: 全AIを雇用済みにしました。", "company");
+    } else if (action === "completeProducts") {
+      PRODUCTS.forEach(function (definition) {
+        const product = getProduct(definition.id);
+        if (product.status === "idea" || product.status === "developing") product.status = "ready";
+        product.progress = definition.developmentRequired;
+      });
+      addLog("system", "デバッグ: 全製品を完成状態にしました。", "company");
+    } else if (action === "decisionNow") {
+      const candidate = getDecisionEventCandidates()[0];
+      if (candidate) {
+        state.pendingDecisionEvent = { id: candidate.id, productId: candidate.productId, createdAt: Date.now() };
+        state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
+        addLog("system", "デバッグ: 社長判断を発生させました。", "company");
+      } else {
+        addLog("system", "デバッグ: 発生条件を満たす社長判断がありません。", "company");
+      }
+    } else if (action === "dumpSave") {
+      console.log("AI_BLACK_STARTUP_SAVE", JSON.stringify(state));
+      addLog("system", "デバッグ: save内容をconsoleへ出力しました。", "company");
+    } else {
+      return false;
+    }
+    applyAchievements(false);
+    saveGame();
+    render();
+    scheduleNextTick();
+    return true;
   }
 
   function createShareText() {
@@ -2359,10 +2632,8 @@
 
   function getWorkerAssignmentMode(workerId, taskId, productId) {
     if (taskId !== "development") return "normal";
-    const definition = getProductDefinition(productId);
-    const product = getProduct(definition.id);
-    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling")) return "upgrade";
-    return "newProduct";
+    const assignmentMode = getDevelopmentAssignmentMode(taskId, productId, null);
+    return assignmentMode === "upgrade" ? "upgrade" : "newProduct";
   }
 
   function closeAssignmentModal() {
@@ -2607,6 +2878,51 @@
     return { productId: definition.id, aiIds: (entry.aiIds || []).slice(0, 2), mode: taskId === "development" ? (entry.mode === "upgrade" ? "upgrade" : "newProduct") : "normal" };
   }
 
+
+  function getTaskProductAssignment(taskId, productId) {
+    return getProductAssignment(taskId, productId);
+  }
+
+  function getAssignedAiIds(taskId, productId) {
+    return getTaskProductAssignment(taskId, productId).aiIds;
+  }
+
+  function getDevelopmentAssignmentMode(taskId, productId, mode) {
+    if (taskId !== "development") return "normal";
+    if (mode === "newProduct") return "newProduct";
+    if (mode === "upgrade") return "upgrade";
+    const definition = getProductDefinition(productId);
+    const product = getProduct(definition.id);
+    if (definition.type === "subscription" && (product.status === "ready" || product.status === "selling")) return "upgrade";
+    return "newProduct";
+  }
+
+  function setAssignedAiIds(taskId, productId, aiIds, mode) {
+    const assignmentMode = getDevelopmentAssignmentMode(taskId, productId, mode);
+    setProductAssignmentEntry(taskId, productId, { aiIds: (aiIds || []).slice(0, 2), mode: assignmentMode });
+  }
+
+  function canAssignAiToTaskProduct(taskId, productId, aiId) {
+    return canWorkerAssignToTask(aiId, taskId, state.employees) && canAssignTaskToProduct(taskId, productId);
+  }
+
+  function removeAiFromTaskProduct(taskId, productId, aiId) {
+    const assignment = getTaskProductAssignment(taskId, productId);
+    setAssignedAiIds(taskId, productId, assignment.aiIds.filter(function (id) { return id !== aiId; }), assignment.mode);
+  }
+
+  function clearTaskProductAssignment(taskId, productId) {
+    const assignment = getTaskProductAssignment(taskId, productId);
+    const mode = taskId === "development" ? "newProduct" : assignment.mode;
+    setAssignedAiIds(taskId, productId, [], mode);
+  }
+
+  function normalizeProductAssignments(taskId, rawAssignment) {
+    const wrapper = {};
+    wrapper[taskId] = rawAssignment;
+    return normalizeAssignments(wrapper, state.employees)[taskId].productAssignments;
+  }
+
   function getAssignmentProduct(taskId) {
     return getProduct(getAssignment(taskId).productId);
   }
@@ -2636,7 +2952,7 @@
       PRODUCTS.forEach(function (definition) {
         const assignment = getProductAssignment(task.id, definition.id);
         if (assignment.aiIds.indexOf(aiId) === -1) return;
-        setProductAssignmentEntry(task.id, definition.id, { aiIds: assignment.aiIds.filter(function (id) { return id !== aiId; }), mode: assignment.mode });
+        setAssignedAiIds(task.id, definition.id, assignment.aiIds.filter(function (id) { return id !== aiId; }), assignment.mode);
       });
     });
   }
@@ -2645,7 +2961,7 @@
     const assignment = getProductAssignment("development", productId);
     if (!assignment.aiIds.length) return;
     const workerNames = getWorkerGroupLabel(assignment.aiIds);
-    setProductAssignmentEntry("development", productId, { aiIds: [], mode: "newProduct" });
+    setAssignedAiIds("development", productId, [], "newProduct");
     addLog("normal", messageTemplate.replace("{workers}", workerNames), productId);
   }
 
@@ -2654,9 +2970,7 @@
     const normalizedProductId = getProductDefinition(productId).id;
     if (!canAssignTaskToProduct(taskId, normalizedProductId)) return false;
     state.assignments = normalizeAssignments(state.assignments, state.employees);
-    const targetDefinition = getProductDefinition(normalizedProductId);
-    const targetProduct = getProduct(targetDefinition.id);
-    const assignmentMode = taskId === "development" ? ((mode === "upgrade" || (targetDefinition.type === "subscription" && (targetProduct.status === "ready" || targetProduct.status === "selling"))) ? "upgrade" : "newProduct") : "normal";
+    const assignmentMode = getDevelopmentAssignmentMode(taskId, normalizedProductId, mode);
     const selectedAiIds = [];
     (aiIds || []).forEach(function (aiId) {
       if (!aiId || selectedAiIds.indexOf(aiId) !== -1 || selectedAiIds.length >= 2) return;
@@ -2664,11 +2978,12 @@
       selectedAiIds.push(aiId);
     });
     selectedAiIds.forEach(removeAiFromAllAssignments);
-    setProductAssignmentEntry(taskId, normalizedProductId, { aiIds: selectedAiIds, mode: assignmentMode });
+    setAssignedAiIds(taskId, normalizedProductId, selectedAiIds, assignmentMode);
     if (taskId === "development" && selectedAiIds.length) {
       if (assignmentMode === "upgrade") startSubscriptionUpgrade(normalizedProductId);
       else startProductDevelopmentIfNeeded(normalizedProductId);
     }
+    applyAchievements(false);
     saveGame();
     render();
     scheduleNextTick();
@@ -2679,9 +2994,7 @@
     if (!TASKS.some(function (task) { return task.id === taskId; })) return false;
     const normalizedProductId = getProductDefinition(productId).id;
     const current = getProductAssignment(taskId, normalizedProductId);
-    const targetDefinition = getProductDefinition(normalizedProductId);
-    const targetProduct = getProduct(targetDefinition.id);
-    const assignmentMode = taskId === "development" ? (((mode || "normal") === "upgrade" || (targetDefinition.type === "subscription" && (targetProduct.status === "ready" || targetProduct.status === "selling"))) ? "upgrade" : "newProduct") : "normal";
+    const assignmentMode = getDevelopmentAssignmentMode(taskId, normalizedProductId, mode || "normal");
     const aiIds = current.aiIds.slice(0, 2);
     if (aiId && aiIds.indexOf(aiId) === -1) {
       if (aiIds.length >= 2) return false;
@@ -2697,15 +3010,13 @@
   }
 
   function clearProductAssignment(taskId, productId) {
-    const assignment = getProductAssignment(taskId, productId);
-    setProductAssignmentEntry(taskId, productId, { aiIds: [], mode: assignment.mode });
+    clearTaskProductAssignment(taskId, productId);
     saveGame();
     render();
   }
 
   function removeAiFromTask(taskId, productId, aiId) {
-    const assignment = getProductAssignment(taskId, productId);
-    setProductAssignmentEntry(taskId, productId, { aiIds: assignment.aiIds.filter(function (id) { return id !== aiId; }), mode: assignment.mode });
+    removeAiFromTaskProduct(taskId, productId, aiId);
     saveGame();
     render();
   }
@@ -2910,7 +3221,7 @@
 
 
   function getEmployee(employeeId) { return EMPLOYEES.find(function (employee) { return employee.id === employeeId; }); }
-  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent); state.decisionEventCooldown = clamp(Math.floor(safeNumber(state.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
+  function sanitizeRuntimeState() { state.money = Math.max(0, safeNumber(state.money, 0)); state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0)); state.users = Math.max(0, safeNumber(state.users, 0)); state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100); state.fire = clamp(safeNumber(state.fire, 0), 0, 100); state.products = normalizeProducts(state.products); state.productFlags = normalizeProductFlags(state.productFlags); state.assignments = normalizeAssignments(state.assignments, state.employees); state.achievements = normalizeAchievements(state.achievements); state.decisionStats = normalizeDecisionStats(state.decisionStats); state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent); state.decisionEventCooldown = clamp(Math.floor(safeNumber(state.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS); state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL); }
   function formatNumber(value) { const number = Math.max(0, safeNumber(value, 0)); if (number >= 1000000000) return (number / 1000000000).toFixed(1) + "B"; if (number >= 1000000) return (number / 1000000).toFixed(1) + "M"; if (number >= 1000) return (number / 1000).toFixed(1) + "K"; return Math.floor(number).toString(); }
   function formatCurrency(value) { return "¥" + formatNumber(value); }
   function formatCurrencyPrecise(value) { const number = Math.max(0, safeNumber(value, 0)); return "¥" + (number > 0 && number < 10 ? number.toFixed(1) : formatNumber(number)); }
@@ -2950,7 +3261,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-33").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-34").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
