@@ -548,3 +548,8 @@ button.share {
 @media (max-width: 380px) { .debug-actions { grid-template-columns: 1fr; } }
 
 .primary-risk-hint { display: inline-flex; width: fit-content; margin-top: 4px; padding: 3px 8px; border-radius: 999px; background: #fff1f2; color: #9f1239; border: 1px solid rgba(244, 63, 94, 0.22); font-size: 0.78rem; font-weight: 900; }
+
+.achievement-category-group { display: grid; gap: 6px; }
+.achievement-category-group h3 { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 0; color: #07506a; font-size: 12px; }
+.achievement-category-group h3 span { color: #586b75; font-size: 11px; }
+.debug-actions h3 { grid-column: 1 / -1; margin: 6px 0 0; color: #8f2c42; font-size: 12px; }
