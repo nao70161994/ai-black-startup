@@ -10,25 +10,25 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.36"' in index
-    assert 'style.css?v=20260524-36' in index
-    assert 'main.js?v=20260524-36' in index
-    assert 'manifest.webmanifest?v=20260524-36' in index
-    assert 'icon.svg?v=20260524-36' in index
-    assert 'ogp.png?v=20260524-36' in index
-    assert 'icon-512.png?v=20260524-36' in index
+    assert 'content="2026.05.24.37"' in index
+    assert 'style.css?v=20260524-37' in index
+    assert 'main.js?v=20260524-37' in index
+    assert 'manifest.webmanifest?v=20260524-37' in index
+    assert 'icon.svg?v=20260524-37' in index
+    assert 'ogp.png?v=20260524-37' in index
+    assert 'icon-512.png?v=20260524-37' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.36"' in main
-    assert 'const APP_VERSION = "2026.05.24.36"' in sw
-    assert 'sw.js?v=20260524-36' in main
+    assert 'const APP_VERSION = "2026.05.24.37"' in main
+    assert 'const APP_VERSION = "2026.05.24.37"' in sw
+    assert 'sw.js?v=20260524-37' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-36"
+    assert manifest["start_url"] == "./index.html?v=20260524-37"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-36" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-37" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -56,11 +56,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-36" in sw
-    assert "icon.svg?v=20260524-36" in sw
-    assert "ogp.svg?v=20260524-36" in sw
-    assert "ogp.png?v=20260524-36" in sw
-    assert "icon-512.png?v=20260524-36" in sw
+    assert "manifest.webmanifest?v=20260524-37" in sw
+    assert "icon.svg?v=20260524-37" in sw
+    assert "ogp.svg?v=20260524-37" in sw
+    assert "ogp.png?v=20260524-37" in sw
+    assert "icon-512.png?v=20260524-37" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -199,7 +199,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.36"
+    assert output["save"]["appVersion"] == "2026.05.24.37"
 
 
 def test_security06_visible_at_company_level_5():
@@ -722,10 +722,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.36"' in index
-    assert 'main.js?v=20260524-36' in index
-    assert 'sw.js?v=20260524-36' in main
-    assert 'const APP_VERSION = "2026.05.24.36"' in sw
+    assert 'content="2026.05.24.37"' in index
+    assert 'main.js?v=20260524-37' in index
+    assert 'sw.js?v=20260524-37' in main
+    assert 'const APP_VERSION = "2026.05.24.37"' in sw
 
 
 
@@ -739,7 +739,7 @@ def test_subscription_product_upgrade_pipeline_present():
     assert "const canResumeUpgrade = definition.type === \"subscription\"" in main
     assert 'product.upgradeStatus = canResumeUpgrade ? "upgrading" : "idle"' in main
     assert "function getCurrentMonthlyPrice(product, definition)" in main
-    assert "Math.round(definition.monthlyPrice * (1 + 0.2 * (getProductVersion(product) - 1)))" in main
+    assert "Math.round(definition.monthlyPrice * (1 + 0.2 * (getProductVersion(product) - 1) + safeNumber(product && product.priceAdjustment, 0)))" in main
     assert "getCurrentMonthlyPrice(product, definition) * getProductCustomers(product)" in main
     assert "function startSubscriptionUpgrade(productId)" in main
     assert 'product.upgradeStatus = "upgrading"' in main
@@ -1795,7 +1795,7 @@ def test_employee_origin_assignment_respects_product_state_constraints():
     assert 'if (taskId === "sales") return product.status === "ready" || product.status === "selling"' in code
     assert 'if (taskId === "qa" || taskId === "marketing") return product.status === "developing" || product.status === "ready" || product.status === "selling"' in code
     assert 'if (taskId === "support") return definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) > 0' in code
-    assert 'if (taskId === "crisis") return product.status === "selling" || (state.fire >= 50 && product.status !== "idea")' in code
+    assert 'if (taskId === "crisis") return product.status === "selling" || ((state.fire >= 50 || getProductFire(product) >= 40) && product.status !== "idea")' in code
 
 
 def test_employee_assignment_mode_separates_new_product_and_upgrade_from_employee_cards():
@@ -2727,8 +2727,8 @@ def test_product_action_menu_categories_are_rendered():
 def test_fire_pressure_reduces_sales_chance_structure():
     main = (ROOT / "main.js").read_text()
 
-    assert "function getFireSalesPressureFactor()" in main
-    assert "const fireFactor = getFireSalesPressureFactor();" in main
+    assert "function getFireSalesPressureFactor(product)" in main
+    assert "const fireFactor = getFireSalesPressureFactor(product);" in main
     assert "definition.demand * fireFactor" in main
 
 
@@ -2785,7 +2785,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-36" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-37" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3037,11 +3037,121 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.36"' in index
+    assert 'content="2026.05.24.37"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.36"' in main
-    assert 'const APP_VERSION = "2026.05.24.36"' in sw
-    assert 'sw.js?v=20260524-36' in main
+    assert 'const APP_VERSION = "2026.05.24.37"' in main
+    assert 'const APP_VERSION = "2026.05.24.37"' in sw
+    assert 'sw.js?v=20260524-37' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4へ向けた設計メモ' in readme
     assert '製品別炎上' in readme
+
+
+def test_product_fire_is_normalized_and_rendered_as_product_risk():
+    output = run_browser_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "productFire": 75}},
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission"],
+    })
+
+    product = output["save"]["products"]["dailyReportAi"]
+    assert product["productFire"] == 75
+    assert "製品炎上高" in output["primaryProductHtml"]
+    assert "Fire-05推奨" in output["primaryProductHtml"]
+
+
+def test_marketing_raises_product_fire_and_crisis_reduces_it():
+    raised = run_game_action_smoke({
+        "employees": {"buzz03": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "productFire": 0}},
+        "assignments": {"marketing": {"productAssignments": {"dailyReportAi": {"aiIds": ["buzz03"]}}}},
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    assert raised["save"]["products"]["dailyReportAi"]["productFire"] > 0
+
+    lowered = run_game_action_smoke({
+        "fire": 20,
+        "employees": {"fire05": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "productFire": 80}},
+        "assignments": {"crisis": {"productAssignments": {"dailyReportAi": {"aiIds": ["fire05"]}}}},
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    assert lowered["save"]["products"]["dailyReportAi"]["productFire"] < 80
+
+
+def test_product_fire_affects_churn_and_sales_pressure_structure():
+    main = (ROOT / "main.js").read_text()
+
+    assert "getProductFire(product) * 0.18" in main
+    assert "getProductFire(product) * 0.0012" in main
+    assert "const productPenalty = clamp(getProductFire(product) / 260" in main
+    assert "adjustProductFire(product, marketing.fire * 0.75)" in main
+    assert "adjustProductFire(product, crisis.productFire || crisis.fire * 0.6)" in main
+
+
+def test_subscription_price_adjustment_is_derived_in_mrr_and_decision_approval():
+    normalized = run_browser_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 10, "priceAdjustment": 0.05}},
+    })
+    assert normalized["save"]["products"]["dailyReportAi"]["priceAdjustment"] == 0.05
+    assert normalized["save"]["products"]["dailyReportAi"]["mrr"] == 5250
+
+    approved = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 10, "satisfaction": 70, "churnRisk": 10, "priceAdjustment": 0}},
+        "pendingDecisionEvent": {"id": "subscription_price_review", "productId": "dailyReportAi", "createdAt": 1},
+    }, "window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
+    product = approved["save"]["products"]["dailyReportAi"]
+    assert product["priceAdjustment"] == 0.05
+    assert product["mrr"] == 5250
+    assert product["satisfaction"] == 65
+
+
+def test_v04_achievement_expansions_are_present_and_unlockable():
+    main = (ROOT / "main.js").read_text()
+    for achievement_id in ["total_mrr_500k", "slide_100_sales", "slide_500_sales", "version_20", "product_fire_50", "fire05_first_crisis", "care04_first_support", "all_tasks_active", "manual_reward_claimed", "manual_company_expansion"]:
+        assert f'id: "{achievement_id}"' in main
+
+    output = run_game_action_smoke({
+        "companyLevel": 2,
+        "claimedMissions": ["daily_report_developing"],
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 210, "version": 20, "productFire": 60}, "slideKitAi": {"id": "slideKitAi", "status": "selling", "unitsSold": 500}},
+        "achievements": {},
+    }, "window.__testApi.applyAchievements(false); window.__testApi.saveGame();")
+
+    achievements = output["save"]["achievements"]
+    assert achievements["total_mrr_500k"]["unlocked"] is True
+    assert achievements["slide_500_sales"]["unlocked"] is True
+    assert achievements["version_20"]["unlocked"] is True
+    assert achievements["product_fire_50"]["unlocked"] is True
+    assert achievements["manual_reward_claimed"]["unlocked"] is True
+    assert achievements["manual_company_expansion"]["unlocked"] is True
+
+
+def test_next_recommendation_product_cta_can_open_assignment_modal_directly():
+    main = (ROOT / "main.js").read_text()
+
+    assert 'const taskId = button.getAttribute("data-recommendation-task") || "";' in main
+    assert 'if (action === "product" && productId && taskId) { openProductAssignmentModal(taskId, productId, mode); return; }' in main
+    assert 'taskId: "support"' in main
+    assert 'taskId: "development", mode: "upgrade"' in main
+    assert 'taskId: "crisis"' in main
+
+
+def test_debug_product_fire_and_task_presets_are_guarded():
+    blocked = run_game_action_smoke({"products": {"dailyReportAi": {"id": "dailyReportAi", "productFire": 0}}}, "window.__testApi.applyDebugAction('productFireScenario'); window.__testApi.saveGame();")
+    allowed = run_game_action_smoke({"__locationSearch": "?debug=1", "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "productFire": 0}}}, "window.__testApi.applyDebugAction('productFireScenario'); window.__testApi.saveGame();")
+
+    assert blocked["save"]["products"]["dailyReportAi"]["productFire"] == 0
+    assert allowed["save"]["products"]["dailyReportAi"]["productFire"] >= 70
+    assert "製品炎上+70" in allowed["debugHtml"]
+    assert "プリセット: 成長" in allowed["debugHtml"]
+    assert "プリセット: 火消し" in allowed["debugHtml"]
+
+
+def test_decision_warning_label_and_product_fire_qa_text_are_present():
+    main = (ROOT / "main.js").read_text()
+    css = (ROOT / "style.css").read_text()
+
+    assert "decision-risk-label" in main
+    assert "リスクあり" in main
+    assert ".decision-risk-label" in css
+    assert "製品炎上" in main
+    assert "productFire50Logged" in main

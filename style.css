@@ -529,6 +529,7 @@ button.share {
 .decision-panel.decision-warning { border-color: rgba(244, 114, 182, 0.42); background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255, 241, 248, 0.96)); }
 
 .decision-impact-heading { display: inline-flex; margin-top: 6px; color: #475569; font-size: 0.78rem; font-weight: 800; }
+.decision-risk-label { display: inline-flex; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: #ffe3ef; color: #8a123f; font-size: 0.72rem; font-style: normal; font-weight: 900; vertical-align: middle; }
 .decision-risk-button { border-color: rgba(244, 114, 182, 0.42); background: linear-gradient(180deg, #ffe3ef, #ffb5d2); color: #5b102c; }
 .company-unlock-preview { margin: -3px 0 6px; color: #07506a; font-size: 0.86rem; font-weight: 700; }
 
@@ -545,3 +546,5 @@ button.share {
 .debug-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .debug-actions button { min-height: 42px; color: #8f2c42; border-color: rgba(255, 107, 138, 0.34); background: #ffffff; box-shadow: none; font-size: 12px; }
 @media (max-width: 380px) { .debug-actions { grid-template-columns: 1fr; } }
+
+.primary-risk-hint { display: inline-flex; width: fit-content; margin-top: 4px; padding: 3px 8px; border-radius: 999px; background: #fff1f2; color: #9f1239; border: 1px solid rgba(244, 63, 94, 0.22); font-size: 0.78rem; font-weight: 900; }
