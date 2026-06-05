@@ -164,7 +164,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-34
+http://localhost:8000/?v=20260524-35
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -199,22 +199,17 @@ PCで確認する場合は `http://localhost:8000` でも起動できます。�
 
 操作エリアの「共有」ボタンから、現在のプレイ状況をテキスト化できます。
 
-共有テキストには以下が含まれます。
+共有テキストはXへ投稿しやすい短い形式です。以下だけを含めます。
 
 - 会社Lv
 - 売上
+- 総MRR
 - 総顧客数
-- バグ
-- 炎上度
-- 製品名
-- 製品状態
-- 顧客数
-- MRR
-- 販売数/累計売上
-- 品質
-- 製品バグ
-- 最新ログ
+- 主力製品名
+- 主力製品状態
 - 公開URL
+
+全製品の詳細、担当一覧、最新ログは共有文には入れず、スクショと一緒に読める要約にしています。
 
 対応ブラウザではWeb Share APIの共有シートを開きます。未対応ブラウザではクリップボードへコピーします。コピーに成功すると業務報告ログにも記録されます。
 
@@ -267,32 +262,32 @@ ai_black_startup_save_v1
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.34` です。
+現在のアプリバージョンは `2026.05.24.35` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-34">
-<script src="main.js?v=20260524-34"></script>
+<link rel="stylesheet" href="style.css?v=20260524-35">
+<script src="main.js?v=20260524-35"></script>
 ```
 
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.34
+ai-black-startup-2026.05.24.35
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-34` を付けて開く
+- URLに `?v=20260524-35` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-34` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-35` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.34";
+  const APP_VERSION = "2026.05.24.35";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const TICK_MS = 1000;
@@ -2388,24 +2388,16 @@
   }
 
   function createShareText() {
-    const latest = state.logs[0] ? state.logs[0].text : "まだ業務報告はありません。";
     const primaryDefinition = getPrimaryProductDefinition();
     const primaryProduct = getProduct(primaryDefinition.id);
     return [
       "AI社長のブラック起業",
       "会社Lv: " + state.companyLevel,
       "売上: " + formatCurrency(state.money),
-      "総顧客: " + formatCustomers(getTotalProductCustomers()),
-      "バグ: " + Math.round(getDashboardBugLevel()) + "/100",
-      "炎上度: " + Math.round(state.fire) + "/100",
-      "主要製品: " + primaryDefinition.name,
-      "主要製品状態: " + getProductStatusLabel(primaryProduct.status),
       "総MRR: " + formatCurrency(getTotalProductMrr()) + "/月",
-      "製品一覧: " + getProductShareSummary(),
-      "担当: " + getAssignmentShareSummary(),
-      "最新ログ: " + latest,
-      "公開URL: " + PUBLIC_URL,
-      "#AI社長のブラック起業"
+      "総顧客: " + formatCustomers(getTotalProductCustomers()),
+      "主力: " + primaryDefinition.name + " / " + getProductStatusLabel(primaryProduct.status),
+      PUBLIC_URL
     ].join("\n");
   }
 
@@ -3261,7 +3253,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-34").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-35").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

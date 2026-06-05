@@ -10,25 +10,25 @@ def test_cache_busting_versions_match_app_version():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.34"' in index
-    assert 'style.css?v=20260524-34' in index
-    assert 'main.js?v=20260524-34' in index
-    assert 'manifest.webmanifest?v=20260524-34' in index
-    assert 'icon.svg?v=20260524-34' in index
-    assert 'ogp.png?v=20260524-34' in index
-    assert 'icon-512.png?v=20260524-34' in index
+    assert 'content="2026.05.24.35"' in index
+    assert 'style.css?v=20260524-35' in index
+    assert 'main.js?v=20260524-35' in index
+    assert 'manifest.webmanifest?v=20260524-35' in index
+    assert 'icon.svg?v=20260524-35' in index
+    assert 'ogp.png?v=20260524-35' in index
+    assert 'icon-512.png?v=20260524-35' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.34"' in main
-    assert 'const APP_VERSION = "2026.05.24.34"' in sw
-    assert 'sw.js?v=20260524-34' in main
+    assert 'const APP_VERSION = "2026.05.24.35"' in main
+    assert 'const APP_VERSION = "2026.05.24.35"' in sw
+    assert 'sw.js?v=20260524-35' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-34"
+    assert manifest["start_url"] == "./index.html?v=20260524-35"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-34" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-35" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -56,11 +56,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-34" in sw
-    assert "icon.svg?v=20260524-34" in sw
-    assert "ogp.svg?v=20260524-34" in sw
-    assert "ogp.png?v=20260524-34" in sw
-    assert "icon-512.png?v=20260524-34" in sw
+    assert "manifest.webmanifest?v=20260524-35" in sw
+    assert "icon.svg?v=20260524-35" in sw
+    assert "ogp.svg?v=20260524-35" in sw
+    assert "ogp.png?v=20260524-35" in sw
+    assert "icon-512.png?v=20260524-35" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -72,10 +72,15 @@ def test_share_button_and_share_fallback_present():
     assert "navigator.share" in main
     assert "navigator.clipboard.writeText" in main
     assert "会社Lv: " in main
-    assert "最新ログ: " in main
-    assert "主要製品: " in main
     assert "総MRR: " in main
-    assert "製品一覧: " in main
+    assert "総顧客: " in main
+    assert "主力: " in main
+    share_start = main.index("function createShareText()")
+    share_end = main.index("function shareGameStatus()", share_start)
+    share_code = main[share_start:share_end]
+    assert "製品一覧: " not in share_code
+    assert "最新ログ: " not in share_code
+    assert "担当: " not in share_code
 
 
 def run_browser_smoke(save):
@@ -83,7 +88,7 @@ def run_browser_smoke(save):
 const fs = require('fs');
 const vm = require('vm');
 let code = fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -122,7 +127,8 @@ console.log(JSON.stringify({
   missionHtml: elements.get('missionList').innerHTML,
   achievementHtml: elements.get('achievementPanel').innerHTML,
   debugHtml: elements.get('debugPanel').innerHTML,
-  debugHidden: elements.get('debugPanel').hidden
+  debugHidden: elements.get('debugPanel').hidden,
+  shareText: window.__testApi.createShareText()
 }));
 '''
     result = subprocess.run(
@@ -193,7 +199,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.34"
+    assert output["save"]["appVersion"] == "2026.05.24.35"
 
 
 def test_security06_visible_at_company_level_5():
@@ -540,9 +546,12 @@ def test_two_product_targets_and_share_summary_present():
     assert 'id="openAssignmentModal"' in main
     assert 'button[data-modal-product]' in main
     assert 'button[data-modal-ai]' in main
-    assert '"主要製品: " + primaryDefinition.name' in main
+    assert '"主力: " + primaryDefinition.name + " / " + getProductStatusLabel(primaryProduct.status)' in main
     assert '"総MRR: " + formatCurrency(getTotalProductMrr()) + "/月"' in main
-    assert '"製品一覧: " + getProductShareSummary()' in main
+    share_start = main.index("function createShareText()")
+    share_end = main.index("function shareGameStatus()", share_start)
+    share_code = main[share_start:share_end]
+    assert '"製品一覧: " + getProductShareSummary()' not in share_code
 
 
 def test_sales_target_ui_is_explicit():
@@ -713,10 +722,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = (ROOT / "main.js").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.34"' in index
-    assert 'main.js?v=20260524-34' in index
-    assert 'sw.js?v=20260524-34' in main
-    assert 'const APP_VERSION = "2026.05.24.34"' in sw
+    assert 'content="2026.05.24.35"' in index
+    assert 'main.js?v=20260524-35' in index
+    assert 'sw.js?v=20260524-35' in main
+    assert 'const APP_VERSION = "2026.05.24.35"' in sw
 
 
 
@@ -782,7 +791,7 @@ def run_game_action_smoke(save, action_script):
 const fs = require('fs');
 const vm = require('vm');
 let code = fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -822,6 +831,7 @@ console.log(JSON.stringify({
   achievementHtml: elements.get('achievementPanel').innerHTML,
   debugHtml: elements.get('debugPanel').innerHTML,
   debugHidden: elements.get('debugPanel').hidden,
+  shareText: window.__testApi.createShareText(),
   latestLog: elements.get('latestLogText').textContent,
 }));
 '''
@@ -1825,6 +1835,32 @@ def test_share_text_uses_total_customers_instead_of_legacy_users_label():
     assert "ユーザー: " not in share_code
 
 
+def test_share_text_is_short_and_omits_full_product_details():
+    output = run_browser_smoke({
+        "money": 672500,
+        "totalMoney": 672500,
+        "companyLevel": 3,
+        "products": {
+            "dailyReportAi": {"status": "selling", "customers": 3, "version": 5, "awareness": 49, "mrr": 999999},
+            "meetingMinutesAi": {"status": "selling", "customers": 12, "version": 2, "awareness": 81},
+            "slideKitAi": {"status": "selling", "unitsSold": 10, "lifetimeRevenue": 98000},
+        },
+        "logs": [{"type": "success", "text": "とても長い最新ログがここに入っても共有文には入れません。", "createdAt": 1760000000000}],
+    })
+    share_text = output["shareText"]
+
+    assert "https://nao70161994.github.io/ai-black-startup/" in share_text
+    assert len(share_text) <= 200
+    assert "総顧客: " in share_text
+    assert "主力: " in share_text
+    assert "製品一覧: " not in share_text
+    assert "AI日報メーカー v" not in share_text
+    assert " | " not in share_text
+    assert "ユーザー" not in share_text
+    assert "最新ログ" not in share_text
+    assert "担当:" not in share_text
+
+
 def test_readme_intro_describes_product_pipeline_not_legacy_employee_effects():
     readme = (ROOT / "README.md").read_text()
     intro = readme[readme.index("## 概要"):readme.index("## 公開URL")]
@@ -2055,7 +2091,9 @@ def test_multi_ai_sales_effects_and_labels_are_available():
     assert "salesWorkers.forEach(function (workerId)" in main
     assert "getWorkerGroupLabel(assignment.aiIds)" in main
     assert "getAssignmentShareSummary()" in main
-    assert '"担当: " + getAssignmentShareSummary()' in main
+    share_start = main.index("function createShareText()")
+    share_end = main.index("function shareGameStatus()", share_start)
+    assert '"担当: " + getAssignmentShareSummary()' not in main[share_start:share_end]
     assert "AI社長は専門AIと同じ仕事に入って補助" in (ROOT / "README.md").read_text()
     assert "最大2体" in main
     assert "最大2体まで" in main
@@ -2590,7 +2628,9 @@ def test_share_text_and_web_share_include_public_url():
     main = (ROOT / "main.js").read_text()
 
     assert 'const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/"' in main
-    assert '"公開URL: " + PUBLIC_URL' in main
+    share_start = main.index("function createShareText()")
+    share_end = main.index("function shareGameStatus()", share_start)
+    assert "PUBLIC_URL" in main[share_start:share_end]
     assert 'url: PUBLIC_URL' in main
 
 
@@ -2731,7 +2771,9 @@ def test_dashboard_bug_level_includes_product_bugs():
     assert "function getProductBugLevel()" in main
     assert "function getDashboardBugLevel()" in main
     assert 'setText("bugs", Math.round(getDashboardBugLevel()) + " / 100")' in main
-    assert '"バグ: " + Math.round(getDashboardBugLevel()) + "/100"' in main
+    share_start = main.index("function createShareText()")
+    share_end = main.index("function shareGameStatus()", share_start)
+    assert '"バグ: " + Math.round(getDashboardBugLevel()) + "/100"' not in main[share_start:share_end]
 
 
 def test_release_candidate_readme_mentions_public_share_and_cache_url():
@@ -2739,9 +2781,10 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
 
     assert "公開URL" in readme
     assert "https://nao70161994.github.io/ai-black-startup/" in readme
-    assert "共有テキストには以下が含まれます" in readme
+    assert "共有テキストはXへ投稿しやすい短い形式" in readme
+    assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-34" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-35" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
