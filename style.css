@@ -409,6 +409,11 @@ button.share {
   .modal-actions { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 420px) {
+  .worker-grid { grid-template-columns: 1fr; }
+  .worker-option { min-height: 48px; }
+}
+
 .product-actions, .primary-product-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .product-action-button { min-height: 40px; border-radius: 9px; font-size: 12px; line-height: 1.15; }
 .worker-option { display: grid; gap: 2px; align-content: center; text-align: left; padding: 7px 8px; }

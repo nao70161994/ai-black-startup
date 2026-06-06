@@ -166,7 +166,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-38
+http://localhost:8000/?v=20260524-39
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -264,32 +264,32 @@ ai_black_startup_save_v1
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.38` です。
+現在のアプリバージョンは `2026.05.24.39` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-38">
-<script src="main.js?v=20260524-38"></script>
+<link rel="stylesheet" href="style.css?v=20260524-39">
+<script src="main.js?v=20260524-39"></script>
 ```
 
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.38
+ai-black-startup-2026.05.24.39
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-38` を付けて開く
+- URLに `?v=20260524-39` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-38` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-39` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -342,11 +342,14 @@ AI社員は、v0.3では売上や顧客を直接増減させる存在ではな�
 
 main.jsは将来的に以下の単位へ分割する予定です。現時点では保存互換とPWA更新を優先し、ファイル分割はまだ行っていません。
 
-- products / employees / tasks の定義
-- state normalize / save migration
-- assignments / productAssignments の不変条件
-- tick処理と製品タスク処理
-- decision events / achievements / missions
-- render / modal / debug UI
+- `products.js`: 製品定義、価格、ログテンプレート
+- `employees.js`: AI社員定義、得意タスク、表示説明
+- `tasks.js` / `assignments.js`: task定義、productAssignments、不変条件
+- `decisions.js`: 社長判断イベント定義、候補条件、承認/却下効果
+- `achievements.js` / `missions.js`: 実績、製品目標、手動報酬
+- `state.js` / `save.js`: 初期state、normalize、旧save移行
+- `tick.js`: 1秒tick、製品タスク処理、収益/解約/炎上処理
+- `render-dashboard.js` / `render-products.js` / `render-modals.js`: ホーム、製品、モーダル描画
+- `debug.js`: `?debug=1` 専用のプレイテスト補助
 
 製品別炎上は、現在の全社 `fire` を維持しつつ、各製品に `productFire` を追加する最小実装から始めています。全社炎上は会社全体の事故判定と共有指標、製品炎上は販売成功率、満足度、解約リスク、製品カード警告に使います。旧saveでは `productFire: 0` を補完し、Fire-05の炎上対応で全社fireと対象製品のproductFireをどちらも下げます。
