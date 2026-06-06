@@ -1,38 +1,42 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.39";
+  const APP_VERSION = "2026.05.24.40";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
-  const TICK_MS = 1000;
-  const FIRST_TICK_MS = 1000;
-  const EFFECTS_PER_SECONDS = 10;
-  const AUTO_SAVE_MS = 10000;
-  const PENALTY_MS = 30000;
-  const MAX_OFFLINE_MS = 2 * 60 * 60 * 1000;
-  const MAX_LOGS = 50;
-  const MAX_LEVEL = 10;
-  const LEVEL_THRESHOLDS = [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000];
-  const EARLY_STAGE_MULTIPLIER = 2;
-  const MRR_TO_REVENUE_DIVISOR = 300;
-  const MAX_AI_PER_TASK_PRODUCT = 2;
-  const VERSION_PRICE_BONUS = 0.2;
-  const PRODUCT_FIRE_SUPPORT_LOAD_WEIGHT = 0.8;
-  const PRODUCT_FIRE_SATISFACTION_PRESSURE = 0.0012;
-  const PRODUCT_FIRE_CHURN_FACTOR = 0.18;
-  const GLOBAL_FIRE_SALES_PENALTY_DIVISOR = 250;
-  const PRODUCT_FIRE_SALES_PENALTY_DIVISOR = 260;
-  const CHURN_CHANCE_MAX = 0.05;
-  const SUPPORT_LOAD_RATE = 0.002;
-  const SUBSCRIPTION_SALES02_PITY_LIMIT = 20;
-  const SUBSCRIPTION_BOSS_PITY_LIMIT = 30;
-  const ONE_SHOT_SALES02_PITY_LIMIT = 60;
-  const ONE_SHOT_BOSS_PITY_LIMIT = 90;
-  const ONE_SHOT_SALE_CHANCE_CAP = 0.20;
-  const ACHIEVEMENT_TOAST_LIMIT = 3;
+  const BALANCE = window.AIBS_BALANCE || {};
+  function balanceValue(key, fallback) {
+    return Object.prototype.hasOwnProperty.call(BALANCE, key) ? BALANCE[key] : fallback;
+  }
+  const TICK_MS = balanceValue("TICK_MS", 1000);
+  const FIRST_TICK_MS = balanceValue("FIRST_TICK_MS", 1000);
+  const EFFECTS_PER_SECONDS = balanceValue("EFFECTS_PER_SECONDS", 10);
+  const AUTO_SAVE_MS = balanceValue("AUTO_SAVE_MS", 10000);
+  const PENALTY_MS = balanceValue("PENALTY_MS", 30000);
+  const MAX_OFFLINE_MS = balanceValue("MAX_OFFLINE_MS", 2 * 60 * 60 * 1000);
+  const MAX_LOGS = balanceValue("MAX_LOGS", 50);
+  const MAX_LEVEL = balanceValue("MAX_LEVEL", 10);
+  const LEVEL_THRESHOLDS = balanceValue("LEVEL_THRESHOLDS", [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000]);
+  const EARLY_STAGE_MULTIPLIER = balanceValue("EARLY_STAGE_MULTIPLIER", 2);
+  const MRR_TO_REVENUE_DIVISOR = balanceValue("MRR_TO_REVENUE_DIVISOR", 300);
+  const MAX_AI_PER_TASK_PRODUCT = balanceValue("MAX_AI_PER_TASK_PRODUCT", 2);
+  const VERSION_PRICE_BONUS = balanceValue("VERSION_PRICE_BONUS", 0.2);
+  const PRODUCT_FIRE_SUPPORT_LOAD_WEIGHT = balanceValue("PRODUCT_FIRE_SUPPORT_LOAD_WEIGHT", 0.8);
+  const PRODUCT_FIRE_SATISFACTION_PRESSURE = balanceValue("PRODUCT_FIRE_SATISFACTION_PRESSURE", 0.0012);
+  const PRODUCT_FIRE_CHURN_FACTOR = balanceValue("PRODUCT_FIRE_CHURN_FACTOR", 0.18);
+  const GLOBAL_FIRE_SALES_PENALTY_DIVISOR = balanceValue("GLOBAL_FIRE_SALES_PENALTY_DIVISOR", 250);
+  const PRODUCT_FIRE_SALES_PENALTY_DIVISOR = balanceValue("PRODUCT_FIRE_SALES_PENALTY_DIVISOR", 260);
+  const CHURN_CHANCE_MAX = balanceValue("CHURN_CHANCE_MAX", 0.05);
+  const SUPPORT_LOAD_RATE = balanceValue("SUPPORT_LOAD_RATE", 0.002);
+  const SUBSCRIPTION_SALES02_PITY_LIMIT = balanceValue("SUBSCRIPTION_SALES02_PITY_LIMIT", 20);
+  const SUBSCRIPTION_BOSS_PITY_LIMIT = balanceValue("SUBSCRIPTION_BOSS_PITY_LIMIT", 30);
+  const ONE_SHOT_SALES02_PITY_LIMIT = balanceValue("ONE_SHOT_SALES02_PITY_LIMIT", 60);
+  const ONE_SHOT_BOSS_PITY_LIMIT = balanceValue("ONE_SHOT_BOSS_PITY_LIMIT", 90);
+  const ONE_SHOT_SALE_CHANCE_CAP = balanceValue("ONE_SHOT_SALE_CHANCE_CAP", 0.20);
+  const ACHIEVEMENT_TOAST_LIMIT = balanceValue("ACHIEVEMENT_TOAST_LIMIT", 3);
 
   // === Employee definitions ===
-  const EMPLOYEES = [
+  const EMPLOYEES = window.AIBS_EMPLOYEES || [
     { id: "dev01", code: "Dev-01", nickname: "デブワン", role: "開発AI", unlockLevel: 1, baseCost: 500, description: "開発進捗を大きく進めます。副作用として製品バグが増えやすいです。", personality: "技術至上主義。リファクタリング好き。バグを「未分類機能」と呼ぶ。", catchphrase: "軽微な修正です。" },
     { id: "sales02", code: "Sales-02", nickname: "セルツー", role: "販売AI", unlockLevel: 1, baseCost: 700, description: "新規顧客獲得や売り切り販売が得意です。副作用として炎上が少し増えます。", personality: "超ポジティブ。即答する。未実装機能も売る。", catchphrase: "できます。" },
     { id: "buzz03", code: "Buzz-03", nickname: "バズミ", role: "広報AI", unlockLevel: 2, baseCost: 1000, description: "認知度を上げ、販売成功率を高めます。副作用として炎上が少し増えます。", personality: "ノリが軽い。バズと炎上の区別が曖昧。", catchphrase: "伸びています。" },
@@ -42,14 +46,16 @@
   ];
 
   // === Product definitions ===
-  const PRODUCTS = [
-    { id: "dailyReportAi", name: "AI日報メーカー", type: "subscription", monthlyPrice: 500, developmentRequired: 100, demand: 0.8, risk: 0.6, initialQuality: 60 },
-    { id: "meetingMinutesAi", name: "自動議事録AI", type: "subscription", monthlyPrice: 1200, developmentRequired: 180, demand: 1.0, risk: 1.0, initialQuality: 55 },
-    { id: "slideKitAi", name: "AIスライド生成キット", type: "oneShot", price: 9800, developmentRequired: 160, demand: 1.2, risk: 1.0, initialQuality: 55 }
+  const PRODUCTS = window.AIBS_PRODUCTS || [
+    { id: "dailyReportAi", name: "AI日報メーカー", type: "subscription", monthlyPrice: 500, category: "productivity", developmentRequired: 100, demand: 0.8, risk: 0.6, initialQuality: 60 },
+    { id: "meetingMinutesAi", name: "自動議事録AI", type: "subscription", monthlyPrice: 1200, category: "document", developmentRequired: 180, demand: 1.0, risk: 1.0, initialQuality: 55 },
+    { id: "slideKitAi", name: "AIスライド生成キット", type: "oneShot", price: 9800, category: "oneShotTool", developmentRequired: 160, demand: 1.2, risk: 1.0, initialQuality: 55 },
+    { id: "supportReplyAi", name: "AI問い合わせ返信", type: "subscription", monthlyPrice: 900, category: "support", developmentRequired: 140, demand: 1.0, risk: 0.8, initialQuality: 58 },
+    { id: "apologyWriterAi", name: "AI謝罪文ジェネレーター", type: "oneShot", price: 7800, category: "crisis", developmentRequired: 120, demand: 0.9, risk: 1.3, initialQuality: 52 }
   ];
 
   // === Task definitions ===
-  const TASKS = [
+  const TASKS = window.AIBS_TASKS || [
     { id: "development", label: "開発", workers: ["boss", "dev01"] },
     { id: "qa", label: "品質管理", workers: ["boss", "security06"] },
     { id: "sales", label: "販売", workers: ["boss", "sales02"] },
@@ -58,7 +64,7 @@
     { id: "crisis", label: "炎上対応", workers: ["boss", "fire05"] }
   ];
 
-  const TASK_PRESETS = [
+  const TASK_PRESETS = window.AIBS_TASK_PRESETS || [
     { id: "growth", label: "成長重視", description: "Dev-01を開発、Sales-02とBuzz-03を主力サブスクへ寄せます。" },
     { id: "cash", label: "即金重視", description: "Sales-02とBuzz-03をAIスライド生成キットへ寄せます。" },
     { id: "firefighting", label: "火消し重視", description: "Fire-05、Care-04、Security-06を高リスク製品へ寄せます。" },
@@ -68,7 +74,7 @@
     { id: "stability", label: "全社安定化", description: "Care-04、Fire-05、Security-06で運用リスクを抑えます。" }
   ];
 
-  const WORKERS = {
+  const WORKERS = window.AIBS_WORKERS || {
     boss: { id: "boss", label: "AI社長", alwaysAvailable: true },
     dev01: { id: "dev01", label: "Dev-01" },
     security06: { id: "security06", label: "Security-06" },
@@ -79,7 +85,7 @@
   };
 
 
-  const WORKER_TASK_PROFILES = {
+  const WORKER_TASK_PROFILES = window.AIBS_WORKER_TASK_PROFILES || {
     boss: { specialty: "汎用補助", description: "すべてのタスクに割り振れるが、専門AIより低速です。序盤の開発・販売・品質管理・広報・サポートを広く補助します。", levelHint: "AI社長は初期から利用可能です。" },
     dev01: { specialty: "開発", description: "開発進捗を大きく進めます。副作用として製品バグが増えやすいです。", levelHint: "Lvアップで開発速度UP" },
     sales02: { specialty: "販売", description: "新規顧客獲得や売り切り販売が得意です。副作用として炎上が少し増えます。", levelHint: "Lvアップで販売成功率UP" },
@@ -91,11 +97,11 @@
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
   const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪", system: "更新" };
-  const DECISION_EVENT_COOLDOWN_SECONDS = 45;
-  const DECISION_EVENT_RETRY_SECONDS = 12;
-  const DECISION_EVENT_ROLL_CHANCE = 0.08;
+  const DECISION_EVENT_COOLDOWN_SECONDS = balanceValue("DECISION_EVENT_COOLDOWN_SECONDS", 45);
+  const DECISION_EVENT_RETRY_SECONDS = balanceValue("DECISION_EVENT_RETRY_SECONDS", 12);
+  const DECISION_EVENT_ROLL_CHANCE = balanceValue("DECISION_EVENT_ROLL_CHANCE", 0.08);
   // === Decision events ===
-  const DECISION_EVENTS = [
+  const DECISION_EVENTS = window.AIBS_DECISION_EVENTS || [
     {
       id: "sales_big_contract",
       label: "大型契約の相談",
@@ -158,7 +164,7 @@
       id: "one_shot_bulk_sale",
       label: "売り切り大口販売",
       workerId: "sales02",
-      message: "Sales-02「AIスライド生成キットをまとめ買いしたい会社があります。導入理由は勢いです。」",
+      message: "Sales-02「この売り切り製品をまとめ買いしたい会社があります。導入理由は勢いです。」",
       approveImpact: "承認: 販売数+1 / 即時売上UP / 炎上+8",
       rejectImpact: "却下: 炎上-1。落ち着いた販売に戻します。",
       riskLevel: "warning"
@@ -242,7 +248,7 @@
       id: "limited_one_shot_sale",
       label: "期間限定セール",
       workerId: "sales02",
-      message: "Sales-02「AIスライド生成キットを期間限定で押し切れます。売れますが、少しざわつきます。」",
+      message: "Sales-02「この売り切り製品を期間限定で押し切れます。売れますが、少しざわつきます。」",
       approveImpact: "承認: 販売数+2 / 即時売上UP / 製品炎上+8 / 炎上+4",
       rejectImpact: "却下: 製品炎上-1。通常販売を続けます。",
       riskLevel: "warning"
@@ -341,6 +347,17 @@
       ]
     },
     {
+      id: "v04_product_expansion",
+      label: "製品ライン拡張",
+      missions: [
+        { id: "support_reply_developing_mission", text: "AI問い合わせ返信を開発中にする", reward: 900, done: function () { return getProduct("supportReplyAi").status !== "idea"; } },
+        { id: "support_reply_first_customer_mission", text: "AI問い合わせ返信の顧客を1社獲得する", reward: 1200, done: function () { return getProductCustomers(getProduct("supportReplyAi")) >= 1; } },
+        { id: "apology_writer_developing_mission", text: "AI謝罪文ジェネレーターを開発中にする", reward: 800, done: function () { return getProduct("apologyWriterAi").status !== "idea"; } },
+        { id: "apology_writer_first_sale_mission", text: "AI謝罪文ジェネレーターを1本販売する", reward: 1100, done: function () { return getProductUnitsSold(getProduct("apologyWriterAi")) >= 1; } },
+        { id: "three_product_categories_started", text: "3カテゴリ以上で製品開発を開始する", reward: 1000, done: function () { const started = {}; PRODUCTS.forEach(function (definition) { if (getProduct(definition.id).status !== "idea") started[getProductCategory(definition)] = true; }); return Object.keys(started).length >= 3; } }
+      ]
+    },
+    {
       id: "improvement",
       label: "改善運用",
       missions: [
@@ -361,6 +378,12 @@
     { id: "slide_kit_ready", productId: "slideKitAi", text: "AIスライド生成キットを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("slideKitAi").status) !== -1; } },
     { id: "slide_kit_first_sale", productId: "slideKitAi", text: "AIスライド生成キットを1本販売する", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 1; } },
     { id: "slide_kit_10_sales", productId: "slideKitAi", text: "AIスライド生成キットを10本販売する", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 10; } },
+    { id: "support_reply_start", productId: "supportReplyAi", text: "AI問い合わせ返信の開発を開始する", done: function () { return getProduct("supportReplyAi").status !== "idea"; } },
+    { id: "support_reply_ready", productId: "supportReplyAi", text: "AI問い合わせ返信を完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("supportReplyAi").status) !== -1; } },
+    { id: "support_reply_first_customer", productId: "supportReplyAi", text: "AI問い合わせ返信の顧客を1社獲得する", done: function () { return getProductCustomers(getProduct("supportReplyAi")) >= 1; } },
+    { id: "apology_writer_start", productId: "apologyWriterAi", text: "AI謝罪文ジェネレーターの開発を開始する", done: function () { return getProduct("apologyWriterAi").status !== "idea"; } },
+    { id: "apology_writer_ready", productId: "apologyWriterAi", text: "AI謝罪文ジェネレーターを完成させる", done: function () { return ["ready", "selling"].indexOf(getProduct("apologyWriterAi").status) !== -1; } },
+    { id: "apology_writer_first_sale", productId: "apologyWriterAi", text: "AI謝罪文ジェネレーターを1本販売する", done: function () { return getProductUnitsSold(getProduct("apologyWriterAi")) >= 1; } },
     { id: "daily_report_v2", productId: "dailyReportAi", text: "AI日報メーカーをv2にする", done: function () { return getProductVersion(getProduct("dailyReportAi")) >= 2; } },
     { id: "meeting_minutes_v2", productId: "meetingMinutesAi", text: "自動議事録AIをv2にする", done: function () { return getProductVersion(getProduct("meetingMinutesAi")) >= 2; } },
     { id: "total_mrr_10k", productId: "dailyReportAi", text: "総MRR ¥10K/月を達成する", done: function () { return getTotalProductMrr() >= 10000; } }
@@ -380,7 +403,7 @@
     { id: "slide_10_sales", category: "製品", title: "売り切り10本", description: "AIスライド生成キットを10本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 10; } },
     { id: "slide_100_sales", category: "製品", title: "売り切り100本", description: "AIスライド生成キットを100本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 100; } },
     { id: "slide_500_sales", category: "製品", title: "売り切り500本", description: "AIスライド生成キットを500本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 500; } },
-    { id: "all_products_selling", category: "製品", title: "全製品販売開始", description: "3製品すべてを販売中にする", done: function () { return PRODUCTS.every(function (definition) { return getProduct(definition.id).status === "selling"; }); } },
+    { id: "all_products_selling", category: "製品", title: "全製品販売開始", description: "全製品を販売中にする", done: function () { return PRODUCTS.every(function (definition) { return getProduct(definition.id).status === "selling"; }); } },
     { id: "first_v2", category: "製品", title: "初v2到達", description: "サブスク製品を初めてv2へアップデート", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 2; }); } },
     { id: "version_3", category: "製品", title: "v3到達", description: "いずれかのサブスク製品をv3へ育てる", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 3; }); } },
     { id: "version_5", category: "製品", title: "v5到達", description: "いずれかのサブスク製品をv5へ育てる", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProductVersion(getProduct(definition.id)) >= 5; }); } },
@@ -406,7 +429,7 @@
     { id: "total_mrr_1m", category: "経営", title: "MRR ¥1M/月", description: "総MRRを¥1M/月まで伸ばす", done: function () { return getTotalProductMrr() >= 1000000; } },
     { id: "customers_500", category: "顧客", title: "総顧客500社", description: "サブスク総顧客を500社まで伸ばす", done: function () { return getTotalProductCustomers() >= 500; } },
     { id: "slide_1000_sales", category: "製品", title: "売り切り1000本", description: "AIスライド生成キットを1000本販売", done: function () { return getProductUnitsSold(getProduct("slideKitAi")) >= 1000; } },
-    { id: "all_products_v5", category: "製品", title: "全製品v5級", description: "サブスク2製品をどちらもv5以上へ育てる", done: function () { return PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }).every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }); } },
+    { id: "all_products_v5", category: "製品", title: "全製品v5級", description: "すべてのサブスク製品をv5以上へ育てる", done: function () { return PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }).every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }); } },
     { id: "decisions_50", category: "社長判断", title: "社長判断50回", description: "承認/却下を合計50回選ぶ", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) + safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 50; } },
     { id: "approvals_25", category: "社長判断", title: "承認25回", description: "社長判断を25回承認", done: function () { return safeNumber(state.decisionStats && state.decisionStats.approved, 0) >= 25; } },
     { id: "rejections_25", category: "社長判断", title: "却下25回", description: "社長判断を25回却下", done: function () { return safeNumber(state.decisionStats && state.decisionStats.rejected, 0) >= 25; } },
@@ -416,10 +439,13 @@
     { id: "care04_satisfaction_90", category: "AI", title: "満足度90", description: "サブスク製品の満足度を90以上にする", done: function () { return PRODUCTS.some(function (definition) { return definition.type === "subscription" && getProduct(definition.id).satisfaction >= 90; }); } },
     { id: "security_quality_95", category: "AI", title: "品質95", description: "いずれかの製品品質を95以上にする", done: function () { return PRODUCTS.some(function (definition) { return getProduct(definition.id).quality >= 95; }); } },
     { id: "buzz_awareness_100", category: "AI", title: "認知100", description: "いずれかの製品認知度を100にする", done: function () { return PRODUCTS.some(function (definition) { return getProduct(definition.id).awareness >= 100; }); } },
+    { id: "support_reply_first_customer_achievement", category: "製品", title: "問い合わせ自動返信開始", description: "AI問い合わせ返信で初顧客を獲得", done: function () { return getProductCustomers(getProduct("supportReplyAi")) >= 1; } },
+    { id: "apology_writer_first_sale_achievement", category: "製品", title: "謝罪文初販売", description: "AI謝罪文ジェネレーターを初販売", done: function () { return getProductUnitsSold(getProduct("apologyWriterAi")) >= 1; } },
+    { id: "all_categories_started", category: "製品", title: "製品カテゴリ拡張", description: "3種類以上のカテゴリで製品開発を開始", done: function () { const started = {}; PRODUCTS.forEach(function (definition) { if (getProduct(definition.id).status !== "idea") started[getProductCategory(definition)] = true; }); return Object.keys(started).length >= 3; } },
     { id: "two_ai_assignment", category: "AI", title: "2AI同時担当", description: "1つの仕事にAIを2体割り振る", done: function () { return TASKS.some(function (task) { return PRODUCTS.some(function (definition) { return getAssignedAiIds(task.id, definition.id).length >= 2; }); }); } }
   ];
 
-  const PRODUCT_LOG_TEXTS = {
+  const PRODUCT_LOG_TEXTS = window.AIBS_PRODUCT_LOG_TEXTS || {
     dailyReportAi: {
       started: "AI日報メーカーの開発を開始しました。最初の顧客はまだ社内にいます。",
       developmentTargetChanged: "開発対象をAI日報メーカーに設定しました。",
@@ -467,6 +493,37 @@
       marketingStarted: "Buzz-03がAIスライド生成キットの広報を開始しました。スライドの表紙だけ先に話題です。",
       awareness50: "AIスライド生成キットの認知度が50を超えました。資料作成の期待だけが先に伸びています。",
       awareness100: "AIスライド生成キットの認知度が100に到達しました。スライドが会議の主役になっています。"
+    },
+    supportReplyAi: {
+      started: "AI問い合わせ返信の開発を開始しました。問い合わせより先に返信案が待機しています。",
+      developmentTargetChanged: "開発対象をAI問い合わせ返信に設定しました。",
+      noDevelopmentWorker: "次に開発担当を割り振りましょう。返信テンプレートはまだ白紙です。",
+      completed: "AI問い合わせ返信が完成しました。返事は速く、前提説明は少し長めです。",
+      salesStarted: "AI問い合わせ返信の販売を開始しました。Care-04が導入後の静けさに期待しています。",
+      customer10: "AI問い合わせ返信の顧客が10社に到達しました。サポート窓口が少し深呼吸しました。",
+      customer50: "AI問い合わせ返信の顧客が50社に到達しました。返信速度が会社の売り文句になっています。",
+      customer100: "AI問い合わせ返信の顧客が100社に到達しました。問い合わせが継続収益に変わっています。",
+      mrr10k: "AI問い合わせ返信のMRRが¥10K/月を超えました。丁寧な返事が積み上がっています。",
+      mrr100k: "AI問い合わせ返信のMRRが¥100K/月を超えました。サポートが経営の柱になり始めました。",
+      upgradeStarted: "AI問い合わせ返信 v{version} の開発を開始しました。返答がさらに先回りします。",
+      upgradeCompleted: "AI問い合わせ返信が v{version} にアップデートされました。顧客対応が少し落ち着きました。",
+      marketingStarted: "Buzz-03がAI問い合わせ返信の広報を開始しました。問い合わせを減らす広告が増えています。",
+      awareness50: "AI問い合わせ返信の認知度が50を超えました。サポート担当者が少し前を向きました。",
+      awareness100: "AI問い合わせ返信の認知度が100に到達しました。問い合わせ前に名前が出ています。"
+    },
+    apologyWriterAi: {
+      started: "AI謝罪文ジェネレーターの開発を開始しました。まだ何も起きていないのに謝罪文があります。",
+      developmentTargetChanged: "開発対象をAI謝罪文ジェネレーターに設定しました。",
+      noDevelopmentWorker: "次に開発担当を割り振りましょう。謝罪文はまだ下書きです。",
+      completed: "AI謝罪文ジェネレーターが完成しました。Fire-05が静かにうなずいています。",
+      salesStarted: "AI謝罪文ジェネレーターの販売を開始しました。需要があること自体が少し不安です。",
+      firstSale: "AI謝罪文ジェネレーターが初めて売れました。即時売上 {price} を獲得しました。",
+      sales10: "AI謝罪文ジェネレーターの販売数が10本を超えました。危機管理が商品になっています。",
+      sales50: "AI謝罪文ジェネレーターの販売数が50本を超えました。謝罪文のテンプレートが増えています。",
+      sales100: "AI謝罪文ジェネレーターの販売数が100本を超えました。謝罪がひとつの市場になりました。",
+      marketingStarted: "Buzz-03がAI謝罪文ジェネレーターの広報を開始しました。宣伝文が少し謝っています。",
+      awareness50: "AI謝罪文ジェネレーターの認知度が50を超えました。Fire-05が売れ行きを監視しています。",
+      awareness100: "AI謝罪文ジェネレーターの認知度が100に到達しました。使わないことが一番の宣伝です。"
     }
   };
 
@@ -491,7 +548,7 @@
   let productDetailProductId = PRODUCTS[0].id;
   let productActionMenuOpen = false;
   let productActionMenuProductId = PRODUCTS[0].id;
-  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false };
+  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false };
 
   function buildReportLogs(source) {
     return Object.keys(source).flatMap(function (employeeId) {
@@ -907,6 +964,36 @@
     applyProductMilestones(product, definition);
   }
 
+  function getProductCategory(definition) {
+    if (definition && definition.category) return definition.category;
+    return definition && definition.type === "oneShot" ? "oneShotTool" : "productivity";
+  }
+
+  function getProductCategoryLabel(definition) {
+    const labels = { productivity: "業務効率", document: "ドキュメント", oneShotTool: "売り切りツール", support: "サポート", crisis: "危機対応", security: "セキュリティ", sales: "営業支援", marketing: "広報支援" };
+    return labels[getProductCategory(definition)] || "汎用";
+  }
+
+  function getAiProductAffinity(aiId, definition, taskId) {
+    const category = getProductCategory(definition);
+    const table = {
+      boss: { all: 1.03 },
+      dev01: { development: { productivity: 1.08, document: 1.08, support: 1.05, crisis: 1.05, security: 1.05, oneShotTool: 1.04 } },
+      sales02: { sales: { sales: 1.12, oneShotTool: 1.12, productivity: 1.05, document: 1.05, support: 1.03 } },
+      buzz03: { marketing: { marketing: 1.12, oneShotTool: 1.08, sales: 1.07, productivity: 1.04 } },
+      care04: { support: { support: 1.15, productivity: 1.05, document: 1.04 } },
+      security06: { qa: { security: 1.15, document: 1.10, support: 1.06, crisis: 1.06 } },
+      fire05: { crisis: { crisis: 1.15, oneShotTool: 1.05 } }
+    };
+    const worker = table[aiId] || {};
+    const byTask = worker[taskId] || {};
+    return clamp(safeNumber(byTask[category], safeNumber(worker.all, 1)), 0.8, 1.2);
+  }
+
+  function applyAffinity(value, aiId, definition, taskId) {
+    return safeNumber(value, 0) * getAiProductAffinity(aiId, definition, taskId);
+  }
+
   // === Product Task Effects ===
   function applyDevelopmentTask(product, definition) {
     const flags = getProductFlags(product.id);
@@ -921,7 +1008,7 @@
     if (product.status !== "developing") return;
     developmentWorkers.forEach(function (workerId) {
       const development = getDevelopmentEffect(workerId);
-      product.progress = clamp(product.progress + development.progress, 0, definition.developmentRequired);
+      product.progress = clamp(product.progress + applyAffinity(development.progress, workerId, definition, "development"), 0, definition.developmentRequired);
       product.bugs = clamp(product.bugs + development.bugs, 0, 100);
       product.awareness = clamp(product.awareness + 0.04, 0, 100);
     });
@@ -943,7 +1030,7 @@
 
   function applySubscriptionUpgradeDevelopment(product, definition, workerId) {
     const upgrade = getUpgradeDevelopmentEffect(workerId);
-    product.upgradeProgress = clamp(product.upgradeProgress + upgrade.progress, 0, 100);
+    product.upgradeProgress = clamp(product.upgradeProgress + applyAffinity(upgrade.progress, workerId, definition, "development"), 0, 100);
     product.bugs = clamp(product.bugs + upgrade.bugs, 0, 100);
     if (product.upgradeProgress >= 100) completeSubscriptionUpgrade(product, definition);
   }
@@ -968,8 +1055,8 @@
     const previousBugs = product.bugs;
     qaWorkers.forEach(function (workerId) {
       const qa = getQaEffect(workerId);
-      product.quality = clamp(product.quality + qa.quality, 0, 100);
-      product.bugs = clamp(product.bugs + qa.bugs, 0, 100);
+      product.quality = clamp(product.quality + applyAffinity(qa.quality, workerId, definition, "qa"), 0, 100);
+      product.bugs = clamp(product.bugs + applyAffinity(qa.bugs, workerId, definition, "qa"), 0, 100);
     });
     if (qaWorkers.indexOf("security06") !== -1 && previousBugs > product.bugs && !flags.qaLogShown) {
       flags.qaLogShown = true;
@@ -989,7 +1076,7 @@
     let marketingFire = 0;
     marketingWorkers.forEach(function (workerId) {
       const marketing = getMarketingEffect(workerId);
-      product.awareness = clamp(product.awareness + marketing.awareness, 0, 100);
+      product.awareness = clamp(product.awareness + applyAffinity(marketing.awareness, workerId, definition, "marketing"), 0, 100);
       state.fire = clamp(state.fire + marketing.fire, 0, 100);
       adjustProductFire(product, marketing.fire * 0.75);
       marketingFire += marketing.fire;
@@ -1031,8 +1118,8 @@
     if (!supportWorkers.length || !canApplySupport(product, definition)) return;
     supportWorkers.forEach(function (workerId) {
       const support = getSupportEffect(workerId);
-      product.supportLoad = clamp(product.supportLoad + support.supportLoad, 0, 100);
-      product.satisfaction = clamp(product.satisfaction + support.satisfaction, 0, 100);
+      product.supportLoad = clamp(product.supportLoad + applyAffinity(support.supportLoad, workerId, definition, "support"), 0, 100);
+      product.satisfaction = clamp(product.satisfaction + applyAffinity(support.satisfaction, workerId, definition, "support"), 0, 100);
       state.fire = clamp(state.fire + support.fire, 0, 100);
     });
   }
@@ -1044,8 +1131,8 @@
     const previousProductFire = getProductFire(product);
     crisisWorkers.forEach(function (workerId) {
       const crisis = getCrisisEffect(workerId);
-      state.fire = clamp(state.fire + crisis.fire, 0, 100);
-      adjustProductFire(product, crisis.productFire || crisis.fire * 0.6);
+      state.fire = clamp(state.fire + applyAffinity(crisis.fire, workerId, definition, "crisis"), 0, 100);
+      adjustProductFire(product, applyAffinity(crisis.productFire || crisis.fire * 0.6, workerId, definition, "crisis"));
       if (crisis.money) state.money = Math.max(0, state.money + crisis.money);
     });
     const flags = getProductFlags(product.id);
@@ -1387,6 +1474,7 @@
     renderProductDetailModal();
     renderProductActionMenuModal();
     renderAssignments();
+    renderTaskPresetPanel();
     renderProductObjectives();
     renderAchievements();
     renderMissions();
@@ -2178,7 +2266,7 @@
     if (!panel) return;
     const body = dashboardUi.productsExpanded ? '<div class="portfolio-products">' + PRODUCTS.map(function (definition) { return getProductCardHtml(definition); }).join('') + '</div>' : '';
     panel.innerHTML = '<div class="section-heading"><h2>製品ポートフォリオ</h2><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (dashboardUi.productsExpanded ? '製品一覧を閉じる' : '製品一覧を開く') + '</button></div>' +
-      '<p class="dashboard-summary">3製品運用 / 総MRR ' + formatCurrency(getTotalProductMrr()) + '/月 / 売り切り累計 ' + formatCurrency(getTotalOneShotRevenue()) + '</p>' + body;
+      '<p class="dashboard-summary">' + PRODUCTS.length + '製品運用 / 総MRR ' + formatCurrency(getTotalProductMrr()) + '/月 / 売り切り累計 ' + formatCurrency(getTotalOneShotRevenue()) + '</p>' + body;
     const toggle = document.getElementById("toggleProductsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("productsExpanded"); });
     panel.querySelectorAll("button[data-product-detail]").forEach(function (button) {
@@ -2260,6 +2348,21 @@
     const openButton = document.getElementById("openAssignmentModal");
     if (openButton) openButton.addEventListener("click", openAssignmentModal);
     renderAssignmentModal();
+  }
+
+  function renderTaskPresetPanel() {
+    const panel = document.getElementById("taskPresetPanel");
+    if (!panel) return;
+    const body = dashboardUi.presetsExpanded ? '<div class="preset-list">' + TASK_PRESETS.map(function (preset) {
+      return '<article class="preset-card"><div><strong>' + escapeHtml(preset.label) + '</strong><span>' + escapeHtml(preset.description) + '</span></div><button type="button" class="change-assignment-button" data-task-preset="' + preset.id + '">空きAIを配置</button></article>';
+    }).join('') + '</div>' : '';
+    panel.innerHTML = '<div class="section-heading"><h2>配置プリセット</h2><button type="button" id="togglePresetsButton" class="change-assignment-button">' + (dashboardUi.presetsExpanded ? 'プリセットを閉じる' : 'プリセットを見る') + '</button></div>' +
+      '<p class="dashboard-summary">空いているAIを中心に、既存の制約を守って配置します。</p>' + body;
+    const toggle = document.getElementById("togglePresetsButton");
+    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("presetsExpanded"); });
+    panel.querySelectorAll("button[data-task-preset]").forEach(function (button) {
+      button.addEventListener("click", function () { applyTaskPreset(button.getAttribute("data-task-preset"), { allowStateBoost: false }); });
+    });
   }
 
   // === Rendering: Modals ===
@@ -2398,7 +2501,7 @@
     const progressPercent = getProductProgressPercent(product, definition);
     modal.innerHTML = '<div class="assignment-modal-backdrop product-detail-backdrop" data-product-detail-close="1"></div><div class="product-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">' +
       '<div class="assignment-dialog-head"><strong id="productDetailTitle">' + escapeHtml(definition.name) + 'の詳細</strong><button type="button" class="modal-close-button" data-product-detail-close="1">閉じる</button></div>' +
-      '<div class="product-detail-status"><span>' + escapeHtml(getProductTypeLine(definition, product)) + '</span><strong>' + escapeHtml(getProductStatusLabel(product.status)) + '</strong></div>' +
+      '<div class="product-detail-status"><span>' + escapeHtml(getProductTypeLine(definition, product)) + ' / ' + escapeHtml(getProductCategoryLabel(definition)) + '</span><strong>' + escapeHtml(getProductStatusLabel(product.status)) + '</strong></div>' +
       '<div class="product-detail-grid">' +
       getProductSpecificDetailHtml(product, definition) +
       '<span class="product-detail-heading">品質</span>' +
@@ -2935,22 +3038,22 @@
       addLog("system", "デバッグ: " + definition.name + "の製品炎上を上げました。", definition.id);
     } else if (action === "presetGrowth") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
-      applyTaskPreset("growth");
+      applyTaskPreset("growth", { allowStateBoost: true, allowReassign: true });
     } else if (action === "presetCash") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
-      applyTaskPreset("cash");
+      applyTaskPreset("cash", { allowStateBoost: true, allowReassign: true });
     } else if (action === "presetFirefighting") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
-      applyTaskPreset("firefighting");
+      applyTaskPreset("firefighting", { allowStateBoost: true, allowReassign: true });
     } else if (action === "presetSupport") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
-      applyTaskPreset("support");
+      applyTaskPreset("support", { allowStateBoost: true, allowReassign: true });
     } else if (action === "presetVnext") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
-      applyTaskPreset("vnext");
+      applyTaskPreset("vnext", { allowStateBoost: true, allowReassign: true });
     } else if (action === "presetStability") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
-      applyTaskPreset("stability");
+      applyTaskPreset("stability", { allowStateBoost: true, allowReassign: true });
     } else if (action === "allAiLevel5") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(5, state.employees[employee.id] || 0); });
       addLog("system", "デバッグ: 全AIをLv5にしました。", "company");
@@ -3012,54 +3115,75 @@
     };
   }
 
-  function applyTaskPreset(presetId) {
+  function applyTaskPreset(presetId, options) {
     const preset = TASK_PRESETS.find(function (item) { return item.id === presetId; });
+    const allowStateBoost = Boolean(options && options.allowStateBoost);
+    const allowReassign = Boolean(options && (options.allowReassign || options.allowStateBoost));
     if (!preset) return false;
     const results = [];
     function trySet(taskId, productId, aiIds, mode) {
-      const selected = (aiIds || []).filter(function (aiId) { return isWorkerAvailable(aiId, state.employees); });
-      if (!selected.length) return false;
+      const current = getProductAssignment(taskId, productId);
+      const selected = allowReassign ? [] : current.aiIds.slice(0, MAX_AI_PER_TASK_PRODUCT);
+      let added = false;
+      (aiIds || []).forEach(function (aiId) {
+        if (!isWorkerAvailable(aiId, state.employees) || selected.indexOf(aiId) !== -1 || selected.length >= MAX_AI_PER_TASK_PRODUCT) return;
+        if (allowReassign || isWorkerIdle(aiId) || current.aiIds.indexOf(aiId) !== -1) {
+          selected.push(aiId);
+          if (current.aiIds.indexOf(aiId) === -1) added = true;
+        }
+      });
+      if (!selected.length || (!allowReassign && !added)) return false;
       const ok = setTaskAis(taskId, productId, selected.slice(0, MAX_AI_PER_TASK_PRODUCT), mode || "normal");
       if (ok) results.push(getTaskLabel(taskId) + " → " + getProductDefinition(productId).name);
       return ok;
     }
     const primary = getPrimaryProductDefinition();
-    const slide = getProductDefinition("slideKitAi");
-    const riskySubscription = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && (product.churnRisk >= 35 || product.supportLoad >= 35); }) || PRODUCTS.find(function (definition) { return definition.type === "subscription"; }) || primary;
-    const riskyProduct = PRODUCTS.find(function (definition) { return getProductFire(getProduct(definition.id)) >= 40; }) || primary;
-    const buggyProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.bugs >= 20 || product.quality < 75); }) || primary;
+    const oneShotTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "oneShot" && ["ready", "selling"].indexOf(product.status) !== -1 && (definition.category === "oneShotTool" || definition.category === "crisis"); }) || PRODUCTS.find(function (definition) { return definition.type === "oneShot" && definition.category === "oneShotTool"; }) || PRODUCTS.find(function (definition) { return definition.type === "oneShot"; }) || primary;
+    const supportProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && (product.churnRisk >= 35 || product.supportLoad >= 35); }) || PRODUCTS.find(function (definition) { return definition.type === "subscription" && definition.category === "support"; }) || PRODUCTS.find(function (definition) { return definition.type === "subscription"; }) || primary;
+    const riskyProduct = PRODUCTS.find(function (definition) { return getProductFire(getProduct(definition.id)) >= 40; }) || PRODUCTS.find(function (definition) { return definition.category === "crisis"; }) || primary;
+    const buggyProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && (product.bugs >= 20 || product.quality < 75); }) || PRODUCTS.find(function (definition) { return definition.category === "security" || definition.category === "document"; }) || primary;
     const devTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status === "idea" || product.status === "developing" || product.upgradeStatus === "upgrading"; }) || primary;
     if (presetId === "growth") {
-      trySet("development", devTarget.id, ["boss", "dev01"], getProduct(devTarget.id).upgradeStatus === "upgrading" || getProduct(devTarget.id).status === "selling" ? "upgrade" : "newProduct");
+      const devMode = getProduct(devTarget.id).upgradeStatus === "upgrading" ? "upgrade" : "newProduct";
+      if (allowStateBoost || getProduct(devTarget.id).upgradeStatus === "upgrading" || ["idea", "developing"].indexOf(getProduct(devTarget.id).status) !== -1) trySet("development", devTarget.id, ["boss", "dev01"], devMode);
       trySet("sales", primary.id, ["sales02"], "normal");
       trySet("marketing", primary.id, ["buzz03"], "normal");
     } else if (presetId === "cash") {
-      if (getProduct(slide.id).status === "idea") getProduct(slide.id).status = "developing";
-      if (getProduct(slide.id).status === "developing" && getProduct(slide.id).progress < slide.developmentRequired) getProduct(slide.id).progress = slide.developmentRequired;
-      if (getProduct(slide.id).status !== "selling") getProduct(slide.id).status = "ready";
-      trySet("sales", slide.id, ["boss", "sales02"], "normal");
-      trySet("marketing", slide.id, ["buzz03"], "normal");
+      if (allowStateBoost) {
+        if (getProduct(oneShotTarget.id).status === "idea") getProduct(oneShotTarget.id).status = "developing";
+        if (getProduct(oneShotTarget.id).status === "developing" && getProduct(oneShotTarget.id).progress < oneShotTarget.developmentRequired) getProduct(oneShotTarget.id).progress = oneShotTarget.developmentRequired;
+        if (getProduct(oneShotTarget.id).status !== "selling") getProduct(oneShotTarget.id).status = "ready";
+      }
+      if (["ready", "selling"].indexOf(getProduct(oneShotTarget.id).status) !== -1) {
+        trySet("sales", oneShotTarget.id, ["boss", "sales02"], "normal");
+        trySet("marketing", oneShotTarget.id, ["buzz03"], "normal");
+      } else {
+        trySet("development", oneShotTarget.id, ["boss", "dev01"], "newProduct");
+        trySet("marketing", oneShotTarget.id, ["buzz03"], "normal");
+      }
     } else if (presetId === "firefighting") {
       trySet("crisis", riskyProduct.id, ["boss", "fire05"], "normal");
-      trySet("support", riskySubscription.id, ["care04"], "normal");
+      trySet("support", supportProduct.id, ["care04"], "normal");
       trySet("qa", buggyProduct.id, ["security06"], "normal");
     } else if (presetId === "quality") {
       trySet("qa", buggyProduct.id, ["boss", "security06"], "normal");
     } else if (presetId === "support") {
-      trySet("support", riskySubscription.id, ["boss", "care04"], "normal");
+      trySet("support", supportProduct.id, ["boss", "care04"], "normal");
       trySet("crisis", riskyProduct.id, ["fire05"], "normal");
     } else if (presetId === "vnext") {
-      const upgradeTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && ["ready", "selling"].indexOf(product.status) !== -1; }) || devTarget;
+      const upgradingTarget = PRODUCTS.find(function (definition) { return definition.type === "subscription" && getProduct(definition.id).upgradeStatus === "upgrading"; });
+      const readyUpgradeTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && ["ready", "selling"].indexOf(product.status) !== -1; });
+      const upgradeTarget = upgradingTarget || (allowStateBoost ? readyUpgradeTarget : null) || devTarget;
       const upgradeProduct = getProduct(upgradeTarget.id);
-      if (upgradeTarget.type === "subscription" && ["ready", "selling"].indexOf(upgradeProduct.status) !== -1) {
-        startSubscriptionUpgrade(upgradeTarget.id);
+      if (upgradingTarget || (allowStateBoost && upgradeTarget.type === "subscription" && ["ready", "selling"].indexOf(upgradeProduct.status) !== -1)) {
+        if (allowStateBoost && upgradeProduct.upgradeStatus !== "upgrading") startSubscriptionUpgrade(upgradeTarget.id);
         trySet("development", upgradeTarget.id, ["boss", "dev01"], "upgrade");
-      } else {
+      } else if (["idea", "developing"].indexOf(getProduct(devTarget.id).status) !== -1) {
         trySet("development", devTarget.id, ["boss", "dev01"], "newProduct");
       }
       trySet("qa", upgradeTarget.id, ["security06"], "normal");
     } else if (presetId === "stability") {
-      trySet("support", riskySubscription.id, ["care04"], "normal");
+      trySet("support", supportProduct.id, ["care04"], "normal");
       trySet("crisis", riskyProduct.id, ["boss", "fire05"], "normal");
       trySet("qa", buggyProduct.id, ["security06"], "normal");
     }
@@ -3778,7 +3902,10 @@
 
   function adjustProductFire(product, amount) {
     if (!product) return 0;
-    product.productFire = clamp(getProductFire(product) + safeNumber(amount, 0), 0, 100);
+    const definition = getProductDefinition(product.id);
+    const rawAmount = safeNumber(amount, 0);
+    const riskMultiplier = rawAmount > 0 ? clamp(safeNumber(definition.risk, 1), 0.7, 1.4) : 1;
+    product.productFire = clamp(getProductFire(product) + rawAmount * riskMultiplier, 0, 100);
     return product.productFire;
   }
 
@@ -3795,9 +3922,9 @@
     if (workerId === "sales02") {
       const level = state.employees.sales02 || 0;
       const baseChance = 0.06 + level * 0.01;
-      return { customerChance: clamp(baseChance * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.35), awareness: 0.12, fire: 0.03 };
+      return { customerChance: clamp(applyAffinity(baseChance, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.35), awareness: 0.12, fire: 0.03 };
     }
-    return { customerChance: clamp(0.02 * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.35), awareness: 0.06, fire: 0 };
+    return { customerChance: clamp(applyAffinity(0.02, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.35), awareness: 0.06, fire: 0 };
   }
 
   function getOneShotSalesEffect(workerId, product, definition) {
@@ -3807,9 +3934,9 @@
     if (workerId === "sales02") {
       const level = state.employees.sales02 || 0;
       const baseChance = 0.035 + level * 0.006;
-      return { saleChance: clamp(baseChance * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, ONE_SHOT_SALE_CHANCE_CAP), awareness: 0.12, fire: 0.03 };
+      return { saleChance: clamp(applyAffinity(baseChance, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, ONE_SHOT_SALE_CHANCE_CAP), awareness: 0.12, fire: 0.03 };
     }
-    return { saleChance: clamp(0.01 * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, ONE_SHOT_SALE_CHANCE_CAP), awareness: 0.06, fire: 0 };
+    return { saleChance: clamp(applyAffinity(0.01, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, ONE_SHOT_SALE_CHANCE_CAP), awareness: 0.06, fire: 0 };
   }
 
   function getProduct(productId) { return state.products[productId] || createInitialProducts()[productId] || createInitialProducts()[PRODUCTS[0].id]; }
@@ -3965,7 +4092,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-39").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-40").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
