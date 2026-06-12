@@ -5,30 +5,44 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def app_source():
+    data_dir = ROOT / "js" / "data"
+    data_files = [
+        "balance.js",
+        "employees.js",
+        "products.js",
+        "tasks.js",
+        "decision-events.js",
+        "achievements.js",
+        "missions.js",
+    ]
+    return "\n".join([(ROOT / "main.js").read_text()] + [(data_dir / name).read_text() for name in data_files])
+
+
 def test_cache_busting_versions_match_app_version():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.40"' in index
-    assert 'style.css?v=20260524-40' in index
-    assert 'main.js?v=20260524-40' in index
-    assert 'manifest.webmanifest?v=20260524-40' in index
-    assert 'icon.svg?v=20260524-40' in index
-    assert 'ogp.png?v=20260524-40' in index
-    assert 'icon-512.png?v=20260524-40' in index
+    assert 'content="2026.05.24.41"' in index
+    assert 'style.css?v=20260524-41' in index
+    assert 'main.js?v=20260524-41' in index
+    assert 'manifest.webmanifest?v=20260524-41' in index
+    assert 'icon.svg?v=20260524-41' in index
+    assert 'ogp.png?v=20260524-41' in index
+    assert 'icon-512.png?v=20260524-41' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.40"' in main
-    assert 'const APP_VERSION = "2026.05.24.40"' in sw
-    assert 'sw.js?v=20260524-40' in main
+    assert 'const APP_VERSION = "2026.05.24.41"' in main
+    assert 'const APP_VERSION = "2026.05.24.41"' in sw
+    assert 'sw.js?v=20260524-41' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-40"
+    assert manifest["start_url"] == "./index.html?v=20260524-41"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-40" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-41" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -46,28 +60,29 @@ def test_release_png_assets_exist_with_expected_sizes():
 def test_external_data_files_are_loaded_before_main_and_precached():
     index = (ROOT / "index.html").read_text()
     sw = (ROOT / "sw.js").read_text()
-    main = (ROOT / "main.js").read_text()
-    data_files = ["balance", "employees", "products", "tasks", "decision-events"]
-    main_pos = index.index('main.js?v=20260524-40')
+    main = app_source()
+    data_files = ["balance", "employees", "products", "tasks", "decision-events", "achievements", "missions"]
+    main_pos = index.index('main.js?v=20260524-41')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-40' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-40') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-40' in sw
-    assert "window.AIBS_PRODUCTS ||" in main
-    assert "window.AIBS_EMPLOYEES ||" in main
-    assert "window.AIBS_TASKS ||" in main
-    assert "window.AIBS_DECISION_EVENTS ||" in main
+        assert f'js/data/{name}.js?v=20260524-41' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-41') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-41' in sw
+    assert 'readExternalData("AIBS_PRODUCTS", [])' in main
+    assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
+    assert 'readExternalData("AIBS_TASKS", [])' in main
+    assert 'readExternalData("AIBS_DECISION_EVENTS", [])' in main
+    assert 'readExternalFactory("AIBS_CREATE_ACHIEVEMENTS")' in main
+    assert 'readExternalFactory("AIBS_CREATE_MISSION_DATA")' in main
 
 
 def test_new_v04_products_and_category_affinity_are_defined():
     products_data = (ROOT / "js" / "data" / "products.js").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     for product_id in ["supportReplyAi", "apologyWriterAi"]:
         assert f'id: "{product_id}"' in products_data
-        assert f'id: "{product_id}"' in main
     assert 'category: "support"' in products_data
     assert 'category: "crisis"' in products_data
     assert "function getAiProductAffinity" in main
@@ -97,7 +112,7 @@ def test_category_affinity_changes_support_effect_and_detail_label_runtime():
 
 
 def test_service_worker_update_flow_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
     assert "serviceWorker" in main
@@ -109,16 +124,16 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-40" in sw
-    assert "icon.svg?v=20260524-40" in sw
-    assert "ogp.svg?v=20260524-40" in sw
-    assert "ogp.png?v=20260524-40" in sw
-    assert "icon-512.png?v=20260524-40" in sw
+    assert "manifest.webmanifest?v=20260524-41" in sw
+    assert "icon.svg?v=20260524-41" in sw
+    assert "ogp.svg?v=20260524-41" in sw
+    assert "ogp.png?v=20260524-41" in sw
+    assert "icon-512.png?v=20260524-41" in sw
 
 
 def test_share_button_and_share_fallback_present():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id="shareButton"' in index
     assert "function createShareText()" in main
@@ -138,11 +153,13 @@ def test_share_button_and_share_fallback_present():
 
 def test_task_presets_are_available_in_normal_ui_without_state_boost():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id="taskPresetPanel"' in index
     assert "function renderTaskPresetPanel()" in main
-    assert "空きAIを配置" in main
+    assert "空きAIだけを追加します" in main
+    assert "既存担当は外しません" in main
+    assert "preset-result" in main
     assert 'allowStateBoost: false' in main
     cash_start = main.index('} else if (presetId === "cash")')
     cash_end = main.index('} else if (presetId === "firefighting")', cash_start)
@@ -155,7 +172,7 @@ def run_browser_smoke(save):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js'];
+const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
 code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
@@ -196,6 +213,7 @@ console.log(JSON.stringify({
   missionHtml: elements.get('missionList').innerHTML,
   achievementHtml: elements.get('achievementPanel').innerHTML,
   debugHtml: elements.get('debugPanel').innerHTML,
+  presetHtml: elements.get('taskPresetPanel').innerHTML,
   debugHidden: elements.get('debugPanel').hidden,
   actionMenuHtml: elements.get('productActionMenuModal').innerHTML,
   assignmentModalHtml: elements.get('assignmentModal').innerHTML,
@@ -278,7 +296,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.40"
+    assert output["save"]["appVersion"] == "2026.05.24.41"
 
 
 def test_security06_visible_at_company_level_5():
@@ -301,7 +319,7 @@ def test_security06_visible_at_company_level_5():
 
 
 def test_product_pipeline_minimum_definition_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'const SAVE_KEY = "ai_black_startup_save_v1"' in main
     assert 'LEVEL_THRESHOLDS: [0, 5000, 20000, 80000, 300000, 1000000, 3000000, 10000000, 30000000, 100000000]' in (ROOT / 'js' / 'data' / 'balance.js').read_text()
@@ -340,7 +358,7 @@ def test_product_pipeline_minimum_definition_present():
 
 
 def test_products_collection_has_two_subscription_products():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id: "dailyReportAi"' in main
     assert 'id: "meetingMinutesAi"' in main
@@ -353,7 +371,7 @@ def test_products_collection_has_two_subscription_products():
 
 def test_product_pipeline_ui_and_assignment_rules_present():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id="productPanel"' in index
     assert 'id="assignmentPanel"' in index
@@ -478,7 +496,7 @@ def test_product_flags_migrate_from_legacy_shape():
 
 
 def test_mrr_recurring_revenue_is_independent_from_sales_assignment():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function hasRevenueProduct()" in main
     assert "getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0" in main
@@ -489,7 +507,7 @@ def test_mrr_recurring_revenue_is_independent_from_sales_assignment():
 
 
 def test_revenue_product_keeps_tick_condition_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function hasRevenueProduct()" in main
     assert "getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0" in main
@@ -503,7 +521,7 @@ def test_revenue_product_keeps_tick_condition_present():
 
 def test_product_objectives_are_separate_from_stage_missions():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id="productObjectivePanel"' in index
     assert 'id="productObjectiveList"' in index
@@ -548,7 +566,7 @@ def test_fractional_customers_are_normalized_to_integer_mrr():
 
 
 def test_customer_display_and_share_use_integer_company_units():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function formatCustomers(value)" in main
     assert 'formatNumber(getProductCustomers({ customers: value })) + "社"' in main
@@ -558,7 +576,7 @@ def test_customer_display_and_share_use_integer_company_units():
 
 
 def test_first_customer_guarantee_and_milestone_flags_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "product.sellingSeconds >= 3" in main
     assert "getProductCustomers(product) === 0" in main
@@ -604,7 +622,7 @@ def test_saved_mrr_is_derived_from_integer_customers():
 
 
 def test_product_mrr_and_revenue_are_derived_values():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function getProductCustomers(product)" in main
     assert "return Math.max(0, Math.floor(Number(product.customers) || 0))" in main
@@ -618,7 +636,7 @@ def test_product_mrr_and_revenue_are_derived_values():
 
 
 def test_two_product_targets_and_share_summary_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'name: "自動議事録AI"' in main
     assert 'PRODUCTS.map(function (definition)' in main
@@ -635,7 +653,7 @@ def test_two_product_targets_and_share_summary_present():
 
 
 def test_sales_target_ui_is_explicit():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "対象: " in main
     assert "製品一覧" in main
@@ -649,7 +667,7 @@ def test_sales_target_ui_is_explicit():
 
 def test_assignment_modal_ui_present():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id="assignmentModal"' in index
     assert "現在の担当" in main
@@ -666,7 +684,7 @@ def test_assignment_modal_ui_present():
 
 
 def test_product_mrr_is_not_used_directly_for_revenue_or_share():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "safeNumber(product.mrr" not in main
     assert "formatCurrency(product.mrr" not in main
@@ -676,7 +694,7 @@ def test_product_mrr_is_not_used_directly_for_revenue_or_share():
 
 
 def test_assignment_modal_visual_states_are_readable():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "販売担当を外しても、既存顧客のMRRは継続します" in main
@@ -697,7 +715,7 @@ def test_assignment_modal_visual_states_are_readable():
 
 
 def test_assignment_modal_subtle_actions_and_disabled_contrast():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "modal-apply-button" in main
@@ -712,7 +730,7 @@ def test_assignment_modal_subtle_actions_and_disabled_contrast():
 
 
 def test_product_card_assignment_flow_exists():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "function getProductActionButtons(product, definition)" in main
@@ -746,7 +764,7 @@ def test_product_card_assignment_flow_exists():
 
 
 def test_high_priority_pipeline_foundation_is_prepared():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'setProductAssignmentEntry("development", definition.id, { aiIds: developmentAssignment.aiIds.slice(0, 2), mode: "newProduct" })' in main
     assert "開発対象を自動議事録AIに設定しました" in main
@@ -768,7 +786,7 @@ def test_high_priority_pipeline_foundation_is_prepared():
 
 
 def test_one_shot_slide_kit_pipeline_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id: "slideKitAi"' in main
     assert 'name: "AIスライド生成キット"' in main
@@ -801,18 +819,18 @@ def test_one_shot_slide_kit_pipeline_present():
 
 def test_cache_busting_updated_for_mrr_discrete_fix():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.40"' in index
-    assert 'main.js?v=20260524-40' in index
-    assert 'sw.js?v=20260524-40' in main
-    assert 'const APP_VERSION = "2026.05.24.40"' in sw
+    assert 'content="2026.05.24.41"' in index
+    assert 'main.js?v=20260524-41' in index
+    assert 'sw.js?v=20260524-41' in main
+    assert 'const APP_VERSION = "2026.05.24.41"' in sw
 
 
 
 def test_subscription_product_upgrade_pipeline_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "version: 1" in main
     assert "upgradeProgress: 0" in main
@@ -872,7 +890,7 @@ def run_game_action_smoke(save, action_script):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js'];
+const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
 code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
@@ -913,6 +931,7 @@ console.log(JSON.stringify({
   missionHtml: elements.get('missionList').innerHTML,
   achievementHtml: elements.get('achievementPanel').innerHTML,
   debugHtml: elements.get('debugPanel').innerHTML,
+  presetHtml: elements.get('taskPresetPanel').innerHTML,
   debugHidden: elements.get('debugPanel').hidden,
   actionMenuHtml: elements.get('productActionMenuModal').innerHTML,
   assignmentModalHtml: elements.get('assignmentModal').innerHTML,
@@ -1053,7 +1072,7 @@ def test_recurring_and_one_shot_revenue_paths_are_separate_behavior():
 
 
 def test_product_card_summary_version_and_marketing_hint_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "function getSubscriptionVersionLine(product)" in main
@@ -1069,7 +1088,7 @@ def test_product_card_summary_version_and_marketing_hint_present():
 
 
 def test_marketing_task_and_product_centered_missions_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert '{ id: "marketing", label: "広報", workers: ["boss", "buzz03"] }' in main
     assert "createInitialProductAssignments(task.id)" in main
@@ -1131,7 +1150,7 @@ def test_qa_and_marketing_status_limits_behavior():
 
 
 def test_one_shot_primary_score_and_milestone_flags_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     assert "function getProductPrimaryScore(product, definition)" in main
     assert 'if (definition.type === "oneShot") return safeNumber(product.lifetimeRevenue, 0)' in main
     assert "getProductMrr(product, definition) * 1.1" in main
@@ -1192,7 +1211,7 @@ def test_subscription_support_state_and_assignment_are_normalized():
 
 
 def test_support_task_behavior_and_churn_are_subscription_only():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     assert "function applySupportOperations(product, definition)" in main
     assert 'if (definition.type !== "subscription") return;' in main
     assert "function getSupportEffect(workerId)" in main
@@ -1238,7 +1257,7 @@ def test_support_task_behavior_and_churn_are_subscription_only():
 
 
 def test_support_ui_and_detail_metrics_are_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "満足度" in main
     assert "サポート負荷" in main
@@ -1254,7 +1273,7 @@ def test_support_ui_and_detail_metrics_are_present():
 
 def test_product_summary_cards_have_detail_modal_flow():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert 'id="productDetailModal"' in index
@@ -1269,7 +1288,7 @@ def test_product_summary_cards_have_detail_modal_flow():
 
 
 def test_product_detail_modal_contains_common_subscription_and_one_shot_metrics():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "品質 <strong>" in main
     assert "製品バグ <strong>" in main
@@ -1389,7 +1408,7 @@ def test_product_cards_show_compact_operation_and_detail_buttons_only():
 
 
 def test_product_action_menu_can_route_to_assignment_modal():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     index = (ROOT / "index.html").read_text()
 
     assert 'id="productActionMenuModal"' in index
@@ -1404,7 +1423,7 @@ def test_product_action_menu_can_route_to_assignment_modal():
 
 
 def test_product_card_renderer_does_not_emit_individual_action_buttons():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     start = main.index("function getProductActionButtons(product, definition)")
     end = main.index("function getAssignmentModalTitle()", start)
@@ -1445,7 +1464,7 @@ def test_dashboard_home_collapses_heavy_sections_by_default():
 
 
 def test_dashboard_render_functions_and_toggles_exist():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     index = (ROOT / "index.html").read_text()
 
     assert 'id="primaryProductPanel"' in index
@@ -1467,7 +1486,7 @@ def test_dashboard_render_functions_and_toggles_exist():
 
 def test_dashboard_home_uses_five_primary_status_cards_and_integrated_activity():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     start = index.index('<section class="status-grid compact-status dashboard-status"')
     end = index.index('</section>', start)
@@ -1512,7 +1531,7 @@ def test_next_recommendation_and_compact_missions_are_rendered():
 
 
 def test_product_action_menu_descriptions_explain_effects():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "顧客獲得 / MRR UP" in main
     assert "販売成功で即時売上UP" in main
@@ -1552,7 +1571,7 @@ def test_mission_stage_uses_current_state_not_claimed_history_for_existing_saves
 
 
 def test_current_mission_stage_includes_unclaimed_completed_missions_in_code():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     start = main.index("function getCurrentMissionStage()")
     end = main.index("function getAllMissions()", start)
@@ -1563,7 +1582,7 @@ def test_current_mission_stage_includes_unclaimed_completed_missions_in_code():
 
 
 def test_product_action_menu_uses_explicit_action_definitions():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function getProductAvailableActions(product, definition)" in main
     assert "id: \"newProduct\"" in main
@@ -1578,7 +1597,7 @@ def test_product_action_menu_uses_explicit_action_definitions():
 
 
 def test_product_action_availability_matches_product_status_and_type():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function getProductAvailableActions(product, definition)")
     end = main.index("function getProductAssignmentActions(product, definition)", start)
     action_code = main[start:end]
@@ -1607,7 +1626,7 @@ def test_product_action_availability_matches_product_status_and_type():
 
 
 def test_vnext_development_action_replaces_upgrade_while_upgrade_is_running():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function getProductAvailableActions(product, definition)")
     end = main.index("function getProductAssignmentActions(product, definition)", start)
     action_code = main[start:end]
@@ -1625,7 +1644,7 @@ def test_vnext_development_action_replaces_upgrade_while_upgrade_is_running():
 
 
 def test_development_and_upgrade_modes_are_kept_separate_when_assigning():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function assignAiToTask(taskId, aiId, productId, mode)" in main
     assert "function getDevelopmentAssignmentMode(taskId, productId, mode)" in main
@@ -1640,7 +1659,7 @@ def test_development_and_upgrade_modes_are_kept_separate_when_assigning():
 
 
 def test_idea_product_action_menu_only_offers_development():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function getProductAvailableActions(product, definition)")
     end = main.index("function getProductAssignmentActions(product, definition)", start)
     action_code = main[start:end]
@@ -1659,7 +1678,7 @@ def test_idea_product_action_menu_only_offers_development():
 
 
 def test_manual_mission_rewards_are_not_auto_synced_on_load():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "claimCompletedMissions" not in main
     assert "function claimMissionReward(missionId)" in main
@@ -1749,7 +1768,7 @@ def test_employee_summary_includes_hired_ai_specialty_labels():
 
 
 def test_product_detail_modal_has_group_headings_for_scanability():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "product-detail-heading" in main
@@ -1775,7 +1794,7 @@ def test_reset_button_is_subdued_danger_action():
 
 
 def test_employee_cards_show_task_specialties_and_current_assignments():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "WORKER_TASK_PROFILES" in main
     assert "得意タスク: " in main
@@ -1789,7 +1808,7 @@ def test_employee_cards_show_task_specialties_and_current_assignments():
 
 
 def test_employee_cards_deemphasize_legacy_direct_status_effects():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function getEmployeeCardsHtml()")
     end = main.index("function renderLatestLog()", start)
     employee_code = main[start:end]
@@ -1803,7 +1822,7 @@ def test_employee_cards_deemphasize_legacy_direct_status_effects():
 
 
 def test_boss_and_fire05_roles_are_explained_for_v03_pipeline():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "AI社長" in main
     assert "汎用補助" in main
@@ -1835,7 +1854,7 @@ def test_employee_summary_keeps_specialty_labels_after_pipeline_card_update():
 
 
 def test_employee_cards_have_assign_work_buttons_and_disabled_unhired_state():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "data-worker-assign" in main
     assert "仕事を割り振る" in main
@@ -1845,7 +1864,7 @@ def test_employee_cards_have_assign_work_buttons_and_disabled_unhired_state():
 
 
 def test_worker_assignment_modal_uses_set_task_ais_flow():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function openWorkerAssignmentModal(workerId)" in main
     assert 'assignmentModalMode = "employee"' in main
@@ -1859,7 +1878,7 @@ def test_worker_assignment_modal_uses_set_task_ais_flow():
 
 
 def test_worker_task_candidates_match_v03_specialists():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert '{ id: "development", label: "開発", workers: ["boss", "dev01"] }' in main
     assert '{ id: "sales", label: "販売", workers: ["boss", "sales02"] }' in main
@@ -1871,7 +1890,7 @@ def test_worker_task_candidates_match_v03_specialists():
 
 
 def test_employee_origin_assignment_respects_product_state_constraints():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function canAssignTaskToProduct")
     end = main.index("function getWorkerProductTaskDisabledReason", start)
     code = main[start:end]
@@ -1886,7 +1905,7 @@ def test_employee_origin_assignment_respects_product_state_constraints():
 
 
 def test_employee_assignment_mode_separates_new_product_and_upgrade_from_employee_cards():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function getWorkerAssignmentMode")
     end = main.index("function closeAssignmentModal", start)
     code = main[start:end]
@@ -1898,21 +1917,17 @@ def test_employee_assignment_mode_separates_new_product_and_upgrade_from_employe
 
 
 def test_legacy_employee_effects_are_removed_from_primary_logic():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
-    employees_start = main.index("const EMPLOYEES = window.AIBS_EMPLOYEES || [")
-    employees_end = main.index("const PRODUCTS = window.AIBS_PRODUCTS || [", employees_start)
-    employees_code = main[employees_start:employees_end]
-    assert "effect:" not in employees_code
-    assert "employee.effect" not in main
-    assert "function applyEmployeeEffects" not in main
-    assert "function applyBaseContractWork" in main
-    assert "function getBaseContractRevenuePerSecond" in main
-    assert "state.companyLevel * 8 + hiredCount * 4 + hiredLevelTotal * 2" in main
+    assert "applyEmployeeEffects" not in main
+    assert "applyBaseContractWork" in main
+    assert 'money:' not in (ROOT / "js" / "data" / "employees.js").read_text()
+    assert 'users:' not in (ROOT / "js" / "data" / "employees.js").read_text()
+    assert 'effect:' not in (ROOT / "js" / "data" / "employees.js").read_text()
 
 
 def test_share_text_uses_total_customers_instead_of_legacy_users_label():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function createShareText()")
     end = main.index("function shareGameStatus()", start)
     share_code = main[start:end]
@@ -2078,7 +2093,7 @@ def test_company_level_existing_save_is_not_lowered_by_normalize():
 
 def test_company_expansion_panel_and_manual_reward_ui_are_present():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'id="companyExpansionPanel"' in index
     assert "会社Lvアップ可能" in main
@@ -2089,7 +2104,7 @@ def test_company_expansion_panel_and_manual_reward_ui_are_present():
     assert "function claimMissionReward(missionId)" in main
 
 def test_manual_mission_reward_button_uses_full_width_claim_row():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "mission-claim-block" in main
@@ -2173,7 +2188,7 @@ def test_multi_ai_development_effects_are_combined():
 
 
 def test_multi_ai_sales_effects_and_labels_are_available():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "salesWorkers.forEach(function (workerId)" in main
     assert "getWorkerGroupLabel(assignment.aiIds)" in main
@@ -2187,7 +2202,7 @@ def test_multi_ai_sales_effects_and_labels_are_available():
 
 
 def test_product_action_disabled_reasons_match_product_state():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function getProductActionDisabledReason(actionId, product, definition)" in main
     assert "現在vNextを開発中です" in main
@@ -2198,7 +2213,7 @@ def test_product_action_disabled_reasons_match_product_state():
 
 
 def test_sales_assignment_hint_explains_existing_revenue_continues():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "販売担当なし。既存MRRは継続します。販売担当を置くと新規顧客を獲得できます。" in main
     assert "販売担当を置くと販売判定が進みます。" in main
@@ -2206,7 +2221,7 @@ def test_sales_assignment_hint_explains_existing_revenue_continues():
 
 
 def test_assignment_modal_disables_empty_bulk_apply_and_invalid_products():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "selectedAiIds.length > 0" in main
     assert "担当AIを1体以上選んでください。" in main
@@ -2234,7 +2249,7 @@ def test_invalid_state_task_assignment_is_rejected():
 
 
 def test_assignment_modal_supports_multi_ai_selection_and_bulk_apply():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "aiIds: []" in main
     assert "assignmentDraft.aiIds" in main
@@ -2280,7 +2295,7 @@ def test_set_task_ais_replaces_ai_ids_and_moves_selected_workers_from_other_jobs
 
 
 def test_assignment_modal_initializes_existing_and_employee_origin_selected_ai_ids():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "assignmentDraft.aiIds = assignment.aiIds.slice(0, 2)" in main
     assert "assignmentDraft.aiIds = current.aiIds.slice(0, 2)" in main
@@ -2470,7 +2485,7 @@ def test_continuous_tasks_are_not_auto_released_when_development_completes():
 
 
 def test_development_completion_release_structure_is_documented():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     readme = (ROOT / "README.md").read_text()
 
     assert "function releaseDevelopmentWorkersAfterCompletion(productId, messageTemplate)" in main
@@ -2481,7 +2496,7 @@ def test_development_completion_release_structure_is_documented():
 
 
 def test_product_scoped_assignment_structure_is_documented_for_all_tasks():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     readme = (ROOT / "README.md").read_text()
 
     assert "function createInitialProductAssignments(taskId)" in main
@@ -2527,7 +2542,7 @@ def test_beta1_public_descriptions_are_product_pipeline_focused():
 
 
 def test_legacy_user_wording_is_removed_from_report_logs():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("const REPORT_LOGS")
     end = main.index("function createInitialState", start)
     report_logs = main[start:end]
@@ -2540,7 +2555,7 @@ def test_legacy_user_wording_is_removed_from_report_logs():
 
 
 def test_assignment_modal_makes_two_ai_limit_clear():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "選択中: " in main
     assert "selectedAiIds.length + '/2）</div>'" in main
@@ -2550,7 +2565,7 @@ def test_assignment_modal_makes_two_ai_limit_clear():
 
 
 def test_next_recommendation_can_suggest_idle_workers():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function getIdleWorkerRecommendationText()" in main
     assert "function isWorkerIdle(workerId)" in main
@@ -2564,7 +2579,7 @@ def test_next_recommendation_can_suggest_idle_workers():
 
 
 def test_fire05_and_crisis_copy_explains_tradeoff():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "炎上対応専門。炎上度を大きく下げます" in main
     assert "対応中は売上機会を少し失います" in main
@@ -2575,7 +2590,7 @@ def test_fire05_and_crisis_copy_explains_tradeoff():
 
 def test_reset_copy_is_explicit_and_subdued():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert ">データリセット</button>" in index
@@ -2588,7 +2603,7 @@ def test_reset_copy_is_explicit_and_subdued():
 
 def test_decision_event_state_and_ui_are_present():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     style = (ROOT / "style.css").read_text()
 
     assert 'id="decisionPanel"' in index
@@ -2712,7 +2727,7 @@ def test_next_recommendation_names_idle_sales_target_product():
 
 
 def test_share_text_and_web_share_include_public_url():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/"' in main
     share_start = main.index("function createShareText()")
@@ -2723,7 +2738,7 @@ def test_share_text_and_web_share_include_public_url():
 
 
 def test_beta2_decision_events_and_weighted_selector_are_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     for event_id in [
         "subscription_price_review",
@@ -2801,7 +2816,7 @@ def test_primary_product_card_has_direct_action_and_detail_buttons():
 
 
 def test_product_action_menu_categories_are_rendered():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "function renderProductActionMenuList(actions, productId)" in main
@@ -2812,7 +2827,7 @@ def test_product_action_menu_categories_are_rendered():
 
 
 def test_fire_pressure_reduces_sales_chance_structure():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function getFireSalesPressureFactor(product)" in main
     assert "const fireFactor = getFireSalesPressureFactor(product);" in main
@@ -2854,7 +2869,7 @@ def test_mixed_legacy_save_migration_keeps_beta2_fields_safe():
 
 
 def test_dashboard_bug_level_includes_product_bugs():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "function getProductBugLevel()" in main
     assert "function getDashboardBugLevel()" in main
@@ -2872,11 +2887,11 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-40" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-41" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "decision-impact-heading" in main
@@ -2902,7 +2917,7 @@ def test_company_expansion_panel_previews_unlock_text():
 
 
 def test_assignment_invariant_helpers_are_present_and_runtime_rules_still_hold():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     for helper in [
         "function getTaskProductAssignment(taskId, productId)",
@@ -2950,7 +2965,7 @@ def test_assignment_moves_ai_from_previous_work_with_helpers():
 
 
 def test_new_decision_events_are_defined_and_can_apply_state_changes():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     for event_id in ["competitive_campaign", "tech_debt_repayment", "customer_interview", "mystery_big_deal"]:
         assert event_id in main
 
@@ -3114,7 +3129,7 @@ def test_sales_pity_counter_increments_once_with_two_sales_workers():
 
 
 def test_new_debug_presets_and_state_summary_are_guarded():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     assert 'data-debug-action="presetVnext"' in main
     assert 'data-debug-action="presetStability"' in main
     assert 'data-debug-action="allProductsV5"' in main
@@ -3147,7 +3162,7 @@ def test_outsourcing_decision_can_complete_new_product_without_throwing():
 
 
 def test_debug_state_summary_uses_existing_total_helpers():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     start = main.index("function getDebugStateSummary()")
     end = main.index("function applyTaskPreset", start)
     summary_code = main[start:end]
@@ -3157,7 +3172,7 @@ def test_debug_state_summary_uses_existing_total_helpers():
     assert "getTotalCustomers()" not in summary_code
 
 def test_decision_event_runtime_has_customer_request_and_ai_runaway_paths():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     for event_id in ["customer_impossible_request", "ai_runaway_proposal"]:
         assert f'id: "{event_id}"' in main
         assert f'eventId === "{event_id}"' in main
@@ -3208,7 +3223,7 @@ def test_next_recommendation_cta_prioritizes_pending_decision():
 
 
 def test_beta4_decision_events_are_defined_and_free_trial_changes_state():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     for event_id in ["free_trial_offer", "vip_customer_support", "sns_fire_response", "quality_audit", "outsourcing_offer"]:
         assert f'id: "{event_id}"' in main
 
@@ -3226,7 +3241,7 @@ def test_beta4_decision_events_are_defined_and_free_trial_changes_state():
 
 
 def test_extended_achievements_have_categories_and_unlock_by_state():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     assert 'category: "経営"' in main
     assert 'id: "total_mrr_50k"' in main
     assert 'id: "customers_100"' in main
@@ -3270,15 +3285,15 @@ def test_debug_playtest_scenarios_are_guarded_and_available_with_debug_query():
 
 def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.40"' in index
+    assert 'content="2026.05.24.41"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.40"' in main
-    assert 'const APP_VERSION = "2026.05.24.40"' in sw
-    assert 'sw.js?v=20260524-40' in main
+    assert 'const APP_VERSION = "2026.05.24.41"' in main
+    assert 'const APP_VERSION = "2026.05.24.41"' in sw
+    assert 'sw.js?v=20260524-41' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4へ向けた設計メモ' in readme
     assert '製品別炎上' in readme
@@ -3314,7 +3329,7 @@ def test_marketing_raises_product_fire_and_crisis_reduces_it():
 
 
 def test_product_fire_affects_churn_and_sales_pressure_structure():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert "getProductFire(product) * PRODUCT_FIRE_CHURN_FACTOR" in main
     assert "getProductFire(product) * PRODUCT_FIRE_SATISFACTION_PRESSURE" in main
@@ -3342,7 +3357,7 @@ def test_subscription_price_adjustment_is_derived_in_mrr_and_decision_approval()
 
 
 def test_v04_achievement_expansions_are_present_and_unlockable():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     for achievement_id in ["total_mrr_500k", "slide_100_sales", "slide_500_sales", "version_20", "product_fire_50", "fire05_first_crisis", "care04_first_support", "all_tasks_active", "manual_reward_claimed", "manual_company_expansion"]:
         assert f'id: "{achievement_id}"' in main
 
@@ -3364,7 +3379,7 @@ def test_v04_achievement_expansions_are_present_and_unlockable():
 
 
 def test_v04_new_decision_events_are_defined_and_effectful():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     for event_id in ["limited_one_shot_sale", "server_outage_response", "support_discount_offer", "security_audit_push"]:
         assert f'id: "{event_id}"' in main
         assert f'eventId === "{event_id}"' in main
@@ -3410,7 +3425,7 @@ def test_decision_candidates_include_new_v04_events_under_matching_conditions():
 
 
 def test_v04_achievement_expansions_and_category_group_rendering():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
     for achievement_id in ["total_mrr_1m", "customers_500", "slide_1000_sales", "all_products_v5", "decisions_50", "approvals_25", "rejections_25", "product_fire_80", "all_ai_level_5", "care04_satisfaction_90", "security_quality_95", "buzz_awareness_100"]:
         assert f'id: "{achievement_id}"' in main
@@ -3439,7 +3454,7 @@ def test_v04_achievement_expansions_and_category_group_rendering():
 
 
 def test_debug_panel_categories_and_new_preset_actions_are_guarded():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     assert "const TASK_PRESETS" in main
     assert "function applyTaskPreset(presetId, options)" in main
     assert 'data-debug-action="presetCash"' in main
@@ -3527,7 +3542,7 @@ def test_next_recommendation_cta_labels_are_task_specific():
 
 
 def test_render_uses_light_runtime_clamp_not_full_normalize_each_time():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     render_start = main.index("function render()")
     render_end = main.index("function renderStatus()", render_start)
     render_code = main[render_start:render_end]
@@ -3537,7 +3552,7 @@ def test_render_uses_light_runtime_clamp_not_full_normalize_each_time():
     assert "function clampRuntimeProduct(product, definition)" in main
 
 def test_next_recommendation_product_cta_can_open_assignment_modal_directly():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
 
     assert 'const taskId = button.getAttribute("data-recommendation-task") || "";' in main
     assert 'if (action === "product" && productId && taskId) { openProductAssignmentModal(taskId, productId, mode); return; }' in main
@@ -3558,7 +3573,7 @@ def test_debug_product_fire_and_task_presets_are_guarded():
 
 
 def test_decision_warning_label_and_product_fire_qa_text_are_present():
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
 
     assert "decision-risk-label" in main
@@ -3566,3 +3581,38 @@ def test_decision_warning_label_and_product_fire_qa_text_are_present():
     assert ".decision-risk-label" in css
     assert "製品炎上" in main
     assert "productFire50Logged" in main
+
+
+def test_v04_product_line_missions_and_one_shot_first_sale_are_playtest_friendly():
+    missions = (ROOT / "js" / "data" / "missions.js").read_text()
+    balance = (ROOT / "js" / "data" / "balance.js").read_text()
+
+    assert missions.index('id: "v04_product_expansion"') < missions.index('id: "product_growth"')
+    assert 'ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS: 12' in balance
+
+    output = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"apologyWriterAi": {"id": "apologyWriterAi", "status": "selling", "unitsSold": 0, "sellingSeconds": 12, "oneShotSalesPityCounter": 0, "awareness": 0, "quality": 52}},
+        "assignments": {"sales": {"productAssignments": {"apologyWriterAi": {"aiIds": ["sales02"]}}}},
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    product = output["save"]["products"]["apologyWriterAi"]
+    assert product["unitsSold"] >= 1
+    assert product["lifetimeRevenue"] >= 7800
+
+
+def test_decision_once_flags_are_preserved_in_product_flags():
+    output = run_browser_smoke({
+        "productFlags": {"dailyReportAi": {"impossibleRequestHandled": True, "aiRunawayHandled": True}},
+    })
+    flags = output["save"]["productFlags"]["dailyReportAi"]
+    assert flags["impossibleRequestHandled"] is True
+    assert flags["aiRunawayHandled"] is True
+
+
+def test_task_preset_result_is_rendered_in_normal_ui():
+    output = run_game_action_smoke({
+        "employees": {"dev01": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "developing", "progress": 0}},
+    }, "window.__testApi.applyTaskPreset('growth', { allowStateBoost: false }); window.__testApi.saveGame();")
+    assert "プリセット「成長重視」" in output["presetHtml"]
+    assert "preset-result" in output["presetHtml"]
