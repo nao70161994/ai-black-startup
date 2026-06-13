@@ -1,24 +1,24 @@
 "use strict";
 
-const APP_VERSION = "2026.05.24.41";
+const APP_VERSION = "2026.05.24.42";
 const CACHE_NAME = "ai-black-startup-" + APP_VERSION;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./manifest.webmanifest?v=20260524-41",
-  "./icon.svg?v=20260524-41",
-  "./icon-512.png?v=20260524-41",
-  "./ogp.svg?v=20260524-41",
-  "./ogp.png?v=20260524-41",
-  "./style.css?v=20260524-41",
-  "./js/data/balance.js?v=20260524-41",
-  "./js/data/employees.js?v=20260524-41",
-  "./js/data/products.js?v=20260524-41",
-  "./js/data/tasks.js?v=20260524-41",
-  "./js/data/decision-events.js?v=20260524-41",
-  "./js/data/achievements.js?v=20260524-41",
-  "./js/data/missions.js?v=20260524-41",
-  "./main.js?v=20260524-41"
+  "./manifest.webmanifest?v=20260524-42",
+  "./icon.svg?v=20260524-42",
+  "./icon-512.png?v=20260524-42",
+  "./ogp.svg?v=20260524-42",
+  "./ogp.png?v=20260524-42",
+  "./style.css?v=20260524-42",
+  "./js/data/balance.js?v=20260524-42",
+  "./js/data/employees.js?v=20260524-42",
+  "./js/data/products.js?v=20260524-42",
+  "./js/data/tasks.js?v=20260524-42",
+  "./js/data/decision-events.js?v=20260524-42",
+  "./js/data/achievements.js?v=20260524-42",
+  "./js/data/missions.js?v=20260524-42",
+  "./main.js?v=20260524-42"
 ];
 
 self.addEventListener("install", function (event) {

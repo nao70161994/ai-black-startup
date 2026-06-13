@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.41";
+  const APP_VERSION = "2026.05.24.42";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -1249,7 +1249,6 @@
     const panel = document.getElementById("decisionPanel");
     if (!panel) return;
     const event = normalizeDecisionEvent(state.pendingDecisionEvent);
-    state.pendingDecisionEvent = event;
     if (!event) {
       panel.hidden = true;
       panel.classList.remove("decision-warning");
@@ -1360,20 +1359,306 @@
     return primary ? primary.id : PRODUCTS[0].id;
   }
 
+
+  function createDecisionHandler(approve, reject) {
+    return { approve: approve, reject: reject };
+  }
+
+  function legacyDecisionHandler(eventId) {
+    return createDecisionHandler(
+      function (context) { applyDecisionApprovalLegacy(eventId, context.product, context.definition); },
+      function (context) { applyDecisionRejectionLegacy(eventId, context.product, context.definition); }
+    );
+  }
+
+  const DECISION_EVENT_HANDLERS = {
+    sales_big_contract: legacyDecisionHandler("sales_big_contract"),
+    buzz_bold_ad: legacyDecisionHandler("buzz_bold_ad"),
+    security_quality_pause: legacyDecisionHandler("security_quality_pause"),
+    care_customer_priority: legacyDecisionHandler("care_customer_priority"),
+    fire05_crisis_statement: legacyDecisionHandler("fire05_crisis_statement"),
+    subscription_price_review: createDecisionHandler(approveSubscriptionPriceReview, rejectSubscriptionPriceReview),
+    emergency_quality_fix: legacyDecisionHandler("emergency_quality_fix"),
+    one_shot_bulk_sale: legacyDecisionHandler("one_shot_bulk_sale"),
+    vnext_fast_track: legacyDecisionHandler("vnext_fast_track"),
+    competitive_campaign: legacyDecisionHandler("competitive_campaign"),
+    tech_debt_repayment: legacyDecisionHandler("tech_debt_repayment"),
+    customer_interview: legacyDecisionHandler("customer_interview"),
+    mystery_big_deal: legacyDecisionHandler("mystery_big_deal"),
+    free_trial_offer: createDecisionHandler(approveFreeTrialOffer, rejectFreeTrialOffer),
+    vip_customer_support: createDecisionHandler(approveVipCustomerSupport, rejectVipCustomerSupport),
+    sns_fire_response: createDecisionHandler(approveSnsFireResponse, rejectSnsFireResponse),
+    quality_audit: createDecisionHandler(approveQualityAudit, rejectQualityAudit),
+    limited_one_shot_sale: createDecisionHandler(approveLimitedOneShotSale, rejectLimitedOneShotSale),
+    server_outage_response: createDecisionHandler(approveServerOutageResponse, rejectServerOutageResponse),
+    support_discount_offer: createDecisionHandler(approveSupportDiscountOffer, rejectSupportDiscountOffer),
+    security_audit_push: createDecisionHandler(approveSecurityAuditPush, rejectSecurityAuditPush),
+    customer_impossible_request: createDecisionHandler(approveCustomerImpossibleRequest, rejectCustomerImpossibleRequest),
+    ai_runaway_proposal: createDecisionHandler(approveAiRunawayProposal, rejectAiRunawayProposal),
+    outsourcing_offer: createDecisionHandler(approveOutsourcingOffer, rejectOutsourcingOffer)
+  };
+
+  function getDecisionEventHandler(eventId) {
+    return DECISION_EVENT_HANDLERS[eventId] || null;
+  }
+
+  function getDecisionHandlerMissingEventIds() {
+    return DECISION_EVENTS.filter(function (event) { return !getDecisionEventHandler(event.id); }).map(function (event) { return event.id; });
+  }
+
+  function getDecisionContext(eventId, product, definition) {
+    return { eventId: eventId, product: product, definition: definition, flags: getProductFlags(product.id) };
+  }
+
+  function applyDecisionHandlerChoice(choice, eventId, product, definition) {
+    const handler = getDecisionEventHandler(eventId);
+    if (!handler || typeof handler[choice] !== "function") {
+      addLog("system", "社長判断イベント " + eventId + " の処理が未定義です。", "company");
+      return false;
+    }
+    handler[choice](getDecisionContext(eventId, product, definition));
+    clampDecisionRuntime(product, definition);
+    return true;
+  }
+
+  function decisionAddRevenue(amount) {
+    const value = Math.max(0, safeNumber(amount, 0));
+    state.money = Math.max(0, state.money + value);
+    state.totalMoney = Math.max(0, state.totalMoney + value);
+    return value;
+  }
+
+  function decisionAddCost(amount) {
+    const value = Math.max(0, safeNumber(amount, 0));
+    const paid = Math.min(state.money, value);
+    const shortfall = Math.max(0, value - paid);
+    state.money = Math.max(0, state.money - value);
+    if (shortfall > 0) {
+      state.fire = clamp(state.fire + clamp(shortfall / 500, 1, 6), 0, 100);
+    }
+    return paid;
+  }
+
+  function decisionAddCustomers(product, amount) {
+    product.customers = getProductCustomers(product) + Math.max(0, Math.floor(safeNumber(amount, 0)));
+    if (product.customers > 0) product.status = "selling";
+    return product.customers;
+  }
+
+  function decisionAddOneShotSales(product, definition, units) {
+    const count = Math.max(0, Math.floor(safeNumber(units, 0)));
+    const revenue = safeNumber(definition.price, 0) * count;
+    if (count <= 0) return 0;
+    product.status = "selling";
+    product.unitsSold = getProductUnitsSold(product) + count;
+    product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + revenue);
+    decisionAddRevenue(revenue);
+    return revenue;
+  }
+
+  function decisionAddProductFire(product, amount) { return adjustProductFire(product, safeNumber(amount, 0)); }
+  function decisionAddGlobalFire(amount) { state.fire = clamp(safeNumber(state.fire, 0) + safeNumber(amount, 0), 0, 100); return state.fire; }
+  function decisionAddProductBugs(product, amount) { product.bugs = clamp(safeNumber(product.bugs, 0) + safeNumber(amount, 0), 0, 100); return product.bugs; }
+  function decisionAddProductQuality(product, amount) { product.quality = clamp(safeNumber(product.quality, 0) + safeNumber(amount, 0), 0, 100); return product.quality; }
+  function decisionAddAwareness(product, amount) { product.awareness = clamp(safeNumber(product.awareness, 0) + safeNumber(amount, 0), 0, 100); return product.awareness; }
+  function decisionAddSupportLoad(product, amount) { product.supportLoad = clamp(safeNumber(product.supportLoad, 0) + safeNumber(amount, 0), 0, 100); return product.supportLoad; }
+  function decisionAddSatisfaction(product, amount) { product.satisfaction = clamp(safeNumber(product.satisfaction, 70) + safeNumber(amount, 0), 0, 100); return product.satisfaction; }
+  function decisionAddChurnRisk(product, amount) {
+    const value = safeNumber(amount, 0);
+    product.churnRisk = clamp(safeNumber(product.churnRisk, 0) + value, 0, 100);
+    if (value > 0) {
+      product.supportLoad = clamp(safeNumber(product.supportLoad, 0) + value * 0.35, 0, 100);
+      product.satisfaction = clamp(safeNumber(product.satisfaction, 70) - value * 0.25, 0, 100);
+    } else if (value < 0) {
+      product.supportLoad = clamp(safeNumber(product.supportLoad, 0) + value * 0.25, 0, 100);
+      product.satisfaction = clamp(safeNumber(product.satisfaction, 70) - value * 0.15, 0, 100);
+    }
+    return product.churnRisk;
+  }
+  function decisionAddPriceAdjustment(product, amount) { product.priceAdjustment = clamp(safeNumber(product.priceAdjustment, 0) + safeNumber(amount, 0), -0.2, 0.6); return product.priceAdjustment; }
+
+  function clampDecisionRuntime(product, definition) {
+    clampRuntimeProduct(product, definition);
+    state.money = Math.max(0, safeNumber(state.money, 0));
+    state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0));
+    state.fire = clamp(safeNumber(state.fire, 0), 0, 100);
+  }
+
+  function approveSubscriptionPriceReview(context) {
+    decisionAddPriceAdjustment(context.product, 0.05);
+    decisionAddAwareness(context.product, 6);
+    decisionAddSatisfaction(context.product, -5);
+    decisionAddChurnRisk(context.product, 5);
+    addLog("normal", context.definition.name + "の上位プラン準備を承認しました。月額単価は少し伸びますが、既存顧客の視線は厳しめです。", "sales02");
+  }
+
+  function rejectSubscriptionPriceReview(context) {
+    decisionAddSatisfaction(context.product, 2);
+    addLog("support", context.definition.name + "の値上げ準備を見送りました。既存顧客の安心感を優先しました。", "sales02");
+  }
+
+  function approveFreeTrialOffer(context) {
+    decisionAddCustomers(context.product, 1);
+    decisionAddAwareness(context.product, 10);
+    decisionAddSupportLoad(context.product, 5);
+    addLog("success", context.definition.name + "の無料トライアルを承認しました。導入社は増えましたが、サポート窓口も少し忙しくなりました。", "sales02");
+  }
+
+  function rejectFreeTrialOffer(context) {
+    addLog("normal", context.definition.name + "の無料トライアルを見送りました。通常販売を続けます。", "sales02");
+  }
+
+  function approveVipCustomerSupport(context) {
+    decisionAddSatisfaction(context.product, 10);
+    decisionAddChurnRisk(context.product, -5);
+    decisionAddCost(700);
+    addLog("support", context.definition.name + "のVIP顧客対応を承認しました。費用はかかりましたが、解約リスクを少し抑えました。", "care04");
+  }
+
+  function rejectVipCustomerSupport(context) {
+    decisionAddSatisfaction(context.product, -3);
+    addLog("support", context.definition.name + "のVIP顧客対応を見送りました。満足度が少し下がりました。", "care04");
+  }
+
+  function approveSnsFireResponse(context) {
+    decisionAddGlobalFire(-15);
+    decisionAddProductFire(context.product, -12);
+    decisionAddCost(400);
+    addLog("crisis", "Fire-05のSNS火消し案を承認しました。通知欄の温度が少し下がりました。", "fire05");
+  }
+
+  function rejectSnsFireResponse(context) {
+    decisionAddGlobalFire(6);
+    decisionAddProductFire(context.product, 4);
+    addLog("fire", "Fire-05のSNS火消し案を保留しました。通知欄が少し熱くなりました。", "fire05");
+  }
+
+  function approveQualityAudit(context) {
+    decisionAddProductBugs(context.product, -12);
+    decisionAddProductQuality(context.product, 5);
+    decisionAddCost(500);
+    addLog("support", context.definition.name + "の品質監査を承認しました。製品バグが少し整理されました。", "security06");
+  }
+
+  function rejectQualityAudit(context) {
+    decisionAddProductBugs(context.product, 3);
+    addLog("bug", context.definition.name + "の品質監査を見送りました。製品バグが少し積み上がりました。", "security06");
+  }
+
+  function approveLimitedOneShotSale(context) {
+    const units = 2;
+    const revenue = decisionAddOneShotSales(context.product, context.definition, units);
+    decisionAddAwareness(context.product, 4);
+    decisionAddGlobalFire(4);
+    decisionAddProductFire(context.product, 8);
+    addLog("success", context.definition.name + "の期間限定セールを承認しました。" + units + "本分の即時売上 " + formatCurrency(revenue) + " を獲得しました。", "sales02");
+  }
+
+  function rejectLimitedOneShotSale(context) {
+    decisionAddProductFire(context.product, -1);
+    addLog("normal", context.definition.name + "の期間限定セールを見送りました。売り急ぎを避けました。", "sales02");
+  }
+
+  function approveServerOutageResponse(context) {
+    decisionAddProductBugs(context.product, -5);
+    decisionAddProductFire(context.product, -18);
+    decisionAddCost(600);
+    addLog("crisis", context.definition.name + "の障害告知を承認しました。費用はかかりましたが、製品炎上が下がりました。", "fire05");
+  }
+
+  function rejectServerOutageResponse(context) {
+    decisionAddGlobalFire(4);
+    decisionAddProductFire(context.product, 8);
+    addLog("fire", context.definition.name + "の障害告知を保留しました。製品炎上が上がりました。", "fire05");
+  }
+
+  function approveSupportDiscountOffer(context) {
+    decisionAddPriceAdjustment(context.product, -0.03);
+    decisionAddSatisfaction(context.product, 8);
+    decisionAddChurnRisk(context.product, -8);
+    decisionAddSupportLoad(context.product, -5);
+    decisionAddCost(500);
+    addLog("support", context.definition.name + "の解約寸前顧客に一時値引きと個別対応を行いました。MRR単価は下がり、短期費用もかかりましたが、継続率を守りました。", "care04");
+  }
+
+  function rejectSupportDiscountOffer(context) {
+    decisionAddChurnRisk(context.product, 3);
+    addLog("support", context.definition.name + "の解約寸前顧客対応を見送りました。解約リスクが少し上がりました。", "care04");
+  }
+
+  function approveSecurityAuditPush(context) {
+    decisionAddProductBugs(context.product, -18);
+    decisionAddProductQuality(context.product, 6);
+    decisionAddProductFire(context.product, -5);
+    decisionAddCost(900);
+    addLog("support", context.definition.name + "のセキュリティ監査を承認しました。短期費用で事故の種を減らしました。", "security06");
+  }
+
+  function rejectSecurityAuditPush(context) {
+    decisionAddProductBugs(context.product, 2);
+    decisionAddProductFire(context.product, 3);
+    addLog("bug", context.definition.name + "のセキュリティ監査を見送りました。小さな不安が残りました。", "security06");
+  }
+
+  function approveCustomerImpossibleRequest(context) {
+    context.flags.impossibleRequestHandled = true;
+    decisionAddSatisfaction(context.product, 5);
+    decisionAddSupportLoad(context.product, 10);
+    decisionAddProductBugs(context.product, 5);
+    addLog("support", context.definition.name + "の無茶な顧客要望を受けました。満足度は上がりましたが、現場負荷と製品バグも増えました。", "care04");
+  }
+
+  function rejectCustomerImpossibleRequest(context) {
+    context.flags.impossibleRequestHandled = true;
+    decisionAddSatisfaction(context.product, -3);
+    decisionAddSupportLoad(context.product, -2);
+    addLog("support", context.definition.name + "の無茶な顧客要望を見送りました。運用負荷を優先しました。", "care04");
+  }
+
+  function approveAiRunawayProposal(context) {
+    context.flags.aiRunawayHandled = true;
+    decisionAddAwareness(context.product, 8);
+    if (context.definition.type === "subscription" && context.product.status === "selling") decisionAddCustomers(context.product, 1);
+    if (context.definition.type === "oneShot" && context.product.status === "selling") decisionAddOneShotSales(context.product, context.definition, 1);
+    decisionAddGlobalFire(8);
+    decisionAddProductFire(context.product, 10);
+    addLog("fire", context.definition.name + "の強めの自動化案を承認しました。短期成果と説明責任が同時に増えました。", "boss");
+  }
+
+  function rejectAiRunawayProposal(context) {
+    context.flags.aiRunawayHandled = true;
+    decisionAddGlobalFire(-1);
+    addLog("normal", context.definition.name + "の強めの自動化案を見送りました。今日は説明可能な範囲で進めます。", "boss");
+  }
+
+  function approveOutsourcingOffer(context) {
+    decisionAddCost(1200);
+    decisionAddProductBugs(context.product, 6);
+    if (context.product.upgradeStatus === "upgrading") {
+      context.product.upgradeProgress = clamp(context.product.upgradeProgress + 18, 0, 100);
+      if (context.product.upgradeProgress >= 100) completeSubscriptionUpgrade(context.product, context.definition);
+    } else {
+      context.product.status = context.product.status === "idea" ? "developing" : context.product.status;
+      context.product.progress = clamp(context.product.progress + 25, 0, context.definition.developmentRequired);
+      if (context.product.progress >= context.definition.developmentRequired) completeNewProductDevelopment(context.product, context.definition);
+    }
+    addLog("bug", context.definition.name + "の外注提案を承認しました。進捗は買えましたが、製品バグも少し増えました。", "boss");
+  }
+
+  function rejectOutsourcingOffer(context) {
+    addLog("normal", context.definition.name + "の外注提案を見送りました。内製で進めます。", "boss");
+  }
+
   function applyDecisionEventChoice(choice) {
     const event = normalizeDecisionEvent(state.pendingDecisionEvent);
     if (!event || (choice !== "approve" && choice !== "reject")) return false;
     const definition = getDecisionEventDefinition(event.id);
     const productDefinition = getProductDefinition(event.productId);
     const product = getProduct(productDefinition.id);
+    if (!applyDecisionHandlerChoice(choice, definition.id, product, productDefinition)) return false;
     state.decisionStats = normalizeDecisionStats(state.decisionStats);
-    if (choice === "approve") {
-      state.decisionStats.approved += 1;
-      applyDecisionApproval(definition.id, product, productDefinition);
-    } else {
-      state.decisionStats.rejected += 1;
-      applyDecisionRejection(definition.id, product, productDefinition);
-    }
+    if (choice === "approve") state.decisionStats.approved += 1;
+    else state.decisionStats.rejected += 1;
     recalculateProductMrr(product, productDefinition);
     applyProductMilestones(product, productDefinition);
     state.pendingDecisionEvent = null;
@@ -1385,7 +1670,16 @@
     return true;
   }
 
+
   function applyDecisionApproval(eventId, product, definition) {
+    applyDecisionHandlerChoice("approve", eventId, product, definition);
+  }
+
+  function applyDecisionRejection(eventId, product, definition) {
+    applyDecisionHandlerChoice("reject", eventId, product, definition);
+  }
+
+  function applyDecisionApprovalLegacy(eventId, product, definition) {
     if (eventId === "sales_big_contract") {
       if (definition.type === "oneShot") {
         const units = 1;
@@ -1438,7 +1732,7 @@
       product.priceAdjustment = clamp(safeNumber(product.priceAdjustment, 0) + 0.05, -0.2, 0.6);
       product.awareness = clamp(product.awareness + 6, 0, 100);
       product.satisfaction = clamp(product.satisfaction - 5, 0, 100);
-      product.churnRisk = clamp(product.churnRisk + 5, 0, 100);
+      decisionAddChurnRisk(product, 5);
       addLog("normal", definition.name + "の上位プラン準備を承認しました。月額単価は少し伸びますが、既存顧客の視線は厳しめです。", "sales02");
       return;
     }
@@ -1519,7 +1813,7 @@
     }
     if (eventId === "vip_customer_support") {
       product.satisfaction = clamp(product.satisfaction + 10, 0, 100);
-      product.churnRisk = clamp(product.churnRisk - 5, 0, 100);
+      decisionAddChurnRisk(product, -5);
       state.money = Math.max(0, state.money - 700);
       addLog("support", definition.name + "のVIP顧客対応を承認しました。費用はかかりましたが、解約リスクを少し抑えました。", "care04");
       return;
@@ -1562,7 +1856,7 @@
     if (eventId === "support_discount_offer") {
       product.priceAdjustment = clamp(safeNumber(product.priceAdjustment, 0) - 0.03, -0.2, 0.6);
       product.satisfaction = clamp(product.satisfaction + 8, 0, 100);
-      product.churnRisk = clamp(product.churnRisk - 8, 0, 100);
+      decisionAddChurnRisk(product, -8);
       product.supportLoad = clamp(product.supportLoad - 5, 0, 100);
       addLog("support", definition.name + "の解約寸前顧客に一時値引きと個別対応を行いました。MRR単価は少し下がりましたが、継続率を守りました。", "care04");
       return;
@@ -1613,7 +1907,7 @@
     }
   }
 
-  function applyDecisionRejection(eventId, product, definition) {
+  function applyDecisionRejectionLegacy(eventId, product, definition) {
     if (eventId === "sales_big_contract") {
       state.fire = clamp(state.fire - 1, 0, 100);
       addLog("normal", definition.name + "の無茶な大型契約を見送りました。Sales-02は少しだけ静かです。", "sales02");
@@ -1630,7 +1924,7 @@
       return;
     }
     if (eventId === "care_customer_priority") {
-      product.churnRisk = clamp(product.churnRisk + 5, 0, 100);
+      decisionAddChurnRisk(product, 5);
       addLog("support", definition.name + "の顧客対応優先を見送りました。解約リスクが少し上がりました。", "care04");
       return;
     }
@@ -1708,7 +2002,7 @@
       return;
     }
     if (eventId === "support_discount_offer") {
-      product.churnRisk = clamp(product.churnRisk + 3, 0, 100);
+      decisionAddChurnRisk(product, 3);
       addLog("support", definition.name + "の解約寸前顧客対応を見送りました。解約リスクが少し上がりました。", "care04");
       return;
     }
@@ -2514,6 +2808,10 @@
       '<button type="button" data-debug-action="crisisScenario">炎上/解約テスト</button>' +
       '<button type="button" data-debug-action="productFireScenario">製品炎上+70</button>' +
       '<button type="button" data-debug-action="decisionNow">社長判断を即発生</button>' +
+      '<button type="button" data-debug-action="decisionClearPending">社長判断をクリア</button>' +
+      '<button type="button" data-debug-action="decisionResetCooldown">判断クールダウン解除</button>' +
+      '<button type="button" data-debug-action="decisionHighChurn">高解約判断シナリオ</button>' +
+      '<button type="button" data-debug-action="decisionHandlersReport">判断handler一覧</button>' +
       '<h3>AI/プリセット</h3>' +
       '<button type="button" data-debug-action="unlockAllAi">全AI解放</button>' +
       '<button type="button" data-debug-action="allAiLevel5">全AI Lv5</button>' +
@@ -2570,14 +2868,41 @@
       });
       addLog("system", "デバッグ: 全製品を完成状態にしました。", "company");
     } else if (action === "decisionNow") {
-      const candidate = getDecisionEventCandidates()[0];
-      if (candidate) {
-        state.pendingDecisionEvent = { id: candidate.id, productId: candidate.productId, createdAt: Date.now() };
-        state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
-        addLog("system", "デバッグ: 社長判断を発生させました。", "company");
+      if (state.pendingDecisionEvent) {
+        addLog("system", "デバッグ: 未処理の社長判断があるため上書きしません。", "company");
       } else {
-        addLog("system", "デバッグ: 発生条件を満たす社長判断がありません。", "company");
+        state.decisionEventCooldown = 0;
+        const candidates = getDecisionEventCandidates();
+        const candidate = candidates.length ? selectDecisionEventCandidate(candidates) : null;
+        if (candidate) {
+          state.pendingDecisionEvent = { id: candidate.id, productId: candidate.productId, createdAt: Date.now() };
+          state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
+          addLog("system", "デバッグ: 社長判断を発生させました。", "company");
+        } else {
+          addLog("system", "デバッグ: 発生条件を満たす社長判断がありません。", "company");
+        }
       }
+    } else if (action === "decisionClearPending") {
+      state.pendingDecisionEvent = null;
+      addLog("system", "デバッグ: 未処理の社長判断をクリアしました。", "company");
+    } else if (action === "decisionResetCooldown") {
+      state.decisionEventCooldown = 0;
+      addLog("system", "デバッグ: 社長判断クールダウンを解除しました。", "company");
+    } else if (action === "decisionHighChurn") {
+      const definition = PRODUCTS.find(function (item) { return item.type === "subscription"; }) || getPrimaryProductDefinition();
+      const product = getProduct(definition.id);
+      product.status = "selling";
+      product.customers = Math.max(getProductCustomers(product), 8);
+      product.supportLoad = 70;
+      product.satisfaction = 35;
+      product.churnRisk = 70;
+      state.employees.care04 = Math.max(1, state.employees.care04 || 0);
+      state.decisionEventCooldown = 0;
+      addLog("system", "デバッグ: " + definition.name + "を高解約判断シナリオにしました。", definition.id);
+    } else if (action === "decisionHandlersReport") {
+      const missing = getDecisionHandlerMissingEventIds();
+      console.log("Decision handlers", { count: DECISION_EVENTS.length, missing: missing });
+      addLog("system", "デバッグ: 社長判断handlerをconsoleへ出力しました。未定義" + missing.length + "件。", "company");
     } else if (action === "scenario10min") {
       state.money += 100000;
       state.totalMoney += 100000;
@@ -3684,7 +4009,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-41").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-42").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

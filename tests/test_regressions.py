@@ -24,25 +24,25 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.41"' in index
-    assert 'style.css?v=20260524-41' in index
-    assert 'main.js?v=20260524-41' in index
-    assert 'manifest.webmanifest?v=20260524-41' in index
-    assert 'icon.svg?v=20260524-41' in index
-    assert 'ogp.png?v=20260524-41' in index
-    assert 'icon-512.png?v=20260524-41' in index
+    assert 'content="2026.05.24.42"' in index
+    assert 'style.css?v=20260524-42' in index
+    assert 'main.js?v=20260524-42' in index
+    assert 'manifest.webmanifest?v=20260524-42' in index
+    assert 'icon.svg?v=20260524-42' in index
+    assert 'ogp.png?v=20260524-42' in index
+    assert 'icon-512.png?v=20260524-42' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.41"' in main
-    assert 'const APP_VERSION = "2026.05.24.41"' in sw
-    assert 'sw.js?v=20260524-41' in main
+    assert 'const APP_VERSION = "2026.05.24.42"' in main
+    assert 'const APP_VERSION = "2026.05.24.42"' in sw
+    assert 'sw.js?v=20260524-42' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-41"
+    assert manifest["start_url"] == "./index.html?v=20260524-42"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-41" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-42" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -62,13 +62,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-41')
+    main_pos = index.index('main.js?v=20260524-42')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-41' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-41') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-41' in sw
+        assert f'js/data/{name}.js?v=20260524-42' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-42') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-42' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_TASKS", [])' in main
@@ -124,11 +124,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-41" in sw
-    assert "icon.svg?v=20260524-41" in sw
-    assert "ogp.svg?v=20260524-41" in sw
-    assert "ogp.png?v=20260524-41" in sw
-    assert "icon-512.png?v=20260524-41" in sw
+    assert "manifest.webmanifest?v=20260524-42" in sw
+    assert "icon.svg?v=20260524-42" in sw
+    assert "ogp.svg?v=20260524-42" in sw
+    assert "ogp.png?v=20260524-42" in sw
+    assert "icon-512.png?v=20260524-42" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -174,7 +174,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -296,7 +296,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.41"
+    assert output["save"]["appVersion"] == "2026.05.24.42"
 
 
 def test_security06_visible_at_company_level_5():
@@ -822,10 +822,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.41"' in index
-    assert 'main.js?v=20260524-41' in index
-    assert 'sw.js?v=20260524-41' in main
-    assert 'const APP_VERSION = "2026.05.24.41"' in sw
+    assert 'content="2026.05.24.42"' in index
+    assert 'main.js?v=20260524-42' in index
+    assert 'sw.js?v=20260524-42' in main
+    assert 'const APP_VERSION = "2026.05.24.42"' in sw
 
 
 
@@ -892,7 +892,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -2887,7 +2887,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-41" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-42" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3289,11 +3289,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.41"' in index
+    assert 'content="2026.05.24.42"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.41"' in main
-    assert 'const APP_VERSION = "2026.05.24.41"' in sw
-    assert 'sw.js?v=20260524-41' in main
+    assert 'const APP_VERSION = "2026.05.24.42"' in main
+    assert 'const APP_VERSION = "2026.05.24.42"' in sw
+    assert 'sw.js?v=20260524-42' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4へ向けた設計メモ' in readme
     assert '製品別炎上' in readme
@@ -3353,7 +3353,8 @@ def test_subscription_price_adjustment_is_derived_in_mrr_and_decision_approval()
     product = approved["save"]["products"]["dailyReportAi"]
     assert product["priceAdjustment"] == 0.05
     assert product["mrr"] == 5250
-    assert product["satisfaction"] == 65
+    assert product["satisfaction"] < 65
+    assert product["supportLoad"] > 0
 
 
 def test_v04_achievement_expansions_are_present_and_unlockable():
@@ -3616,3 +3617,128 @@ def test_task_preset_result_is_rendered_in_normal_ui():
     }, "window.__testApi.applyTaskPreset('growth', { allowStateBoost: false }); window.__testApi.saveGame();")
     assert "プリセット「成長重視」" in output["presetHtml"]
     assert "preset-result" in output["presetHtml"]
+
+
+def test_decision_event_handler_map_covers_all_defined_events():
+    output = run_game_action_smoke({"money": 0}, "window.__testResult = { missing: window.__testApi.getDecisionHandlerMissingEventIds(), hasPrice: Boolean(window.__testApi.getDecisionEventHandler('subscription_price_review')), hasSale: Boolean(window.__testApi.getDecisionEventHandler('limited_one_shot_sale')) }; window.__testApi.saveGame();")
+
+    assert output["testResult"]["missing"] == []
+    assert output["testResult"]["hasPrice"] is True
+    assert output["testResult"]["hasSale"] is True
+
+
+def test_decision_price_approve_reject_do_not_cross_apply_effects():
+    approved = run_game_action_smoke({
+        "money": 1000,
+        "totalMoney": 1000,
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 10, "satisfaction": 70, "churnRisk": 10, "priceAdjustment": 0}},
+        "pendingDecisionEvent": {"id": "subscription_price_review", "productId": "dailyReportAi", "createdAt": 1},
+        "decisionStats": {"approved": 0, "rejected": 0},
+    }, "window.__testResult = window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
+    approved_product = approved["save"]["products"]["dailyReportAi"]
+
+    rejected = run_game_action_smoke({
+        "money": 1000,
+        "totalMoney": 1000,
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 10, "satisfaction": 70, "churnRisk": 10, "priceAdjustment": 0}},
+        "pendingDecisionEvent": {"id": "subscription_price_review", "productId": "dailyReportAi", "createdAt": 1},
+        "decisionStats": {"approved": 0, "rejected": 0},
+    }, "window.__testResult = window.__testApi.applyDecisionEventChoice('reject'); window.__testApi.saveGame();")
+    rejected_product = rejected["save"]["products"]["dailyReportAi"]
+
+    assert approved["testResult"] is True
+    assert approved_product["priceAdjustment"] == 0.05
+    assert approved_product["satisfaction"] < 65
+    assert approved_product["supportLoad"] > 0
+    assert approved_product["churnRisk"] == 15
+    assert approved["save"]["decisionStats"]["approved"] == 1
+    assert rejected["testResult"] is True
+    assert rejected_product["priceAdjustment"] == 0
+    assert rejected_product["satisfaction"] == 72
+    assert rejected_product["churnRisk"] == 10
+    assert rejected["save"]["decisionStats"]["rejected"] == 1
+
+
+def test_decision_one_shot_and_product_fire_handlers_are_directional():
+    approved = run_game_action_smoke({
+        "money": 1000,
+        "totalMoney": 1000,
+        "employees": {"sales02": 1},
+        "products": {"slideKitAi": {"id": "slideKitAi", "status": "selling", "unitsSold": 1, "productFire": 10, "awareness": 20}},
+        "pendingDecisionEvent": {"id": "limited_one_shot_sale", "productId": "slideKitAi", "createdAt": 1},
+    }, "window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
+    approved_product = approved["save"]["products"]["slideKitAi"]
+
+    rejected = run_game_action_smoke({
+        "money": 1000,
+        "totalMoney": 1000,
+        "employees": {"sales02": 1},
+        "products": {"slideKitAi": {"id": "slideKitAi", "status": "selling", "unitsSold": 1, "productFire": 10, "awareness": 20}},
+        "pendingDecisionEvent": {"id": "limited_one_shot_sale", "productId": "slideKitAi", "createdAt": 1},
+    }, "window.__testApi.applyDecisionEventChoice('reject'); window.__testApi.saveGame();")
+    rejected_product = rejected["save"]["products"]["slideKitAi"]
+
+    assert approved_product["unitsSold"] == 3
+    assert approved_product["lifetimeRevenue"] >= 19600
+    assert approved["save"]["money"] > 1000
+    assert approved_product["productFire"] > 10
+    assert rejected_product["unitsSold"] == 1
+    assert rejected["save"]["money"] == 1000
+    assert rejected_product["productFire"] < 10
+
+
+def test_decision_one_time_flags_are_set_by_both_choices_and_block_candidates():
+    approved = run_game_action_smoke({
+        "employees": {"care04": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 5, "satisfaction": 50, "supportLoad": 20, "churnRisk": 20}},
+        "pendingDecisionEvent": {"id": "customer_impossible_request", "productId": "dailyReportAi", "createdAt": 1},
+    }, "window.__testApi.applyDecisionEventChoice('approve'); window.__testResult = window.__testApi.getDecisionEventCandidates().map(function (item) { return item.id; }); window.__testApi.saveGame();")
+
+    rejected = run_game_action_smoke({
+        "employees": {"care04": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 5, "satisfaction": 50, "supportLoad": 20, "churnRisk": 20}},
+        "pendingDecisionEvent": {"id": "customer_impossible_request", "productId": "dailyReportAi", "createdAt": 1},
+    }, "window.__testApi.applyDecisionEventChoice('reject'); window.__testResult = window.__testApi.getDecisionEventCandidates().map(function (item) { return item.id; }); window.__testApi.saveGame();")
+
+    assert approved["save"]["productFlags"]["dailyReportAi"]["impossibleRequestHandled"] is True
+    assert "customer_impossible_request" not in approved["testResult"]
+    assert rejected["save"]["productFlags"]["dailyReportAi"]["impossibleRequestHandled"] is True
+    assert "customer_impossible_request" not in rejected["testResult"]
+
+
+def test_decision_cost_shortfall_adds_fire_pressure():
+    output = run_game_action_smoke({
+        "money": 0,
+        "fire": 10,
+        "employees": {"care04": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "satisfaction": 45, "supportLoad": 70, "churnRisk": 60}},
+        "pendingDecisionEvent": {"id": "support_discount_offer", "productId": "dailyReportAi", "createdAt": 1},
+    }, "window.__testResult = window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
+    product = output["save"]["products"]["dailyReportAi"]
+
+    assert output["testResult"] is True
+    assert output["save"]["money"] == 0
+    assert output["save"]["fire"] > 10
+    assert product["satisfaction"] > 45
+    assert product["churnRisk"] < 60
+
+
+def test_debug_decision_tools_do_not_overwrite_pending_and_can_reset():
+    output = run_game_action_smoke({
+        "__locationSearch": "?debug=1",
+        "decisionEventCooldown": 30,
+        "pendingDecisionEvent": {"id": "care_customer_priority", "productId": "dailyReportAi", "createdAt": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 5, "supportLoad": 70, "churnRisk": 70}},
+    }, "window.__testApi.applyDebugAction('decisionNow'); window.__testApi.applyDebugAction('decisionResetCooldown'); window.__testApi.saveGame();")
+
+    assert output["save"]["pendingDecisionEvent"]["id"] == "care_customer_priority"
+    assert output["save"]["decisionEventCooldown"] == 0
+    assert "未処理の社長判断があるため上書きしません" in output["save"]["logs"][1]["text"]
+
+    cleared = run_game_action_smoke({
+        "__locationSearch": "?debug=1",
+        "pendingDecisionEvent": {"id": "care_customer_priority", "productId": "dailyReportAi", "createdAt": 1},
+    }, "window.__testApi.applyDebugAction('decisionClearPending'); window.__testApi.saveGame();")
+    assert cleared["save"]["pendingDecisionEvent"] is None
