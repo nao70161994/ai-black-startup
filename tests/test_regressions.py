@@ -24,25 +24,25 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.43"' in index
-    assert 'style.css?v=20260524-43' in index
-    assert 'main.js?v=20260524-43' in index
-    assert 'manifest.webmanifest?v=20260524-43' in index
-    assert 'icon.svg?v=20260524-43' in index
-    assert 'ogp.png?v=20260524-43' in index
-    assert 'icon-512.png?v=20260524-43' in index
+    assert 'content="2026.05.24.44"' in index
+    assert 'style.css?v=20260524-44' in index
+    assert 'main.js?v=20260524-44' in index
+    assert 'manifest.webmanifest?v=20260524-44' in index
+    assert 'icon.svg?v=20260524-44' in index
+    assert 'ogp.png?v=20260524-44' in index
+    assert 'icon-512.png?v=20260524-44' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.43"' in main
-    assert 'const APP_VERSION = "2026.05.24.43"' in sw
-    assert 'sw.js?v=20260524-43' in main
+    assert 'const APP_VERSION = "2026.05.24.44"' in main
+    assert 'const APP_VERSION = "2026.05.24.44"' in sw
+    assert 'sw.js?v=20260524-44' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-43"
+    assert manifest["start_url"] == "./index.html?v=20260524-44"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-43" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-44" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -62,13 +62,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-43')
+    main_pos = index.index('main.js?v=20260524-44')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-43' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-43') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-43' in sw
+        assert f'js/data/{name}.js?v=20260524-44' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-44') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-44' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_TASKS", [])' in main
@@ -124,11 +124,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-43" in sw
-    assert "icon.svg?v=20260524-43" in sw
-    assert "ogp.svg?v=20260524-43" in sw
-    assert "ogp.png?v=20260524-43" in sw
-    assert "icon-512.png?v=20260524-43" in sw
+    assert "manifest.webmanifest?v=20260524-44" in sw
+    assert "icon.svg?v=20260524-44" in sw
+    assert "ogp.svg?v=20260524-44" in sw
+    assert "ogp.png?v=20260524-44" in sw
+    assert "icon-512.png?v=20260524-44" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -174,7 +174,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, render }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -299,7 +299,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.43"
+    assert output["save"]["appVersion"] == "2026.05.24.44"
 
 
 def test_security06_visible_at_company_level_5():
@@ -682,7 +682,7 @@ def test_assignment_modal_ui_present():
     assert "タスク・対象製品・担当AIを選んで割り振ります" in main
     assert "担当AIを選択 最大2体" in main
     assert "この仕事には最大2体までAIを割り振れます" in main
-    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, assignmentDraft.aiIds || [], assignmentDraft.mode)" in main
+    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds(assignmentDraft.taskId, assignmentDraft.aiIds || []), assignmentDraft.mode)" in main
     assert "clearProductAssignment(assignmentDraft.taskId, assignmentDraft.productId)" in main
 
 
@@ -825,10 +825,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.43"' in index
-    assert 'main.js?v=20260524-43' in index
-    assert 'sw.js?v=20260524-43' in main
-    assert 'const APP_VERSION = "2026.05.24.43"' in sw
+    assert 'content="2026.05.24.44"' in index
+    assert 'main.js?v=20260524-44' in index
+    assert 'sw.js?v=20260524-44' in main
+    assert 'const APP_VERSION = "2026.05.24.44"' in sw
 
 
 
@@ -895,7 +895,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, render }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -1877,7 +1877,7 @@ def test_worker_assignment_modal_uses_set_task_ais_flow():
     assert "getAssignableTasksForWorker(workerId)" in main
     assert "isWorkerProductTaskAvailable" in main
     assert "getWorkerAssignmentMode" in main
-    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, assignmentDraft.aiIds || [], assignmentDraft.mode)" in main
+    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds(assignmentDraft.taskId, assignmentDraft.aiIds || []), assignmentDraft.mode)" in main
     assert "getWorkerLabel(assignmentDraft.aiId) + \"に仕事を割り振る\"" in main
     assert "refreshAssignmentDraftAiIds()" in main
     assert "toggleAssignmentDraftAi" in main
@@ -2893,7 +2893,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-43" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-44" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3295,11 +3295,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.43"' in index
+    assert 'content="2026.05.24.44"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.43"' in main
-    assert 'const APP_VERSION = "2026.05.24.43"' in sw
-    assert 'sw.js?v=20260524-43' in main
+    assert 'const APP_VERSION = "2026.05.24.44"' in main
+    assert 'const APP_VERSION = "2026.05.24.44"' in sw
+    assert 'sw.js?v=20260524-44' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4へ向けた設計メモ' in readme
     assert '製品別炎上' in readme
@@ -3313,8 +3313,8 @@ def test_product_fire_is_normalized_and_rendered_as_product_risk():
 
     product = output["save"]["products"]["dailyReportAi"]
     assert product["productFire"] == 75
-    assert "製品炎上高" in output["primaryProductHtml"]
-    assert "Fire-05推奨" in output["primaryProductHtml"]
+    assert "製品炎上 高" in output["primaryProductHtml"]
+    assert "炎上対応推奨" in output["primaryProductHtml"]
 
 
 def test_marketing_raises_product_fire_and_crisis_reduces_it():
@@ -3773,7 +3773,7 @@ const context = {
   fetch: function (request) { fetchCount += 1; return request && request.mode === 'navigate' ? Promise.reject(new Error('offline')) : Promise.resolve({ status: 200, clone() { return this; } }); },
   caches: {
     open: function () { return Promise.resolve(cacheStore); },
-    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.43']); },
+    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.44']); },
     delete: function (key) { deleted.push(key); return Promise.resolve(true); },
     match: function (request) { if (request === './index.html') indexFallbackMatched = true; return Promise.resolve(request === './index.html' ? 'cached-index' : undefined); }
   },
@@ -3792,7 +3792,7 @@ events.activate({ waitUntil: function (promise) { waits.push(promise); } });
 events.message({ data: { type: 'SKIP_WAITING' } });
 const fetchResponses = [];
 events.fetch({
-  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-43', mode: 'same-origin' },
+  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-44', mode: 'same-origin' },
   respondWith: function (promise) { fetchResponses.push(promise); }
 });
 events.fetch({
@@ -3809,8 +3809,8 @@ Promise.all(waits.concat(fetchResponses)).then(function () {
     assert data["skipped"] >= 2
     assert data["claimed"] == 1
     assert "ai-black-startup-old" in data["deleted"]
-    assert "./main.js?v=20260524-43" in data["assets"]
-    assert "./js/data/missions.js?v=20260524-43" in data["assets"]
+    assert "./main.js?v=20260524-44" in data["assets"]
+    assert "./js/data/missions.js?v=20260524-44" in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
     assert data["cachePutCount"] == 1
@@ -3940,3 +3940,140 @@ def test_product_fire_reduces_subscription_sales_chance():
     }, "Math.random = function () { return 0.09; }; window.__testApi.tick(); window.__testApi.saveGame();")
     assert low_fire["save"]["products"]["dailyReportAi"]["customers"] == 1
     assert high_fire["save"]["products"]["dailyReportAi"]["customers"] == 0
+
+
+def test_dedicated_risk_chip_classes_are_defined_and_used():
+    main = app_source()
+    css = (ROOT / "style.css").read_text()
+
+    for class_name in [
+        "risk-chip-product-fire",
+        "risk-chip-support",
+        "risk-chip-churn",
+        "risk-chip-bugs",
+        "risk-chip-quality",
+        "risk-chip-muted",
+        "warn-ops",
+    ]:
+        assert class_name in css
+    assert "function getProductRiskChips(product, definition" in main
+    assert "function getProductRiskChipsHtml(product, definition" in main
+    assert "function getProductRiskDetailHtml(product, definition" in main
+    assert "primary-risk-hint" not in main
+
+
+def test_product_card_primary_and_detail_render_dedicated_risk_chips():
+    output = run_game_action_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "productFire": 82, "supportLoad": 84, "churnRisk": 76, "bugs": 72, "quality": 38}},
+        "claimedMissions": ["daily_report_developing", "assign_daily_development", "daily_report_ready_mission"],
+    }, "window.__testApi.openProductDetailModal('dailyReportAi'); window.__testApi.saveGame();")
+
+    combined = output["productHtml"] + output["primaryProductHtml"] + output["productDetailHtml"]
+    assert "risk-chip-product-fire" in combined
+    assert "risk-chip-support" in combined
+    assert "risk-chip-churn" in combined
+    assert "risk-chip-bugs" in combined
+    assert "risk-chip-quality" in combined
+    assert "運用リスク" in output["productDetailHtml"]
+    assert "製品炎上 高" in combined
+    assert "解約リスク 高" in combined
+
+
+def test_product_only_risk_panel_uses_operations_class_not_global_fire_class():
+    output = run_game_action_smoke({
+        "fire": 0,
+        "bugs": 0,
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 4, "productFire": 70, "supportLoad": 65, "churnRisk": 55}},
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    assert "製品運用リスク" in output["riskTitle"] or "製品運用リスク" in output["riskText"]
+    assert "AI日報メーカー" in output["riskText"]
+    main = app_source()
+    assert 'panel.classList.add("warn-ops")' in main
+
+
+def test_debug_risk_chip_scenario_is_hidden_by_default_and_sets_all_risks():
+    main = app_source()
+    assert 'data-debug-action="riskChipsScenario"' in main
+    blocked = run_game_action_smoke({"products": {"dailyReportAi": {"id": "dailyReportAi", "productFire": 0, "bugs": 0, "quality": 80}}}, "window.__testApi.applyDebugAction('riskChipsScenario'); window.__testApi.saveGame();")
+    allowed = run_game_action_smoke({"__locationSearch": "?debug=1", "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 1, "productFire": 0, "bugs": 0, "quality": 80}}}, "window.__testApi.applyDebugAction('riskChipsScenario'); window.__testApi.saveGame();")
+    assert blocked["save"]["products"]["dailyReportAi"]["productFire"] == 0
+    product = allowed["save"]["products"]["dailyReportAi"]
+    assert product["productFire"] >= 80
+    assert product["bugs"] >= 70
+    assert product["quality"] <= 40
+    assert "リスクchip確認状態" in allowed["debugHtml"]
+
+
+def test_render_does_not_mutate_saved_state_or_runtime_state_shape():
+    output = run_game_action_smoke({
+        "pendingDecisionEvent": {"id": "technical_debt_paydown", "productId": "dailyReportAi", "createdAt": 1},
+        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "productFire": 70, "supportLoad": 60, "churnRisk": 55}},
+    }, "const before = localStorage.getItem('ai_black_startup_save_v1'); const draftBefore = JSON.stringify(window.__testApi.getAssignmentDraftSnapshotForTest()); window.__testApi.render(); const draftAfter = JSON.stringify(window.__testApi.getAssignmentDraftSnapshotForTest()); window.__testResult = {sameSave: before === localStorage.getItem('ai_black_startup_save_v1'), sameDraft: draftBefore === draftAfter}; window.__testApi.saveGame();")
+    assert output["testResult"]["sameSave"] is True
+    assert output["testResult"]["sameDraft"] is True
+
+
+def test_render_functions_do_not_call_tick_save_or_heavy_normalize():
+    main = app_source()
+    render_start = main.index("function render()")
+    render_end = main.index("function renderStatus()", render_start)
+    render_code = main[render_start:render_end]
+    forbidden = ["saveGame(", "tick(", "runGameTick(", "normalizeState(", "normalizeProducts(", "clampRuntimeState("]
+    for token in forbidden:
+        assert token not in render_code
+    for helper in ["function renderProductDetailModal()", "function getProductCardHtml", "function renderRiskPanel()"]:
+        assert helper in main
+
+
+def test_assignment_modal_render_does_not_normalize_draft_by_mutation():
+    main = app_source()
+    start = main.index("function renderAssignmentModal()")
+    end = main.index("function getAllWorkerIds()", start)
+    body = main[start:end]
+    assert "assignmentDraft.aiIds = normalizeAssignmentDraftAiIds" not in body
+    assert "const selectedAiIds = normalizeAssignmentDraftAiIds" in body
+    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds" in body
+
+
+def test_product_detail_risk_markup_avoids_block_inside_inline_strong():
+    main = app_source()
+    start = main.index("function getProductRiskDetailHtml")
+    end = main.index("function getProductSpecificDetailHtml", start)
+    body = main[start:end]
+    assert '<div class="product-detail-item wide product-risk-detail">' in body
+    assert '<strong>' not in body
+    assert 'getProductRiskChipsHtml(product, definition' in body
+
+
+def test_global_fire_risk_chip_dependency_is_explicit():
+    main = app_source()
+    assert "function getGlobalFireRiskChipHtmlForProduct(product, globalFire)" in main
+    assert "getGlobalFireRiskChipHtmlForProduct(product, state.fire)" in main
+    old_name = "function getCrisisRiskHint(product)"
+    assert old_name not in main
+
+
+def test_manifest_has_stable_pwa_id_when_start_url_is_cache_busted():
+    manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
+    assert manifest["id"] == "./"
+    assert manifest["start_url"] == "./index.html?v=20260524-44"
+
+
+def test_product_bug_and_quality_risks_are_in_operational_risk_panel_and_recommendation():
+    output = run_game_action_smoke({
+        "fire": 0,
+        "bugs": 0,
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 4, "productFire": 0, "supportLoad": 0, "churnRisk": 0, "bugs": 72, "quality": 38}},
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    combined = output["riskTitle"] + output["riskText"]
+    assert "バグ" in combined or "品質" in combined or "製品バグ" in combined
+    assert "risk-chip-bugs" in output["primaryProductHtml"]
+    assert "risk-chip-quality" in output["primaryProductHtml"]
+
+
+def test_risk_chip_css_overrides_metric_span_styles():
+    css = (ROOT / "style.css").read_text()
+    assert ".product-metrics .risk-chip" in css
+    assert ".primary-product-card .risk-chip" in css
+    assert ".product-detail-grid .risk-chip" in css

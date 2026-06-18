@@ -552,7 +552,6 @@ button.share {
 .debug-actions button { min-height: 42px; color: #8f2c42; border-color: rgba(255, 107, 138, 0.34); background: #ffffff; box-shadow: none; font-size: 12px; }
 @media (max-width: 380px) { .debug-actions { grid-template-columns: 1fr; } }
 
-.primary-risk-hint { display: inline-flex; width: fit-content; margin-top: 4px; padding: 3px 8px; border-radius: 999px; background: #fff1f2; color: #9f1239; border: 1px solid rgba(244, 63, 94, 0.22); font-size: 0.78rem; font-weight: 900; }
 
 .achievement-category-group { display: grid; gap: 6px; }
 .achievement-category-group h3 { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 0; color: #07506a; font-size: 12px; }
@@ -611,3 +610,89 @@ button.share {
   color: #56616a;
   line-height: 1.45;
 }
+
+/* v0.4 render polish: product-specific risk chips */
+.risk-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.product-risk-chip-list {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+}
+.primary-product-card .risk-chip-list {
+  margin-top: 5px;
+}
+.risk-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid rgba(22, 68, 82, 0.14);
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #224352;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.risk-chip-warning { background: #fff7df; color: #8a5200; border-color: rgba(245, 158, 11, 0.28); }
+.risk-chip-danger { background: #fff1f2; color: #9f1239; border-color: rgba(244, 63, 94, 0.28); }
+.risk-chip-product-fire { background: #fff1f2; color: #9f1239; border-color: rgba(244, 63, 94, 0.28); }
+.risk-chip-support { background: #eefaff; color: #07506a; border-color: rgba(25, 189, 232, 0.22); }
+.risk-chip-churn { background: #fff7ed; color: #9a3412; border-color: rgba(249, 115, 22, 0.24); }
+.risk-chip-bugs { background: #fef2f2; color: #991b1b; border-color: rgba(239, 68, 68, 0.24); }
+.risk-chip-quality { background: #f5f3ff; color: #5b21b6; border-color: rgba(124, 58, 237, 0.22); }
+.risk-chip-global-fire { background: #fff1f2; color: #9f1239; border-color: rgba(244, 63, 94, 0.28); }
+.risk-chip-muted { background: #f3f8fb; color: #52646c; border-color: rgba(22, 68, 82, 0.12); }
+.product-risk-detail strong {
+  display: block;
+  width: 100%;
+}
+.risk-panel.warn-ops {
+  border-color: rgba(249, 115, 22, 0.28);
+  background: #fff7ed;
+}
+@media (max-width: 420px) {
+  .risk-chip { width: fit-content; max-width: 100%; font-size: 0.73rem; }
+  .product-risk-chip-list { gap: 4px; }
+}
+.product-risk-detail {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.product-risk-detail > span:first-child {
+  color: #586b75;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.product-metrics .risk-chip,
+.primary-product-card .risk-chip,
+.product-detail-grid .risk-chip {
+  display: inline-flex;
+  color: inherit;
+  font-size: 0.76rem;
+}
+.product-metrics .risk-chip-warning,
+.primary-product-card .risk-chip-warning,
+.product-detail-grid .risk-chip-warning { color: #8a5200; }
+.product-metrics .risk-chip-danger,
+.primary-product-card .risk-chip-danger,
+.product-detail-grid .risk-chip-danger { color: #9f1239; }
+.product-metrics .risk-chip-support,
+.primary-product-card .risk-chip-support,
+.product-detail-grid .risk-chip-support { color: #07506a; }
+.product-metrics .risk-chip-churn,
+.primary-product-card .risk-chip-churn,
+.product-detail-grid .risk-chip-churn { color: #9a3412; }
+.product-metrics .risk-chip-bugs,
+.primary-product-card .risk-chip-bugs,
+.product-detail-grid .risk-chip-bugs { color: #991b1b; }
+.product-metrics .risk-chip-quality,
+.primary-product-card .risk-chip-quality,
+.product-detail-grid .risk-chip-quality { color: #5b21b6; }

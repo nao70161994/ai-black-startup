@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.43";
+  const APP_VERSION = "2026.05.24.44";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -107,6 +107,10 @@
   let productActionMenuOpen = false;
   let productActionMenuProductId = PRODUCTS[0].id;
   const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, presetResult: "" };
+
+  function getAssignmentDraftSnapshotForTest() {
+    return JSON.parse(JSON.stringify(assignmentDraft));
+  }
 
   function createDefinitionApi() {
     return {
@@ -1156,7 +1160,9 @@
       const candidates = [
         { type: "製品炎上", score: getProductFire(product) },
         { type: "解約リスク", score: definition.type === "subscription" ? safeNumber(product.churnRisk, 0) : 0 },
-        { type: "サポート負荷", score: definition.type === "subscription" ? safeNumber(product.supportLoad, 0) : 0 }
+        { type: "サポート負荷", score: definition.type === "subscription" ? safeNumber(product.supportLoad, 0) : 0 },
+        { type: "製品バグ", score: safeNumber(product.bugs, 0) },
+        { type: "品質低下", score: Math.max(0, 100 - safeNumber(product.quality, 0)) }
       ];
       candidates.forEach(function (candidate) {
         if (candidate.score > best.score) {
@@ -1285,6 +1291,12 @@
       const supportWorker = isWorkerAvailable("care04", state.employees) ? "Care-04" : "AI社長";
       return createRecommendation(supportWorker + "を" + supportHeavy.name + "のサポートに割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: supportHeavy.id, taskId: "support", path: "製品一覧 → " + supportHeavy.name + " → 操作 → サポート" });
     }
+    const riskyQualityProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && !getAssignedWorkersForProduct("qa", definition.id).length && (product.bugs >= 45 || product.quality <= 45); });
+    if (riskyQualityProduct) {
+      const product = getProduct(riskyQualityProduct.id);
+      const reason = product.bugs >= 45 ? "製品バグが高い" : "品質が低下している";
+      return createRecommendation(reason + riskyQualityProduct.name + "を品質管理しましょう。", { ctaLabel: "操作を開く", action: "product", productId: riskyQualityProduct.id, taskId: "qa", path: "製品一覧 → " + riskyQualityProduct.name + " → 操作 → 品質管理" });
+    }
     if (state.fire >= 70) {
       if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return createRecommendation("炎上が高いのでFire-05を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Fire-05 → 雇用" });
       const crisisTarget = PRODUCTS.find(function (definition) { return canAssignTaskToProduct("crisis", definition.id); }) || getPrimaryProductDefinition();
@@ -1296,8 +1308,6 @@
       const qaTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea"; }) || getPrimaryProductDefinition();
       return createRecommendation("バグが高いのでSecurity-06を品質管理へ割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: qaTarget.id, taskId: "qa", path: "製品一覧 → " + qaTarget.name + " → 操作 → 品質管理" });
     }
-    const buggyProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && product.bugs >= 45 && !getAssignedWorkersForProduct("qa", definition.id).length; });
-    if (buggyProduct) return createRecommendation("製品バグが高い" + buggyProduct.name + "を品質管理しましょう。", { ctaLabel: "操作を開く", action: "product", productId: buggyProduct.id, taskId: "qa", path: "製品一覧 → " + buggyProduct.name + " → 操作 → 品質管理" });
     const pausedUpgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.upgradeStatus === "upgrading" && !getAssignedWorkersForProduct("development", definition.id).length; });
     if (pausedUpgrade) return createRecommendation(pausedUpgrade.name + "のvNext開発が止まっています。AI社長かDev-01を割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: pausedUpgrade.id, taskId: "development", mode: "upgrade", path: "製品一覧 → " + pausedUpgrade.name + " → 操作 → vNext開発担当" });
     const developing = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status === "developing" && !getAssignedWorkersForProduct("development", definition.id).length; });
@@ -2270,9 +2280,7 @@
   }
 
   function getPrimaryProductRiskHtml(product, definition) {
-    if (getProductFire(product) >= 70) return '<span class="primary-risk-hint">製品炎上高 / Fire-05推奨</span>';
-    if (definition.type === "subscription" && product.churnRisk >= 50) return '<span class="primary-risk-hint">解約注意 / Care-04推奨</span>';
-    return '';
+    return getProductRiskChipsHtml(product, definition, { compact: true });
   }
 
   function getPrimaryProductValueText(product, definition) {
@@ -2341,10 +2349,9 @@
     const employeeMode = assignmentModalMode === "employee";
     const upgradeMode = assignmentDraft.mode === "upgrade";
     const productAssignable = isAssignmentDraftProductAvailable();
-    assignmentDraft.aiIds = normalizeAssignmentDraftAiIds(selectedTask.id, assignmentDraft.aiIds || []);
     const selectedAssignment = getProductAssignment(selectedTask.id, assignmentDraft.productId);
     const currentAiIds = selectedAssignment.aiIds;
-    const selectedAiIds = assignmentDraft.aiIds;
+    const selectedAiIds = normalizeAssignmentDraftAiIds(selectedTask.id, assignmentDraft.aiIds || []);
     const selectionValid = selectedAiIds.length > 0 && selectedAiIds.length <= 2 && selectedAiIds.every(function (workerId) { return canWorkerAssignToTask(workerId, selectedTask.id, state.employees); });
     const assignable = Boolean(assignmentDraft.taskId && assignmentDraft.productId) && productAssignable && selectionValid;
     const taskOptions = employeeMode ? getAssignableTasksForWorker(assignmentDraft.aiId) : TASKS;
@@ -2389,7 +2396,7 @@
     modal.querySelectorAll("button[data-modal-product]").forEach(function (button) { button.addEventListener("click", function () { assignmentDraft.productId = button.getAttribute("data-modal-product"); updateAssignmentDraftMode(); refreshAssignmentDraftAiIds(); renderAssignmentModal(); }); });
     modal.querySelectorAll("button[data-modal-ai]").forEach(function (button) { button.addEventListener("click", function () { toggleAssignmentDraftAi(button.getAttribute("data-modal-ai")); }); });
     const applyButton = document.getElementById("applyAssignmentButton");
-    if (applyButton) applyButton.addEventListener("click", function () { setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, assignmentDraft.aiIds || [], assignmentDraft.mode); closeAssignmentModal(); });
+    if (applyButton) applyButton.addEventListener("click", function () { setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds(assignmentDraft.taskId, assignmentDraft.aiIds || []), assignmentDraft.mode); closeAssignmentModal(); });
     const clearButton = document.getElementById("clearAssignmentButton");
     if (clearButton) clearButton.addEventListener("click", function () { clearProductAssignment(assignmentDraft.taskId, assignmentDraft.productId); closeAssignmentModal(); });
   }
@@ -2499,6 +2506,11 @@
     renderProductDetailModal();
   }
 
+  function getProductRiskDetailHtml(product, definition) {
+    const chipsHtml = getProductRiskChipsHtml(product, definition, { compact: false });
+    return '<div class="product-detail-item wide product-risk-detail"><span>運用リスク</span>' + (chipsHtml || '<span class="risk-chip risk-chip-muted">平常</span>') + '</div>';
+  }
+
   function getProductSpecificDetailHtml(product, definition) {
     if (definition.type === "oneShot") {
       return '<span class="product-detail-heading">収益</span>' +
@@ -2507,6 +2519,7 @@
         '<span class="product-detail-item">累計売上 <strong>' + formatCurrency(product.lifetimeRevenue) + '</strong></span>' +
         '<span class="product-detail-item">MRR <strong>なし</strong></span>' +
         '<span class="product-detail-heading">運用</span>' +
+        getProductRiskDetailHtml(product, definition) +
         '<span class="product-detail-item">製品炎上 <strong>' + Math.round(getProductFire(product)) + '</strong></span>' +
         '<span class="product-detail-item wide">売り切り収益 <strong>販売成功時に即時売上が入ります</strong></span>';
     }
@@ -2518,6 +2531,7 @@
       '<span class="product-detail-item">MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
       '<span class="product-detail-item">製品売上/秒 <strong>' + formatCurrencyPrecise(getProductRevenuePerSecond(product, definition)) + '/秒</strong></span>' +
       '<span class="product-detail-heading">運用</span>' +
+      getProductRiskDetailHtml(product, definition) +
       '<span class="product-detail-item">製品炎上 <strong>' + Math.round(getProductFire(product)) + '</strong></span>' +
       '<span class="product-detail-item">満足度 <strong>' + Math.round(product.satisfaction) + '</strong></span>' +
       '<span class="product-detail-item">サポート負荷 <strong>' + Math.round(product.supportLoad) + '</strong></span>' +
@@ -2741,7 +2755,8 @@
     const title = document.getElementById("riskTitle");
     const text = document.getElementById("riskText");
     if (!panel || !title || !text) return;
-    const bugRisk = state.bugs >= 40;
+    const dashboardBugLevel = getDashboardBugLevel();
+    const bugRisk = dashboardBugLevel >= 40;
     const fireRisk = state.fire >= 40;
     const operationRisk = getHighestOperationalRisk();
     const productRisk = operationRisk.definition && operationRisk.score >= 45;
@@ -2756,17 +2771,17 @@
     if ((fireRisk && bugRisk) || (productRisk && (fireRisk || bugRisk))) {
       panel.classList.add("warn-both");
       title.textContent = state.bugs >= 80 || state.fire >= 80 || operationRisk.score >= 80 ? "危険: 複合リスク発生注意" : "予兆: 複数リスクが同時に上昇中";
-      text.textContent = "全社炎上 " + Math.round(state.fire) + " / バグ " + Math.round(state.bugs) + (productRiskText ? " / " + productRiskText : "") + "。Care-04 / Fire-05 / Security-06の担当を確認しましょう。";
+      text.textContent = "全社炎上 " + Math.round(state.fire) + " / バグ " + Math.round(dashboardBugLevel) + (productRiskText ? " / " + productRiskText : "") + "。Care-04 / Fire-05 / Security-06の担当を確認しましょう。";
     } else if (fireRisk) {
       panel.classList.add("warn-fire");
       title.textContent = state.fire >= 80 ? "危険: 炎上事故イベント発生注意" : "予兆: 炎上度が上がっています";
       text.textContent = "炎上度50以上で売上減少や解約リスク上昇が起きる可能性があります。" + (productRiskText ? productRiskText + "。" : "") + "Care-04 / Fire-05で対策できます。";
     } else if (bugRisk) {
       panel.classList.add("warn-bug");
-      title.textContent = state.bugs >= 80 ? "危険: バグ事故イベント発生注意" : "予兆: バグが増えています";
+      title.textContent = dashboardBugLevel >= 80 ? "危険: バグ事故イベント発生注意" : "予兆: バグが増えています";
       text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。" + (productRiskText ? productRiskText + "。" : "") + getBugMitigationText() + "。";
     } else {
-      panel.classList.add("warn-fire");
+      panel.classList.add("warn-ops");
       title.textContent = "予兆: 製品運用リスクが上がっています";
       text.textContent = productRiskText + "。サポート・品質管理・炎上対応の担当を確認しましょう。";
     }
@@ -2895,6 +2910,7 @@
       '<button type="button" data-debug-action="bugs50">主力製品 バグ+50</button>' +
       '<button type="button" data-debug-action="crisisScenario">炎上/解約テスト</button>' +
       '<button type="button" data-debug-action="productFireScenario">製品炎上+70</button>' +
+      '<button type="button" data-debug-action="riskChipsScenario">リスクchip確認状態</button>' +
       '<button type="button" data-debug-action="decisionNow">社長判断を即発生</button>' +
       '<button type="button" data-debug-action="decisionClearPending">社長判断をクリア</button>' +
       '<button type="button" data-debug-action="decisionResetCooldown">判断クールダウン解除</button>' +
@@ -3056,6 +3072,22 @@
       product.status = product.status === "idea" ? "selling" : product.status;
       adjustProductFire(product, 70);
       addLog("system", "デバッグ: " + definition.name + "の製品炎上を上げました。", definition.id);
+    } else if (action === "riskChipsScenario") {
+      PRODUCTS.forEach(function (definition) {
+        const product = getProduct(definition.id);
+        product.status = product.status === "idea" ? "selling" : product.status;
+        product.progress = Math.max(product.progress, definition.developmentRequired || 0);
+        product.productFire = Math.max(getProductFire(product), 82);
+        product.bugs = Math.max(product.bugs, 72);
+        product.quality = Math.min(product.quality, 38);
+        if (definition.type === "subscription") {
+          product.customers = Math.max(getProductCustomers(product), 8);
+          product.supportLoad = Math.max(product.supportLoad, 84);
+          product.churnRisk = Math.max(product.churnRisk, 76);
+          product.satisfaction = Math.min(product.satisfaction, 34);
+        }
+      });
+      addLog("system", "デバッグ: リスクchip確認用に全製品の運用リスクを上げました。", "company");
     } else if (action === "presetGrowth") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
       applyTaskPreset("growth", { allowStateBoost: true, allowReassign: true });
@@ -3551,22 +3583,67 @@
     return getAssignedWorkersForProduct("marketing", productId).length ? '<span class="marketing-effect">広報中 <strong>認知度UP → 販売成功率UP / 炎上微増</strong></span>' : '';
   }
 
-  function getProductFireRiskHint(product) {
-    if (getProductFire(product) >= 70) return '<span class="marketing-effect support-risk">製品炎上高 <strong>Fire-05推奨</strong></span>';
-    if (getProductFire(product) >= 50) return '<span class="marketing-effect support-risk">製品炎上注意</span>';
-    return '';
+  function getRiskLevel(value, warningThreshold, dangerThreshold, inverse) {
+    const number = safeNumber(value, 0);
+    if (inverse) {
+      if (number <= dangerThreshold) return "danger";
+      if (number <= warningThreshold) return "warning";
+      return "normal";
+    }
+    if (number >= dangerThreshold) return "danger";
+    if (number >= warningThreshold) return "warning";
+    return "normal";
   }
 
-  function getSupportRiskHint(product, definition) {
-    if (definition.type !== "subscription") return '';
-    if (product.churnRisk >= 50) return '<span class="marketing-effect support-risk">解約注意 <strong>サポート推奨</strong></span>';
-    if (product.supportLoad >= 50) return '<span class="marketing-effect support-risk">サポート負荷高 <strong>Care-04推奨</strong></span>';
-    return '';
+  function createRiskChip(type, label, value, recommendation, level) {
+    return {
+      type: type,
+      label: label,
+      value: Math.round(safeNumber(value, 0)),
+      recommendation: recommendation || "",
+      level: level || "warning"
+    };
   }
 
-  function getCrisisRiskHint(product) {
-    if (product.status === "idea" || state.fire < 60) return '';
-    return '<span class="marketing-effect support-risk">炎上注意 <strong>Fire-05推奨</strong></span>';
+  function getProductRiskChips(product, definition, options) {
+    const settings = Object.assign({ includeNormal: false, compact: false }, options || {});
+    const chips = [];
+    const productFire = getProductFire(product);
+    const productFireLevel = getRiskLevel(productFire, 50, 75);
+    if (settings.includeNormal || productFireLevel !== "normal") chips.push(createRiskChip("product-fire", productFireLevel === "danger" ? "製品炎上 高" : "製品炎上 注意", productFire, "炎上対応推奨", productFireLevel));
+    if (definition.type === "subscription") {
+      const churnLevel = getRiskLevel(product.churnRisk, 45, 70);
+      const supportLevel = getRiskLevel(product.supportLoad, 50, 80);
+      if (settings.includeNormal || churnLevel !== "normal") chips.push(createRiskChip("churn", churnLevel === "danger" ? "解約リスク 高" : "解約リスク 注意", product.churnRisk, "サポート推奨", churnLevel));
+      if (settings.includeNormal || supportLevel !== "normal") chips.push(createRiskChip("support", supportLevel === "danger" ? "サポート負荷 高" : "サポート負荷 注意", product.supportLoad, "サポート推奨", supportLevel));
+    }
+    const bugsLevel = getRiskLevel(product.bugs, 35, 65);
+    if (settings.includeNormal || bugsLevel !== "normal") chips.push(createRiskChip("bugs", bugsLevel === "danger" ? "バグ多め" : "バグ注意", product.bugs, "品質管理推奨", bugsLevel));
+    const qualityLevel = getRiskLevel(product.quality, 60, 40, true);
+    if (settings.includeNormal || qualityLevel !== "normal") chips.push(createRiskChip("quality", qualityLevel === "danger" ? "品質低下" : "品質注意", product.quality, "品質管理推奨", qualityLevel));
+    chips.sort(function (a, b) {
+      const levelScore = { danger: 2, warning: 1, normal: 0 };
+      const levelDiff = (levelScore[b.level] || 0) - (levelScore[a.level] || 0);
+      if (levelDiff) return levelDiff;
+      return safeNumber(b.value, 0) - safeNumber(a.value, 0);
+    });
+    return settings.compact ? chips.slice(0, 3) : chips;
+  }
+
+  function getRiskChipHtml(chip) {
+    const text = chip.label + (chip.value || chip.value === 0 ? " " + chip.value : "") + (chip.recommendation ? " / " + chip.recommendation : "");
+    return '<span class="risk-chip risk-chip-' + escapeHtml(chip.type) + ' risk-chip-' + escapeHtml(chip.level) + '">' + escapeHtml(text) + '</span>';
+  }
+
+  function getProductRiskChipsHtml(product, definition, options) {
+    const chips = getProductRiskChips(product, definition, options);
+    return chips.length ? '<div class="risk-chip-list product-risk-chip-list">' + chips.map(getRiskChipHtml).join('') + '</div>' : '';
+  }
+
+
+  function getGlobalFireRiskChipHtmlForProduct(product, globalFire) {
+    if (product.status === "idea" || safeNumber(globalFire, 0) < 60) return '';
+    return '<span class="risk-chip risk-chip-global-fire risk-chip-warning">全社炎上 注意 / 炎上対応推奨</span>';
   }
 
   function getProductSummaryMetrics(product, definition, progressPercent) {
@@ -3574,13 +3651,13 @@
       return '<span class="primary-metric">販売数 <strong>' + getProductUnitsSold(product) + '本</strong></span>' +
         '<span class="primary-metric">累計売上 <strong>' + formatCurrency(product.lifetimeRevenue) + '</strong></span>' +
         '<span class="primary-metric wide">担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
-        getMarketingEffectHint(definition.id) + getProductFireRiskHint(product) + getCrisisRiskHint(product);
+        getMarketingEffectHint(definition.id) + getProductRiskChipsHtml(product, definition, { compact: true }) + getGlobalFireRiskChipHtmlForProduct(product, state.fire);
     }
     return '<span class="primary-metric wide">バージョン <strong>' + getSubscriptionVersionLine(product) + '</strong></span>' +
       '<span class="primary-metric">顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
       '<span class="primary-metric">MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
       '<span class="primary-metric wide">担当中 <strong class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</strong></span>' +
-      getMarketingEffectHint(definition.id) + getSupportRiskHint(product, definition) + getProductFireRiskHint(product) + getCrisisRiskHint(product);
+      getMarketingEffectHint(definition.id) + getProductRiskChipsHtml(product, definition, { compact: true }) + getGlobalFireRiskChipHtmlForProduct(product, state.fire);
   }
 
   function getProductAvailableActions(product, definition) {
@@ -4170,7 +4247,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-43").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-44").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
