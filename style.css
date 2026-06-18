@@ -696,3 +696,35 @@ button.share {
 .product-metrics .risk-chip-quality,
 .primary-product-card .risk-chip-quality,
 .product-detail-grid .risk-chip-quality { color: #5b21b6; }
+
+/* v0.4.0-alpha.5 lightweight mobile hardening */
+@media (max-width: 360px) {
+  .risk-chip-list {
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+  }
+  .risk-chip {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    padding-inline: 7px;
+  }
+  .product-metrics,
+  .primary-product-card .product-metrics,
+  .product-detail-grid {
+    min-width: 0;
+  }
+  .compact-product-actions,
+  .decision-actions,
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+  .decision-actions button,
+  .modal-actions button,
+  .compact-product-actions button {
+    width: 100%;
+  }
+}

@@ -24,25 +24,25 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.44"' in index
-    assert 'style.css?v=20260524-44' in index
-    assert 'main.js?v=20260524-44' in index
-    assert 'manifest.webmanifest?v=20260524-44' in index
-    assert 'icon.svg?v=20260524-44' in index
-    assert 'ogp.png?v=20260524-44' in index
-    assert 'icon-512.png?v=20260524-44' in index
+    assert 'content="2026.05.24.45"' in index
+    assert 'style.css?v=20260524-45' in index
+    assert 'main.js?v=20260524-45' in index
+    assert 'manifest.webmanifest?v=20260524-45' in index
+    assert 'icon.svg?v=20260524-45' in index
+    assert 'ogp.png?v=20260524-45' in index
+    assert 'icon-512.png?v=20260524-45' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.44"' in main
-    assert 'const APP_VERSION = "2026.05.24.44"' in sw
-    assert 'sw.js?v=20260524-44' in main
+    assert 'const APP_VERSION = "2026.05.24.45"' in main
+    assert 'const APP_VERSION = "2026.05.24.45"' in sw
+    assert 'sw.js?v=20260524-45' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-44"
+    assert manifest["start_url"] == "./index.html?v=20260524-45"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-44" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-45" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -62,13 +62,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-44')
+    main_pos = index.index('main.js?v=20260524-45')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-44' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-44') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-44' in sw
+        assert f'js/data/{name}.js?v=20260524-45' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-45') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-45' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_TASKS", [])' in main
@@ -124,11 +124,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-44" in sw
-    assert "icon.svg?v=20260524-44" in sw
-    assert "ogp.svg?v=20260524-44" in sw
-    assert "ogp.png?v=20260524-44" in sw
-    assert "icon-512.png?v=20260524-44" in sw
+    assert "manifest.webmanifest?v=20260524-45" in sw
+    assert "icon.svg?v=20260524-45" in sw
+    assert "ogp.svg?v=20260524-45" in sw
+    assert "ogp.png?v=20260524-45" in sw
+    assert "icon-512.png?v=20260524-45" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -299,7 +299,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.44"
+    assert output["save"]["appVersion"] == "2026.05.24.45"
 
 
 def test_security06_visible_at_company_level_5():
@@ -825,10 +825,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.44"' in index
-    assert 'main.js?v=20260524-44' in index
-    assert 'sw.js?v=20260524-44' in main
-    assert 'const APP_VERSION = "2026.05.24.44"' in sw
+    assert 'content="2026.05.24.45"' in index
+    assert 'main.js?v=20260524-45' in index
+    assert 'sw.js?v=20260524-45' in main
+    assert 'const APP_VERSION = "2026.05.24.45"' in sw
 
 
 
@@ -2893,7 +2893,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-44" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-45" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3295,11 +3295,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.44"' in index
+    assert 'content="2026.05.24.45"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.44"' in main
-    assert 'const APP_VERSION = "2026.05.24.44"' in sw
-    assert 'sw.js?v=20260524-44' in main
+    assert 'const APP_VERSION = "2026.05.24.45"' in main
+    assert 'const APP_VERSION = "2026.05.24.45"' in sw
+    assert 'sw.js?v=20260524-45' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4へ向けた設計メモ' in readme
     assert '製品別炎上' in readme
@@ -3773,7 +3773,7 @@ const context = {
   fetch: function (request) { fetchCount += 1; return request && request.mode === 'navigate' ? Promise.reject(new Error('offline')) : Promise.resolve({ status: 200, clone() { return this; } }); },
   caches: {
     open: function () { return Promise.resolve(cacheStore); },
-    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.44']); },
+    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.45']); },
     delete: function (key) { deleted.push(key); return Promise.resolve(true); },
     match: function (request) { if (request === './index.html') indexFallbackMatched = true; return Promise.resolve(request === './index.html' ? 'cached-index' : undefined); }
   },
@@ -3792,7 +3792,7 @@ events.activate({ waitUntil: function (promise) { waits.push(promise); } });
 events.message({ data: { type: 'SKIP_WAITING' } });
 const fetchResponses = [];
 events.fetch({
-  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-44', mode: 'same-origin' },
+  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-45', mode: 'same-origin' },
   respondWith: function (promise) { fetchResponses.push(promise); }
 });
 events.fetch({
@@ -3809,8 +3809,8 @@ Promise.all(waits.concat(fetchResponses)).then(function () {
     assert data["skipped"] >= 2
     assert data["claimed"] == 1
     assert "ai-black-startup-old" in data["deleted"]
-    assert "./main.js?v=20260524-44" in data["assets"]
-    assert "./js/data/missions.js?v=20260524-44" in data["assets"]
+    assert "./main.js?v=20260524-45" in data["assets"]
+    assert "./js/data/missions.js?v=20260524-45" in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
     assert data["cachePutCount"] == 1
@@ -4057,7 +4057,7 @@ def test_global_fire_risk_chip_dependency_is_explicit():
 def test_manifest_has_stable_pwa_id_when_start_url_is_cache_busted():
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["id"] == "./"
-    assert manifest["start_url"] == "./index.html?v=20260524-44"
+    assert manifest["start_url"] == "./index.html?v=20260524-45"
 
 
 def test_product_bug_and_quality_risks_are_in_operational_risk_panel_and_recommendation():
@@ -4077,3 +4077,96 @@ def test_risk_chip_css_overrides_metric_span_styles():
     assert ".product-metrics .risk-chip" in css
     assert ".primary-product-card .risk-chip" in css
     assert ".product-detail-grid .risk-chip" in css
+
+
+def test_alpha5_mobile_risk_chip_css_hardens_360px_layout():
+    css = (ROOT / "style.css").read_text()
+    assert "@media (max-width: 360px)" in css
+    mobile = css[css.rindex("@media (max-width: 360px)"):]
+    assert ".risk-chip-list" in mobile
+    assert "width: 100%" in mobile
+    assert ".risk-chip" in mobile
+    assert "overflow-wrap: anywhere" in mobile
+    assert "word-break: keep-all" in mobile
+    assert ".compact-product-actions" in mobile
+    assert ".decision-actions" in mobile
+    assert ".modal-actions" in mobile
+    assert "grid-template-columns: 1fr" in mobile
+
+
+def test_alpha5_risk_chip_copy_and_classes_cover_all_operational_risks():
+    main = app_source()
+    css = (ROOT / "style.css").read_text()
+    for text in ["製品炎上", "サポート負荷", "解約リスク", "バグ多め", "品質低下"]:
+        assert text in main
+    for class_name in ["risk-chip-product-fire", "risk-chip-support", "risk-chip-churn", "risk-chip-bugs", "risk-chip-quality"]:
+        assert class_name in css
+    for risk_type in ["product-fire", "support", "churn", "bugs", "quality"]:
+        assert 'createRiskChip("' + risk_type + '"' in main
+    assert "risk-chip-' + escapeHtml(chip.type)" in main
+
+
+def test_alpha5_product_action_menu_to_assignment_modal_flow_is_available():
+    output = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 2}},
+    }, "window.__testApi.openProductActionMenu('dailyReportAi'); window.__testApi.openProductAssignmentModal('sales', 'dailyReportAi', 'normal'); window.__testApi.saveGame();")
+    assert "AI日報メーカーの操作" in output["actionMenuHtml"]
+    assert 'data-product-action="sales"' in output["actionMenuHtml"]
+    assert "販売担当" in output["actionMenuHtml"]
+    assert "AI日報メーカーを販売する" in output["assignmentModalHtml"]
+    assert "担当AIを選択 最大2体" in output["assignmentModalHtml"]
+    assert "選択中:" in output["assignmentModalHtml"]
+    assert "この担当にする" in output["assignmentModalHtml"]
+
+
+def test_alpha5_employee_card_to_assignment_modal_flow_is_available():
+    output = run_game_action_smoke({
+        "employees": {"care04": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "supportLoad": 70, "churnRisk": 60}},
+    }, "window.__testApi.openWorkerAssignmentModal('care04'); window.__testApi.saveGame();")
+    assert "Care-04に仕事を割り振る" in output["assignmentModalHtml"]
+    assert "サポート" in output["assignmentModalHtml"]
+    assert "AI日報メーカー" in output["assignmentModalHtml"]
+    assert "この仕事には最大2体までAIを割り振れます" in output["assignmentModalHtml"]
+
+
+def test_alpha5_decision_card_has_approval_rejection_buttons_and_impact_text():
+    output = run_game_action_smoke({
+        "pendingDecisionEvent": {"id": "technical_debt_paydown", "productId": "dailyReportAi", "createdAt": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "bugs": 60, "quality": 45}},
+    }, "window.__testApi.render(); window.__testApi.saveGame();")
+    decision_html = output["testResult"] or ""
+    main = app_source()
+    assert "approveDecisionButton" in main
+    assert "rejectDecisionButton" in main
+    assert "承認する" in main
+    assert "却下する" in main
+    assert "decision-impact-heading" in main
+
+
+def test_alpha5_debug_risk_scenario_is_debug_only_in_structure():
+    main = app_source()
+    assert 'data-debug-action="riskChipsScenario"' in main
+    debug_start = main.index("function renderDebugPanel")
+    debug_end = main.index("function shareGameStatus", debug_start)
+    debug_runtime = main[debug_start:debug_end]
+    assert "if (!isDebugMode())" in debug_runtime
+    assert "if (!isDebugMode()) return false;" in debug_runtime
+    normal = run_game_action_smoke({}, "window.__testApi.render(); window.__testApi.saveGame();")
+    debug = run_game_action_smoke({"__locationSearch": "?debug=1"}, "window.__testApi.render(); window.__testApi.saveGame();")
+    assert normal["debugHidden"] is True
+    assert "リスクchip確認状態" not in normal["debugHtml"]
+    assert debug["debugHidden"] is False
+    assert "リスクchip確認状態" in debug["debugHtml"]
+
+
+def test_alpha5_render_boundaries_cover_assignment_modal_and_decision_panel():
+    main = app_source()
+    for function_name in ["function renderAssignmentModal()", "function renderDecisionPanel()", "function renderProductDetailModal()"]:
+        start = main.index(function_name)
+        next_function = main.find("\n  function ", start + len(function_name))
+        body = main[start: next_function if next_function != -1 else len(main)]
+        for forbidden in ["saveGame(", "tick(", "runGameTick(", "normalizeState(", "normalizeProducts("]:
+            assert forbidden not in body
+    assert "assignmentDraft.aiIds = normalizeAssignmentDraftAiIds" not in main[main.index("function renderAssignmentModal()"):main.index("function getAllWorkerIds()")]
