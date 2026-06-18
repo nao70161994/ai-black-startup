@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.42";
+  const APP_VERSION = "2026.05.24.43";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -38,14 +38,14 @@
   const PRODUCT_FIRE_CHURN_FACTOR = balanceValue("PRODUCT_FIRE_CHURN_FACTOR", 0.18);
   const GLOBAL_FIRE_SALES_PENALTY_DIVISOR = balanceValue("GLOBAL_FIRE_SALES_PENALTY_DIVISOR", 250);
   const PRODUCT_FIRE_SALES_PENALTY_DIVISOR = balanceValue("PRODUCT_FIRE_SALES_PENALTY_DIVISOR", 260);
-  const CHURN_CHANCE_MAX = balanceValue("CHURN_CHANCE_MAX", 0.05);
+  const CHURN_CHANCE_MAX = balanceValue("CHURN_CHANCE_MAX", 0.01);
   const SUPPORT_LOAD_RATE = balanceValue("SUPPORT_LOAD_RATE", 0.002);
   const SUBSCRIPTION_SALES02_PITY_LIMIT = balanceValue("SUBSCRIPTION_SALES02_PITY_LIMIT", 20);
   const SUBSCRIPTION_BOSS_PITY_LIMIT = balanceValue("SUBSCRIPTION_BOSS_PITY_LIMIT", 30);
   const ONE_SHOT_SALES02_PITY_LIMIT = balanceValue("ONE_SHOT_SALES02_PITY_LIMIT", 60);
   const ONE_SHOT_BOSS_PITY_LIMIT = balanceValue("ONE_SHOT_BOSS_PITY_LIMIT", 90);
-  const ONE_SHOT_SALE_CHANCE_CAP = balanceValue("ONE_SHOT_SALE_CHANCE_CAP", 0.20);
-  const ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS = balanceValue("ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS", 12);
+  const ONE_SHOT_SALE_CHANCE_CAP = balanceValue("ONE_SHOT_SALE_CHANCE_CAP", 0.12);
+  const ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS = balanceValue("ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS", 25);
   const ACHIEVEMENT_TOAST_LIMIT = balanceValue("ACHIEVEMENT_TOAST_LIMIT", 3);
 
   // === Employee definitions ===
@@ -405,7 +405,12 @@
   }
 
   function saveGame() {
-    try { state.appVersion = APP_VERSION; state.lastSavedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+    try {
+      commitRuntimeStateBeforeSave();
+      state.appVersion = APP_VERSION;
+      state.lastSavedAt = Date.now();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    }
     catch (error) { console.warn("Save failed.", error); }
   }
 
@@ -498,17 +503,53 @@
 
   // === Tick / Simulation ===
   function tick() {
-    const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
-    applyBaseContractWork();
-    applyDecisionEventGeneration();
-    applyAchievements(false);
-    state.firstFastTickDone = true;
-    penaltyElapsed += elapsedForPenalty;
-    if (penaltyElapsed >= PENALTY_MS) { penaltyElapsed = 0; applyPenalties(); }
-    clampRuntimeState();
+    runGameTick({ save: false });
     saveGame();
     render();
     scheduleNextTick();
+  }
+
+  function runGameTick(options) {
+    const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
+    applyRecurringRuntime();
+    applyDecisionEventTick();
+    applyAchievementTick();
+    state.firstFastTickDone = true;
+    applyRuntimePenaltiesIfDue(elapsedForPenalty);
+    finalizeTickState();
+    if (!options || options.save !== false) applyAutosaveTick();
+  }
+
+  function applyRecurringRuntime() {
+    applyBaseContractWork();
+  }
+
+  function applyDecisionEventTick() {
+    applyDecisionEventGeneration();
+  }
+
+  function applyAchievementTick() {
+    applyAchievements(false);
+  }
+
+  function applyRuntimePenaltiesIfDue(elapsedForPenalty) {
+    penaltyElapsed += elapsedForPenalty;
+    if (penaltyElapsed >= PENALTY_MS) {
+      penaltyElapsed = 0;
+      applyPenalties();
+    }
+  }
+
+  function finalizeTickState() {
+    clampRuntimeState();
+  }
+
+  function commitRuntimeStateBeforeSave() {
+    clampRuntimeState();
+  }
+
+  function applyAutosaveTick() {
+    saveGame();
   }
 
   function scheduleNextTick() {
@@ -522,16 +563,24 @@
   }
 
   function applyBaseContractWork() {
+    applyRecurringRevenue();
+  }
+
+  function applyRecurringRevenue() {
     const currentRates = getRates();
     state.money = Math.max(0, state.money + currentRates.baseMoney);
     state.totalMoney = Math.max(0, state.totalMoney + currentRates.baseMoney);
-    applyProductPipeline();
+    applyProductTaskEffects();
     const productRevenue = applyProductRevenue();
     state.money = Math.max(0, state.money + productRevenue);
     state.totalMoney = Math.max(0, state.totalMoney + productRevenue);
   }
 
   function applyProductPipeline() {
+    applyProductTaskEffects();
+  }
+
+  function applyProductTaskEffects() {
     PRODUCTS.forEach(function (definition) {
       applySingleProductPipeline(getProduct(definition.id), definition);
     });
@@ -542,8 +591,12 @@
     applyQaTask(product, definition);
     applySalesTask(product, definition);
     applyMarketingTask(product, definition);
-    applySupportOperations(product, definition);
     applyCrisisTask(product, definition);
+    applySupportOperations(product, definition);
+    applyProductLifecycleTick(product, definition);
+  }
+
+  function applyProductLifecycleTick(product, definition) {
     recalculateProductMrr(product, definition);
     applyProductMilestones(product, definition);
   }
@@ -735,7 +788,7 @@
   }
 
   function canApplySupport(product, definition) {
-    return definition.type === "subscription" && ["ready", "selling"].indexOf(product.status) !== -1;
+    return definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) > 0;
   }
 
   function updateSubscriptionSatisfaction(product, definition) {
@@ -753,7 +806,7 @@
 
   function applyChurn(product, definition) {
     if (getProductCustomers(product) <= 0 || product.status !== "selling") return;
-    const churnChance = clamp(product.churnRisk / 1000, 0, CHURN_CHANCE_MAX);
+    const churnChance = clamp(product.churnRisk / 3500, 0, CHURN_CHANCE_MAX);
     if (Math.random() >= churnChance) return;
     product.customers = Math.max(0, getProductCustomers(product) - 1);
     state.churnCount = Math.max(0, Math.floor(safeNumber(state.churnCount, 0))) + 1;
@@ -790,7 +843,7 @@
     const sales = getSalesEffect(workerId, product, definition);
     product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
     state.fire = clamp(state.fire + sales.fire, 0, 100);
-    adjustProductFire(product, sales.fire * 0.5);
+    adjustProductFire(product, Math.max(0.4, sales.fire * definition.risk * 10));
 
     if (getProductCustomers(product) === 0 && !flags.firstCustomerGranted && product.sellingSeconds >= 3) {
       addProductCustomer(product, definition, flags, true);
@@ -810,6 +863,7 @@
     const sales = getOneShotSalesEffect(workerId, product, definition);
     product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
     state.fire = clamp(state.fire + sales.fire, 0, 100);
+    adjustProductFire(product, Math.max(0.4, sales.fire * definition.risk * 10));
     if (getProductUnitsSold(product) === 0 && !flags.firstSaleLogged && product.sellingSeconds >= ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS) {
       addOneShotSale(product, definition, flags);
       product.oneShotSalesPityCounter = 0;
@@ -1051,7 +1105,6 @@
 
   // === Rendering: Dashboard ===
   function render() {
-    clampRuntimeState();
     renderStatus();
     renderOnboarding();
     renderRiskPanel();
@@ -1097,12 +1150,30 @@
     if (nextCard) nextCard.classList.toggle("has-unlock", Boolean(getNextUnlockText()));
   }
 
+  function getHighestOperationalRisk() {
+    return PRODUCTS.reduce(function (best, definition) {
+      const product = getProduct(definition.id);
+      const candidates = [
+        { type: "製品炎上", score: getProductFire(product) },
+        { type: "解約リスク", score: definition.type === "subscription" ? safeNumber(product.churnRisk, 0) : 0 },
+        { type: "サポート負荷", score: definition.type === "subscription" ? safeNumber(product.supportLoad, 0) : 0 }
+      ];
+      candidates.forEach(function (candidate) {
+        if (candidate.score > best.score) {
+          best = { definition: definition, product: product, type: candidate.type, score: candidate.score };
+        }
+      });
+      return best;
+    }, { definition: null, product: null, type: "", score: 0 });
+  }
+
   function renderActivity() {
     const element = document.getElementById("activityText");
     const panel = document.getElementById("activityPanel");
     if (!element) return;
     const rates = getRates();
-    if (panel) panel.classList.toggle("danger", getDashboardBugLevel() >= 80 || state.fire >= 80);
+    const currentOperationalRisk = getHighestOperationalRisk();
+    if (panel) panel.classList.toggle("danger", getDashboardBugLevel() >= 80 || state.fire >= 80 || currentOperationalRisk.score >= 55);
     if (!hasAnyEmployee() && !hasActiveAssignment()) {
       element.textContent = "AI社員の起動待ちです。まず無料雇用かAI社長のタスク割り振りを使いましょう。";
       return;
@@ -1121,6 +1192,8 @@
     if (rates.baseMoney !== 0) parts.push("基礎受託 " + formatSignedCurrencyRate(rates.baseMoney) + "/秒");
     const hasActiveSalesWork = PRODUCTS.some(function (definition) { return getProduct(definition.id).status === "selling" && getAssignedWorkersForProduct("sales", definition.id).length; });
     if (hasActiveSalesWork) parts.push("顧客獲得判定中");
+    const operationRisk = getHighestOperationalRisk();
+    if (operationRisk.definition && operationRisk.score >= 55) parts.push(operationRisk.definition.name + "の" + operationRisk.type + " " + Math.round(operationRisk.score));
     if (rates.bugs < 0) parts.push("バグ " + rates.bugs.toFixed(1) + "/秒");
     if (rates.fire < 0) parts.push("炎上 " + rates.fire.toFixed(1) + "/秒");
     element.textContent = parts.join(" / ") || "AI社員は静かに待機中です。";
@@ -1201,15 +1274,22 @@
     if (getClaimableMissions().length > 0) return createRecommendation("達成済みミッションの報酬を受け取りましょう。", { ctaLabel: "ミッションを見る", action: "missions", targetId: "missionPanel", path: "現在のミッション → 報酬を受け取る" });
     if (canExpandCompany()) return createRecommendation("会社を拡張してLvを上げましょう。", { ctaLabel: "会社を拡張する", action: "company", path: "会社Lvアップ可能 → 会社を拡張する" });
     const productFireHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return getProductFire(product) >= 60 && canAssignTaskToProduct("crisis", definition.id); });
-    if (productFireHeavy) return createRecommendation(productFireHeavy.name + "の製品炎上が高いです。Fire-05を炎上対応に割り振りましょう。", { ctaLabel: "炎上対応を開く", action: "product", productId: productFireHeavy.id, taskId: "crisis", path: "製品一覧 → " + productFireHeavy.name + " → 操作 → 炎上対応" });
-    const churnHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.churnRisk >= 45; });
-    const supportHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.supportLoad >= 50; });
+    if (productFireHeavy) {
+      const crisisWorker = isWorkerAvailable("fire05", state.employees) ? "Fire-05" : "AI社長";
+      return createRecommendation(productFireHeavy.name + "の製品炎上が高いです。" + crisisWorker + "を炎上対応に割り振りましょう。", { ctaLabel: "炎上対応を開く", action: "product", productId: productFireHeavy.id, taskId: "crisis", path: "製品一覧 → " + productFireHeavy.name + " → 操作 → 炎上対応" });
+    }
+    const churnHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.churnRisk >= 45 && canAssignTaskToProduct("support", definition.id); });
+    const supportHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.supportLoad >= 50 && canAssignTaskToProduct("support", definition.id); });
     if (churnHeavy) return createRecommendation("解約リスクが高い" + churnHeavy.name + "をサポートしましょう。", { ctaLabel: "操作を開く", action: "product", productId: churnHeavy.id, taskId: "support", path: "製品一覧 → " + churnHeavy.name + " → 操作 → サポート" });
-    if (supportHeavy) return createRecommendation("Care-04を" + supportHeavy.name + "のサポートに割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: supportHeavy.id, taskId: "support", path: "製品一覧 → " + supportHeavy.name + " → 操作 → サポート" });
+    if (supportHeavy) {
+      const supportWorker = isWorkerAvailable("care04", state.employees) ? "Care-04" : "AI社長";
+      return createRecommendation(supportWorker + "を" + supportHeavy.name + "のサポートに割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: supportHeavy.id, taskId: "support", path: "製品一覧 → " + supportHeavy.name + " → 操作 → サポート" });
+    }
     if (state.fire >= 70) {
       if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return createRecommendation("炎上が高いのでFire-05を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Fire-05 → 雇用" });
       const crisisTarget = PRODUCTS.find(function (definition) { return canAssignTaskToProduct("crisis", definition.id); }) || getPrimaryProductDefinition();
-      return createRecommendation("Fire-05を炎上対応へ割り振りましょう。Care-04はサポート面から火消しを補助できます。", { ctaLabel: "操作を開く", action: "product", productId: crisisTarget.id, taskId: "crisis", path: "製品一覧 → " + crisisTarget.name + " → 操作 → 炎上対応" });
+      const crisisWorker = isWorkerAvailable("fire05", state.employees) ? "Fire-05" : "AI社長";
+      return createRecommendation(crisisWorker + "を炎上対応へ割り振りましょう。Care-04はサポート面から火消しを補助できます。", { ctaLabel: "操作を開く", action: "product", productId: crisisTarget.id, taskId: "crisis", path: "製品一覧 → " + crisisTarget.name + " → 操作 → 炎上対応" });
     }
     if (getDashboardBugLevel() >= 70) {
       if (state.companyLevel >= 5 && (state.employees.security06 || 0) <= 0) return createRecommendation("バグが高いのでSecurity-06を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Security-06 → 雇用" });
@@ -2278,7 +2358,7 @@
       const taskCompatible = selectedTask.workers.indexOf(workerId) !== -1;
       const available = isWorkerAvailable(workerId, state.employees);
       const canAssign = taskCompatible && available;
-      const maxReached = selectedAiIds.length >= 2 && !selected;
+      const maxReached = selectedAiIds.length >= MAX_AI_PER_TASK_PRODUCT && !selected;
       const enabled = selected || (productAssignable && canAssign && !maxReached);
       let detail = getWorkerTaskDescription(workerId, selectedTask.id);
       if (!taskCompatible) detail = "対応不可";
@@ -2349,7 +2429,7 @@
       renderAssignmentModal();
       return;
     }
-    if (!canWorkerAssignToTask(workerId, assignmentDraft.taskId, state.employees) || selectedAiIds.length >= 2) return;
+    if (!canWorkerAssignToTask(workerId, assignmentDraft.taskId, state.employees) || selectedAiIds.length >= MAX_AI_PER_TASK_PRODUCT) return;
     selectedAiIds.push(workerId);
     assignmentDraft.aiIds = selectedAiIds;
     renderAssignmentModal();
@@ -2663,27 +2743,35 @@
     if (!panel || !title || !text) return;
     const bugRisk = state.bugs >= 40;
     const fireRisk = state.fire >= 40;
+    const operationRisk = getHighestOperationalRisk();
+    const productRisk = operationRisk.definition && operationRisk.score >= 45;
+    const productRiskText = productRisk ? operationRisk.definition.name + "の" + operationRisk.type + " " + Math.round(operationRisk.score) : "";
     panel.className = "risk-panel";
-    if (!bugRisk && !fireRisk) {
+    if (!bugRisk && !fireRisk && !productRisk) {
       title.textContent = "リスク監視: 平常";
-      text.textContent = "バグと炎上度が50を超えると、30秒ごとに事故判定が入ります。";
+      text.textContent = "バグ・炎上・製品運用リスクが上がると事故や解約が起きやすくなります。";
       return;
     }
     panel.classList.add("visible");
-    if (bugRisk && fireRisk) {
+    if ((fireRisk && bugRisk) || (productRisk && (fireRisk || bugRisk))) {
       panel.classList.add("warn-both");
-      title.textContent = state.bugs >= 80 || state.fire >= 80 ? "危険: 事故イベント発生注意" : "予兆: バグと炎上が同時に上昇中";
-      text.textContent = "炎上度はCare-04 / Fire-05で下げられます。バグは" + getBugMitigationText() + "。Dev-01を上げすぎると増えやすい点にも注意してください。";
+      title.textContent = state.bugs >= 80 || state.fire >= 80 || operationRisk.score >= 80 ? "危険: 複合リスク発生注意" : "予兆: 複数リスクが同時に上昇中";
+      text.textContent = "全社炎上 " + Math.round(state.fire) + " / バグ " + Math.round(state.bugs) + (productRiskText ? " / " + productRiskText : "") + "。Care-04 / Fire-05 / Security-06の担当を確認しましょう。";
+    } else if (fireRisk) {
+      panel.classList.add("warn-fire");
+      title.textContent = state.fire >= 80 ? "危険: 炎上事故イベント発生注意" : "予兆: 炎上度が上がっています";
+      text.textContent = "炎上度50以上で売上減少や解約リスク上昇が起きる可能性があります。" + (productRiskText ? productRiskText + "。" : "") + "Care-04 / Fire-05で対策できます。";
     } else if (bugRisk) {
       panel.classList.add("warn-bug");
       title.textContent = state.bugs >= 80 ? "危険: バグ事故イベント発生注意" : "予兆: バグが増えています";
-      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。100/100に近いほど危険です。" + getBugMitigationText() + "。";
+      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。" + (productRiskText ? productRiskText + "。" : "") + getBugMitigationText() + "。";
     } else {
       panel.classList.add("warn-fire");
-      title.textContent = "予兆: 炎上度が上がっています";
-      text.textContent = "炎上度50以上で売上減少や解約リスク上昇が起きる可能性があります。Care-04 / Fire-05で対策できます。";
+      title.textContent = "予兆: 製品運用リスクが上がっています";
+      text.textContent = productRiskText + "。サポート・品質管理・炎上対応の担当を確認しましょう。";
     }
   }
+
 
   function renderOffice() {
     const officePanel = document.getElementById("officePanel");
@@ -2812,6 +2900,11 @@
       '<button type="button" data-debug-action="decisionResetCooldown">判断クールダウン解除</button>' +
       '<button type="button" data-debug-action="decisionHighChurn">高解約判断シナリオ</button>' +
       '<button type="button" data-debug-action="decisionHandlersReport">判断handler一覧</button>' +
+      '<h3>Tick/Runtime</h3>' +
+      '<button type="button" data-debug-action="tick10">10秒tick実行</button>' +
+      '<button type="button" data-debug-action="tick60">60秒tick実行</button>' +
+      '<button type="button" data-debug-action="runtimeClamp">runtime clamp</button>' +
+      '<button type="button" data-debug-action="runtimeSummary">tick概要console出力</button>' +
       '<h3>AI/プリセット</h3>' +
       '<button type="button" data-debug-action="unlockAllAi">全AI解放</button>' +
       '<button type="button" data-debug-action="allAiLevel5">全AI Lv5</button>' +
@@ -2903,6 +2996,18 @@
       const missing = getDecisionHandlerMissingEventIds();
       console.log("Decision handlers", { count: DECISION_EVENTS.length, missing: missing });
       addLog("system", "デバッグ: 社長判断handlerをconsoleへ出力しました。未定義" + missing.length + "件。", "company");
+    } else if (action === "tick10") {
+      runDebugTicks(10);
+      addLog("system", "デバッグ: 10秒分のtickを実行しました。", "company");
+    } else if (action === "tick60") {
+      runDebugTicks(60);
+      addLog("system", "デバッグ: 60秒分のtickを実行しました。", "company");
+    } else if (action === "runtimeClamp") {
+      finalizeTickState();
+      addLog("system", "デバッグ: runtime clampを実行しました。", "company");
+    } else if (action === "runtimeSummary") {
+      console.log("AI_BLACK_STARTUP_TICK_SUMMARY", JSON.stringify(getRuntimeDebugSummary()));
+      addLog("system", "デバッグ: tick概要をconsoleへ出力しました。", "company");
     } else if (action === "scenario10min") {
       state.money += 100000;
       state.totalMoney += 100000;
@@ -3013,6 +3118,53 @@
     return true;
   }
 
+  function runDebugTicks(count) {
+    const safeCount = clamp(Math.floor(safeNumber(count, 0)), 0, 600);
+    for (let index = 0; index < safeCount; index += 1) runGameTick({ save: false });
+    saveGame();
+  }
+
+  function setUnsafeRuntimeStateForTest(patch) {
+    if (!patch || typeof patch !== "object") return;
+    Object.keys(patch).forEach(function (key) {
+      if (key === "products" && patch.products && typeof patch.products === "object") {
+        Object.keys(patch.products).forEach(function (productId) {
+          state.products[productId] = Object.assign({}, state.products[productId] || {}, patch.products[productId]);
+        });
+      } else {
+        state[key] = patch[key];
+      }
+    });
+  }
+
+  function getRuntimeDebugSummary() {
+    return {
+      version: APP_VERSION,
+      money: Math.round(state.money),
+      totalMoney: Math.round(state.totalMoney),
+      totalMrr: getTotalProductMrr(),
+      productRevenuePerSecond: Math.round(getProductRevenuePerSecondTotal() * 10) / 10,
+      baseRevenuePerSecond: Math.round(getRates().baseMoney * 10) / 10,
+      fire: Math.round(state.fire),
+      bugs: Math.round(state.bugs),
+      pendingDecision: state.pendingDecisionEvent ? state.pendingDecisionEvent.id : null,
+      products: PRODUCTS.map(function (definition) {
+        const product = getProduct(definition.id);
+        return {
+          id: definition.id,
+          status: product.status,
+          customers: getProductCustomers(product),
+          mrr: getProductMrr(product, definition),
+          unitsSold: getProductUnitsSold(product),
+          supportLoad: Math.round(safeNumber(product.supportLoad, 0)),
+          satisfaction: Math.round(safeNumber(product.satisfaction, 70)),
+          churnRisk: Math.round(safeNumber(product.churnRisk, 0)),
+          productFire: Math.round(getProductFire(product))
+        };
+      })
+    };
+  }
+
   function getDebugStateSummary() {
     return {
       version: APP_VERSION,
@@ -3048,7 +3200,7 @@
         }
       });
       if (!selected.length || (!allowReassign && !added)) return false;
-      const ok = setTaskAis(taskId, productId, selected.slice(0, MAX_AI_PER_TASK_PRODUCT), mode || "normal");
+      const ok = setTaskAis(taskId, productId, selected.slice(0, MAX_AI_PER_TASK_PRODUCT), mode || "normal", { commit: false });
       if (ok) results.push(getTaskLabel(taskId) + " → " + getProductDefinition(productId).name);
       return ok;
     }
@@ -3087,7 +3239,7 @@
       trySet("crisis", riskyProduct.id, ["fire05"], "normal");
     } else if (presetId === "vnext") {
       const upgradingTarget = PRODUCTS.find(function (definition) { return definition.type === "subscription" && getProduct(definition.id).upgradeStatus === "upgrading"; });
-      const readyUpgradeTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && ["ready", "selling"].indexOf(product.status) !== -1; });
+      const readyUpgradeTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.status === "selling" && getProductCustomers(product) > 0; });
       const upgradeTarget = upgradingTarget || (allowStateBoost ? readyUpgradeTarget : null) || devTarget;
       const upgradeProduct = getProduct(upgradeTarget.id);
       if (upgradingTarget || (allowStateBoost && upgradeTarget.type === "subscription" && ["ready", "selling"].indexOf(upgradeProduct.status) !== -1)) {
@@ -3528,21 +3680,22 @@
     return descriptions[taskId] && descriptions[taskId][workerId] ? descriptions[taskId][workerId] : "担当できます";
   }
 
-  function startProductDevelopmentIfNeeded(productId) {
+  function startProductDevelopmentIfNeeded(productId, options) {
     const definition = getProductDefinition(productId);
     const product = getProduct(definition.id);
     if (product.status !== "idea") return;
-    startProductDevelopment(definition.id);
+    startProductDevelopmentCore(definition.id);
+    if (!options || options.commit !== false) commitAssignmentChange();
   }
 
-  function startProductDevelopment(productId) {
+  function startProductDevelopmentCore(productId) {
     const definition = getProductDefinition(productId || PRODUCTS[0].id);
     const product = getProduct(definition.id);
     const flags = getProductFlags(product.id);
-    if (product.status !== "idea") return;
+    if (product.status !== "idea") return false;
 
     const developmentAssignment = getProductAssignment("development", definition.id);
-    setProductAssignmentEntry("development", definition.id, { aiIds: developmentAssignment.aiIds.slice(0, 2), mode: "newProduct" });
+    setProductAssignmentEntry("development", definition.id, { aiIds: developmentAssignment.aiIds.slice(0, MAX_AI_PER_TASK_PRODUCT), mode: "newProduct" });
     assignmentDraft.productId = assignmentDraft.taskId === "development" ? definition.id : assignmentDraft.productId;
     product.status = "developing";
     addLog("normal", getProductLogText(product.id, "developmentTargetChanged", "開発対象を" + definition.name + "に設定しました。"), product.id);
@@ -3551,9 +3704,12 @@
       flags.startedLogged = true;
       addLog("success", getProductLogText(product.id, "started", definition.name + "の開発を開始しました。"), product.id);
     }
-    saveGame();
-    render();
-    scheduleNextTick();
+    return true;
+  }
+
+  function startProductDevelopment(productId) {
+    if (!startProductDevelopmentCore(productId)) return;
+    commitAssignmentChange();
   }
 
   function startSubscriptionUpgrade(productId) {
@@ -3600,7 +3756,7 @@
     const definition = getProductDefinition(productId);
     const taskAssignment = getTaskAssignment(taskId);
     const entry = taskAssignment.productAssignments[definition.id] || { aiIds: [] };
-    return { productId: definition.id, aiIds: (entry.aiIds || []).slice(0, 2), mode: taskId === "development" ? (entry.mode === "upgrade" ? "upgrade" : "newProduct") : "normal" };
+    return { productId: definition.id, aiIds: (entry.aiIds || []).slice(0, MAX_AI_PER_TASK_PRODUCT), mode: taskId === "development" ? (entry.mode === "upgrade" ? "upgrade" : "newProduct") : "normal" };
   }
 
 
@@ -3690,7 +3846,7 @@
     addLog("normal", messageTemplate.replace("{workers}", workerNames), productId);
   }
 
-  function setTaskAis(taskId, productId, aiIds, mode) {
+  function setTaskAis(taskId, productId, aiIds, mode, options) {
     if (!TASKS.some(function (task) { return task.id === taskId; })) return false;
     const normalizedProductId = getProductDefinition(productId).id;
     if (!canAssignTaskToProduct(taskId, normalizedProductId)) return false;
@@ -3698,7 +3854,7 @@
     const assignmentMode = getDevelopmentAssignmentMode(taskId, normalizedProductId, mode);
     const selectedAiIds = [];
     (aiIds || []).forEach(function (aiId) {
-      if (!aiId || selectedAiIds.indexOf(aiId) !== -1 || selectedAiIds.length >= 2) return;
+      if (!aiId || selectedAiIds.indexOf(aiId) !== -1 || selectedAiIds.length >= MAX_AI_PER_TASK_PRODUCT) return;
       if (!canWorkerAssignToTask(aiId, taskId, state.employees)) return;
       selectedAiIds.push(aiId);
     });
@@ -3706,13 +3862,17 @@
     setAssignedAiIds(taskId, normalizedProductId, selectedAiIds, assignmentMode);
     if (taskId === "development" && selectedAiIds.length) {
       if (assignmentMode === "upgrade") startSubscriptionUpgrade(normalizedProductId);
-      else startProductDevelopmentIfNeeded(normalizedProductId);
+      else startProductDevelopmentIfNeeded(normalizedProductId, options);
     }
+    if (!options || options.commit !== false) commitAssignmentChange();
+    return true;
+  }
+
+  function commitAssignmentChange() {
     applyAchievements(false);
     saveGame();
     render();
     scheduleNextTick();
-    return true;
   }
 
   function assignAiToTask(taskId, aiId, productId, mode) {
@@ -3720,7 +3880,7 @@
     const normalizedProductId = getProductDefinition(productId).id;
     const current = getProductAssignment(taskId, normalizedProductId);
     const assignmentMode = getDevelopmentAssignmentMode(taskId, normalizedProductId, mode || "normal");
-    const aiIds = current.aiIds.slice(0, 2);
+    const aiIds = current.aiIds.slice(0, MAX_AI_PER_TASK_PRODUCT);
     if (aiId && aiIds.indexOf(aiId) === -1) {
       if (aiIds.length >= 2) return false;
       aiIds.push(aiId);
@@ -3967,6 +4127,7 @@
     product.churnRisk = clamp(safeNumber(product.churnRisk, 0), 0, 100);
     product.customers = getProductCustomers(product);
     product.unitsSold = getProductUnitsSold(product);
+    product.lifetimeRevenue = definition.type === "oneShot" ? Math.max(0, safeNumber(product.lifetimeRevenue, 0), safeNumber(definition.price, 0) * product.unitsSold) : Math.max(0, safeNumber(product.lifetimeRevenue, 0));
     product.version = Math.max(1, Math.floor(safeNumber(product.version, 1)));
     recalculateProductMrr(product, definition);
   }
@@ -4009,7 +4170,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-42").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-43").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

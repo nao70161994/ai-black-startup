@@ -24,25 +24,25 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.42"' in index
-    assert 'style.css?v=20260524-42' in index
-    assert 'main.js?v=20260524-42' in index
-    assert 'manifest.webmanifest?v=20260524-42' in index
-    assert 'icon.svg?v=20260524-42' in index
-    assert 'ogp.png?v=20260524-42' in index
-    assert 'icon-512.png?v=20260524-42' in index
+    assert 'content="2026.05.24.43"' in index
+    assert 'style.css?v=20260524-43' in index
+    assert 'main.js?v=20260524-43' in index
+    assert 'manifest.webmanifest?v=20260524-43' in index
+    assert 'icon.svg?v=20260524-43' in index
+    assert 'ogp.png?v=20260524-43' in index
+    assert 'icon-512.png?v=20260524-43' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.42"' in main
-    assert 'const APP_VERSION = "2026.05.24.42"' in sw
-    assert 'sw.js?v=20260524-42' in main
+    assert 'const APP_VERSION = "2026.05.24.43"' in main
+    assert 'const APP_VERSION = "2026.05.24.43"' in sw
+    assert 'sw.js?v=20260524-43' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-42"
+    assert manifest["start_url"] == "./index.html?v=20260524-43"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-42" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-43" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -62,13 +62,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-42')
+    main_pos = index.index('main.js?v=20260524-43')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-42' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-42') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-42' in sw
+        assert f'js/data/{name}.js?v=20260524-43' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-43') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-43' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_TASKS", [])' in main
@@ -98,12 +98,12 @@ def test_new_v04_products_and_category_affinity_are_defined():
 def test_category_affinity_changes_support_effect_and_detail_label_runtime():
     support_output = run_game_action_smoke({
         "employees": {"care04": 1},
-        "products": {"supportReplyAi": {"id": "supportReplyAi", "status": "selling", "supportLoad": 50, "satisfaction": 50}},
+        "products": {"supportReplyAi": {"id": "supportReplyAi", "status": "selling", "customers": 5, "supportLoad": 50, "satisfaction": 50}},
         "assignments": {"support": {"productAssignments": {"supportReplyAi": {"aiIds": ["care04"]}}}},
     }, "window.__testApi.tick(); window.__testApi.openProductDetailModal('supportReplyAi'); window.__testApi.saveGame();")
     daily_output = run_game_action_smoke({
         "employees": {"care04": 1},
-        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "supportLoad": 50, "satisfaction": 50}},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 5, "supportLoad": 50, "satisfaction": 50}},
         "assignments": {"support": {"productAssignments": {"dailyReportAi": {"aiIds": ["care04"]}}}},
     }, "window.__testApi.tick(); window.__testApi.saveGame();")
     assert support_output["save"]["products"]["supportReplyAi"]["supportLoad"] < daily_output["save"]["products"]["dailyReportAi"]["supportLoad"]
@@ -124,11 +124,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-42" in sw
-    assert "icon.svg?v=20260524-42" in sw
-    assert "ogp.svg?v=20260524-42" in sw
-    assert "ogp.png?v=20260524-42" in sw
-    assert "icon-512.png?v=20260524-42" in sw
+    assert "manifest.webmanifest?v=20260524-43" in sw
+    assert "icon.svg?v=20260524-43" in sw
+    assert "ogp.svg?v=20260524-43" in sw
+    assert "ogp.png?v=20260524-43" in sw
+    assert "icon-512.png?v=20260524-43" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -174,7 +174,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -218,6 +218,9 @@ console.log(JSON.stringify({
   actionMenuHtml: elements.get('productActionMenuModal').innerHTML,
   assignmentModalHtml: elements.get('assignmentModal').innerHTML,
   productDetailHtml: elements.get('productDetailModal').innerHTML,
+  activityText: elements.get('activityText').textContent,
+  riskTitle: elements.get('riskTitle').textContent,
+  riskText: elements.get('riskText').textContent,
   shareText: window.__testApi.createShareText()
 }));
 '''
@@ -296,7 +299,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.42"
+    assert output["save"]["appVersion"] == "2026.05.24.43"
 
 
 def test_security06_visible_at_company_level_5():
@@ -753,10 +756,10 @@ def test_product_card_assignment_flow_exists():
     assert "開発が速いがバグ増加" in main
     assert "顧客獲得が速いが炎上微増" in main
     assert "品質改善とバグ削減が得意" in main
-    assert "function startProductDevelopmentIfNeeded(productId)" in main
+    assert "function startProductDevelopmentIfNeeded(productId, options)" in main
     assert 'if (taskId === "development" && selectedAiIds.length)' in main
     assert 'if (assignmentMode === "upgrade") startSubscriptionUpgrade(normalizedProductId);' in main
-    assert 'else startProductDevelopmentIfNeeded(normalizedProductId)' in main
+    assert 'else startProductDevelopmentIfNeeded(normalizedProductId, options);' in main
     assert ".product-actions" in css
     assert ".product-action-menu-modal.open" in css
     assert ".product-action-menu-button" in css
@@ -766,7 +769,7 @@ def test_product_card_assignment_flow_exists():
 def test_high_priority_pipeline_foundation_is_prepared():
     main = app_source()
 
-    assert 'setProductAssignmentEntry("development", definition.id, { aiIds: developmentAssignment.aiIds.slice(0, 2), mode: "newProduct" })' in main
+    assert 'setProductAssignmentEntry("development", definition.id, { aiIds: developmentAssignment.aiIds.slice(0, MAX_AI_PER_TASK_PRODUCT), mode: "newProduct" })' in main
     assert "開発対象を自動議事録AIに設定しました" in main
     assert "次に開発担当を割り振りましょう" in main
     assert "function applyDevelopmentTask(product, definition)" in main
@@ -822,10 +825,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.42"' in index
-    assert 'main.js?v=20260524-42' in index
-    assert 'sw.js?v=20260524-42' in main
-    assert 'const APP_VERSION = "2026.05.24.42"' in sw
+    assert 'content="2026.05.24.43"' in index
+    assert 'main.js?v=20260524-43' in index
+    assert 'sw.js?v=20260524-43' in main
+    assert 'const APP_VERSION = "2026.05.24.43"' in sw
 
 
 
@@ -892,7 +895,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, saveGame, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -936,6 +939,9 @@ console.log(JSON.stringify({
   actionMenuHtml: elements.get('productActionMenuModal').innerHTML,
   assignmentModalHtml: elements.get('assignmentModal').innerHTML,
   productDetailHtml: elements.get('productDetailModal').innerHTML,
+  activityText: elements.get('activityText').textContent,
+  riskTitle: elements.get('riskTitle').textContent,
+  riskText: elements.get('riskText').textContent,
   shareText: window.__testApi.createShareText(),
   latestLog: elements.get('latestLogText').textContent,
   testResult: window.__testResult || null,
@@ -1217,7 +1223,7 @@ def test_support_task_behavior_and_churn_are_subscription_only():
     assert "function getSupportEffect(workerId)" in main
     assert "supportLoad: -(0.3 + level * 0.08)" in main
     assert "product.customers = Math.max(0, getProductCustomers(product) - 1)" in main
-    assert "churnChance = clamp(product.churnRisk / 1000, 0, CHURN_CHANCE_MAX)" in main
+    assert "churnChance = clamp(product.churnRisk / 3500, 0, CHURN_CHANCE_MAX)" in main
     assert 'id: "support", label: "サポート"' in main
 
     output = run_game_action_smoke({
@@ -1650,7 +1656,7 @@ def test_development_and_upgrade_modes_are_kept_separate_when_assigning():
     assert "function getDevelopmentAssignmentMode(taskId, productId, mode)" in main
     assert 'const assignmentMode = getDevelopmentAssignmentMode(taskId, normalizedProductId, mode || "normal")' in main
     assert 'if (assignmentMode === "upgrade") startSubscriptionUpgrade(normalizedProductId);' in main
-    assert 'else startProductDevelopmentIfNeeded(normalizedProductId);' in main
+    assert 'else startProductDevelopmentIfNeeded(normalizedProductId, options);' in main
     assert 'shouldStartUpgradeOnDevelopmentAssignment(targetProduct, targetDefinition)' not in main[main.index("function assignAiToTask"):main.index("function clearAssignment", main.index("function assignAiToTask"))]
     assert 'if (assignmentDraft.mode === "upgrade" && product.upgradeStatus === "upgrading") return definition.name + "のv" + (getProductVersion(product) + 1) + "開発担当を選ぶ"' in main
     assert 'if (assignmentDraft.mode === "upgrade") return definition.name + "をバージョンアップする"' in main
@@ -2024,7 +2030,7 @@ def test_claiming_completed_mission_reward_is_manual():
         "claimedMissions": [],
         "logs": [],
         "lastSavedAt": 9999999999999,
-    }, "window.__testApi.saveGame();")
+    }, "window.__testApi.setUnsafeRuntimeStateForTest({money:-50,totalMoney:-20,products:{dailyReportAi:{customers:2.8,mrr:99999,priceAdjustment:9,productFire:250,supportLoad:-10,satisfaction:999,churnRisk:120},slideKitAi:{priceAdjustment:0.8,unitsSold:-3,lifetimeRevenue:-100}}}); window.__testApi.saveGame();")
     assert "daily_report_developing" not in output["save"]["claimedMissions"]
 
     claimed = run_game_action_smoke({
@@ -2253,14 +2259,14 @@ def test_assignment_modal_supports_multi_ai_selection_and_bulk_apply():
 
     assert "aiIds: []" in main
     assert "assignmentDraft.aiIds" in main
-    assert "function setTaskAis(taskId, productId, aiIds, mode)" in main
+    assert "function setTaskAis(taskId, productId, aiIds, mode, options)" in main
     assert "担当AIを選択 最大2体" in main
     assert "現在担当:" in main
     assert "選択中:" in main
     assert "この担当にする" in main
     assert "担当を解除" in main
     assert "toggleAssignmentDraftAi" in main
-    assert "selectedAiIds.length >= 2 && !selected" in main
+    assert "selectedAiIds.length >= MAX_AI_PER_TASK_PRODUCT && !selected" in main
     assert "最大2体まで" in main
     assert "getAllWorkerIds()" in main
     assert "対応不可" in main
@@ -2887,7 +2893,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-42" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-43" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3289,11 +3295,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.42"' in index
+    assert 'content="2026.05.24.43"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.42"' in main
-    assert 'const APP_VERSION = "2026.05.24.42"' in sw
-    assert 'sw.js?v=20260524-42' in main
+    assert 'const APP_VERSION = "2026.05.24.43"' in main
+    assert 'const APP_VERSION = "2026.05.24.43"' in sw
+    assert 'sw.js?v=20260524-43' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4へ向けた設計メモ' in readme
     assert '製品別炎上' in readme
@@ -3547,9 +3553,10 @@ def test_render_uses_light_runtime_clamp_not_full_normalize_each_time():
     render_start = main.index("function render()")
     render_end = main.index("function renderStatus()", render_start)
     render_code = main[render_start:render_end]
-    assert "clampRuntimeState();" in render_code
+    assert "clampRuntimeState();" not in render_code
     assert "sanitizeRuntimeState();" not in render_code
     assert "function clampRuntimeState()" in main
+    assert "function commitRuntimeStateBeforeSave()" in main
     assert "function clampRuntimeProduct(product, definition)" in main
 
 def test_next_recommendation_product_cta_can_open_assignment_modal_directly():
@@ -3589,11 +3596,11 @@ def test_v04_product_line_missions_and_one_shot_first_sale_are_playtest_friendly
     balance = (ROOT / "js" / "data" / "balance.js").read_text()
 
     assert missions.index('id: "v04_product_expansion"') < missions.index('id: "product_growth"')
-    assert 'ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS: 12' in balance
+    assert 'ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS: 25' in balance
 
     output = run_game_action_smoke({
         "employees": {"sales02": 1},
-        "products": {"apologyWriterAi": {"id": "apologyWriterAi", "status": "selling", "unitsSold": 0, "sellingSeconds": 12, "oneShotSalesPityCounter": 0, "awareness": 0, "quality": 52}},
+        "products": {"apologyWriterAi": {"id": "apologyWriterAi", "status": "selling", "unitsSold": 0, "sellingSeconds": 24, "oneShotSalesPityCounter": 0, "awareness": 0, "quality": 52}},
         "assignments": {"sales": {"productAssignments": {"apologyWriterAi": {"aiIds": ["sales02"]}}}},
     }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
     product = output["save"]["products"]["apologyWriterAi"]
@@ -3742,3 +3749,194 @@ def test_debug_decision_tools_do_not_overwrite_pending_and_can_reset():
         "pendingDecisionEvent": {"id": "care_customer_priority", "productId": "dailyReportAi", "createdAt": 1},
     }, "window.__testApi.applyDebugAction('decisionClearPending'); window.__testApi.saveGame();")
     assert cleared["save"]["pendingDecisionEvent"] is None
+
+
+def test_service_worker_runtime_install_activate_and_message_handlers():
+    script = r'''const fs = require('fs');
+const vm = require('vm');
+const events = {};
+const deleted = [];
+let indexFallbackMatched = false;
+let skipped = 0;
+let claimed = 0;
+let recordedAssets = [];
+let cachePutCount = 0;
+let fetchCount = 0;
+const cacheStore = {
+  addAll(assets) { recordedAssets = assets; return Promise.resolve(); },
+  match() { return Promise.resolve(undefined); },
+  put() { cachePutCount += 1; return Promise.resolve(); }
+};
+const context = {
+  console,
+  URL,
+  fetch: function (request) { fetchCount += 1; return request && request.mode === 'navigate' ? Promise.reject(new Error('offline')) : Promise.resolve({ status: 200, clone() { return this; } }); },
+  caches: {
+    open: function () { return Promise.resolve(cacheStore); },
+    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.43']); },
+    delete: function (key) { deleted.push(key); return Promise.resolve(true); },
+    match: function (request) { if (request === './index.html') indexFallbackMatched = true; return Promise.resolve(request === './index.html' ? 'cached-index' : undefined); }
+  },
+  self: {
+    location: { origin: 'https://nao70161994.github.io' },
+    skipWaiting: function () { skipped += 1; },
+    clients: { claim: function () { claimed += 1; return Promise.resolve(); } },
+    addEventListener: function (type, callback) { events[type] = callback; }
+  }
+};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('sw.js', 'utf8'), context);
+const waits = [];
+events.install({ waitUntil: function (promise) { waits.push(promise); } });
+events.activate({ waitUntil: function (promise) { waits.push(promise); } });
+events.message({ data: { type: 'SKIP_WAITING' } });
+const fetchResponses = [];
+events.fetch({
+  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-43', mode: 'same-origin' },
+  respondWith: function (promise) { fetchResponses.push(promise); }
+});
+events.fetch({
+  request: { method: 'GET', url: 'https://nao70161994.github.io/ai-black-startup/', mode: 'navigate' },
+  respondWith: function (promise) { fetchResponses.push(promise); }
+});
+Promise.all(waits.concat(fetchResponses)).then(function () {
+  console.log(JSON.stringify({ events: Object.keys(events).sort(), skipped, claimed, deleted, assets: recordedAssets, fetchResponses: fetchResponses.length, fetchCount, cachePutCount, indexFallbackMatched }));
+}).catch(function (error) { console.error(error); process.exit(1); });
+'''
+    result = subprocess.run(["node", "-e", script], cwd=ROOT, text=True, capture_output=True, check=True)
+    data = json.loads(result.stdout)
+    assert data["events"] == ["activate", "fetch", "install", "message"]
+    assert data["skipped"] >= 2
+    assert data["claimed"] == 1
+    assert "ai-black-startup-old" in data["deleted"]
+    assert "./main.js?v=20260524-43" in data["assets"]
+    assert "./js/data/missions.js?v=20260524-43" in data["assets"]
+    assert data["fetchResponses"] == 2
+    assert data["fetchCount"] == 2
+    assert data["cachePutCount"] == 1
+    assert data["indexFallbackMatched"] is True
+
+
+def test_save_game_clamps_runtime_state_before_persisting():
+    output = run_game_action_smoke({
+        "products": {
+            "dailyReportAi": {"id": "dailyReportAi", "status": "selling"},
+            "slideKitAi": {"id": "slideKitAi", "status": "selling"}
+        }
+    }, "window.__testApi.setUnsafeRuntimeStateForTest({money:-50,totalMoney:-20,products:{dailyReportAi:{customers:2.8,mrr:99999,priceAdjustment:9,productFire:250,supportLoad:-10,satisfaction:999,churnRisk:120},slideKitAi:{priceAdjustment:0.8,unitsSold:-3,lifetimeRevenue:-100}}}); window.__testApi.saveGame();")
+    daily = output["save"]["products"]["dailyReportAi"]
+    slide = output["save"]["products"]["slideKitAi"]
+    assert output["save"]["money"] == 0
+    assert output["save"]["totalMoney"] == 0
+    assert daily["customers"] == 2
+    assert daily["priceAdjustment"] == 0.6
+    assert daily["productFire"] == 100
+    assert daily["supportLoad"] == 0
+    assert daily["satisfaction"] == 100
+    assert daily["churnRisk"] == 100
+    assert daily["mrr"] == 1600
+    assert slide["priceAdjustment"] == 0
+    assert slide["unitsSold"] == 0
+    assert slide["lifetimeRevenue"] == 0
+
+
+def test_debug_tick_tools_run_ticks_and_report_runtime_summary():
+    output = run_game_action_smoke({
+        "__locationSearch": "?debug=1",
+        "money": 0,
+        "totalMoney": 0,
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 1}}
+    }, "window.__testApi.applyDebugAction('tick10'); window.__testApi.applyDebugAction('runtimeClamp'); window.__testResult = window.__testApi.getRuntimeDebugSummary(); window.__testApi.saveGame();")
+    assert output["save"]["money"] > 0
+    assert output["testResult"]["productRevenuePerSecond"] > 0
+    assert output["testResult"]["totalMrr"] == 500
+    assert any("デバッグ: 10秒分のtickを実行しました" in log["text"] for log in output["save"]["logs"])
+
+
+def test_product_fire_and_support_risk_surface_in_activity_and_risk_panel():
+    output = run_game_action_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 4, "productFire": 70, "supportLoad": 65, "churnRisk": 55}}
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    combined = output["activityText"] + output["riskTitle"] + output["riskText"]
+    assert "AI日報メーカーの製品炎上" in combined or "AI日報メーカーのサポート負荷" in combined or "AI日報メーカーの解約リスク" in combined
+    assert "製品運用リスク" in combined or "運用注意" in combined
+
+
+def test_product_fire_increases_churn_pressure_and_fire05_reduces_it():
+    risky = run_game_action_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "satisfaction": 70, "supportLoad": 10, "churnRisk": 0, "productFire": 0}},
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    burning = run_game_action_smoke({
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "satisfaction": 70, "supportLoad": 10, "churnRisk": 0, "productFire": 100}},
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    assert burning["save"]["products"]["dailyReportAi"]["churnRisk"] > risky["save"]["products"]["dailyReportAi"]["churnRisk"]
+
+    cooled = run_game_action_smoke({
+        "money": 100,
+        "fire": 80,
+        "employees": {"fire05": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 8, "productFire": 80}},
+        "assignments": {"crisis": {"productAssignments": {"dailyReportAi": {"aiIds": ["fire05"]}}}}
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    assert cooled["save"]["fire"] < 80
+    assert cooled["save"]["products"]["dailyReportAi"]["productFire"] < 80
+
+
+def test_support_only_applies_to_selling_subscriptions_with_customers():
+    ready = run_game_action_smoke({
+        "employees": {"care04": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "ready", "customers": 0, "supportLoad": 80, "satisfaction": 40, "churnRisk": 60}},
+        "assignments": {"support": {"productAssignments": {"dailyReportAi": {"aiIds": ["care04"]}}}}
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    selling = run_game_action_smoke({
+        "employees": {"care04": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 4, "supportLoad": 80, "satisfaction": 40, "churnRisk": 60}},
+        "assignments": {"support": {"productAssignments": {"dailyReportAi": {"aiIds": ["care04"]}}}}
+    }, "window.__testApi.tick(); window.__testApi.saveGame();")
+    assert ready["save"]["products"]["dailyReportAi"]["supportLoad"] >= 80
+    assert selling["save"]["products"]["dailyReportAi"]["supportLoad"] < 80
+    assert selling["save"]["products"]["dailyReportAi"]["churnRisk"] < 60
+
+
+def test_one_shot_first_sale_guarantee_does_not_double_grant_with_two_sales_ais():
+    output = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"slideKitAi": {"id": "slideKitAi", "status": "selling", "unitsSold": 0, "sellingSeconds": 24}},
+        "assignments": {"sales": {"productAssignments": {"slideKitAi": {"aiIds": ["boss", "sales02"]}}}}
+    }, "Math.random = function () { return 1; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    assert output["save"]["products"]["slideKitAi"]["unitsSold"] == 1
+    assert output["save"]["products"]["slideKitAi"]["lifetimeRevenue"] == 9800
+
+
+def test_mission_claim_is_idempotent_and_unknown_claim_is_safe():
+    output = run_game_action_smoke({
+        "money": 0,
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "developing"}}
+    }, "window.__testApi.claimMissionReward('daily_report_developing'); window.__testApi.claimMissionReward('daily_report_developing'); window.__testApi.claimMissionReward('missing_mission'); window.__testApi.saveGame();")
+    assert output["save"]["money"] == 200
+    assert output["save"]["totalMoney"] == 200
+    assert output["save"]["claimedMissions"].count("daily_report_developing") == 1
+    assert sum(1 for log in output["save"]["logs"] if "ミッション報酬を受け取りました" in log["text"]) == 1
+
+
+def test_preset_batching_uses_deferred_assignment_commits():
+    main = app_source()
+    assert "setTaskAis(taskId, productId, selected.slice(0, MAX_AI_PER_TASK_PRODUCT), mode || \"normal\", { commit: false })" in main
+    assert "function commitAssignmentChange()" in main
+
+
+def test_product_fire_reduces_subscription_sales_chance():
+    low_fire = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 0, "sellingSeconds": 0, "awareness": 100, "quality": 100, "productFire": 0}},
+        "productFlags": {"dailyReportAi": {"firstCustomerGranted": True}},
+        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}}
+    }, "Math.random = function () { return 0.09; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    high_fire = run_game_action_smoke({
+        "employees": {"sales02": 1},
+        "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 0, "sellingSeconds": 0, "awareness": 100, "quality": 100, "productFire": 100}},
+        "productFlags": {"dailyReportAi": {"firstCustomerGranted": True}},
+        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}}
+    }, "Math.random = function () { return 0.09; }; window.__testApi.tick(); window.__testApi.saveGame();")
+    assert low_fire["save"]["products"]["dailyReportAi"]["customers"] == 1
+    assert high_fire["save"]["products"]["dailyReportAi"]["customers"] == 0

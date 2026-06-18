@@ -76,7 +76,7 @@ AI社長とAI社員たちは、その仮想オフィスで24時間自律稼働�
 
 ## v0.3 製品パイプライン実験
 
-v0.3では、AI社長と専門AIを製品ごとのタスクへ割り振り、製品を開発・販売・広報・サポート・炎上対応しながらMRRと即時売上を伸ばす流れを検証しています。現在は2つのサブスク製品と1つの売り切り製品で、販売中の製品を運用しながら別製品やvNextを並行開発できます。
+v0.3では、AI社長と専門AIを製品ごとのタスクへ割り振り、製品を開発・販売・広報・サポート・炎上対応しながらMRRと即時売上を伸ばす流れを検証しています。現在は3つのサブスク製品と2つの売り切り製品で、販売中の製品を運用しながら別製品やvNextを並行開発できます。
 
 利用できる製品は以下です。
 
@@ -166,7 +166,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-42
+http://localhost:8000/?v=20260524-43
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -180,7 +180,7 @@ PCで確認する場合は `http://localhost:8000` でも起動できます。�
 - JavaScript
 - 外部ライブラリなし
 - サーバー不要
-- 主要3ファイル構成
+- 主要ファイル構成
   - `index.html`
   - `style.css`
   - `main.js`
@@ -264,18 +264,18 @@ ai_black_startup_save_v1
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.42` です。
+現在のアプリバージョンは `2026.05.24.43` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-42">
-<script src="js/data/products.js?v=20260524-42"></script>
-<script src="js/data/achievements.js?v=20260524-42"></script>
-<script src="js/data/missions.js?v=20260524-42"></script>
-<script src="main.js?v=20260524-42"></script>
+<link rel="stylesheet" href="style.css?v=20260524-43">
+<script src="js/data/products.js?v=20260524-43"></script>
+<script src="js/data/achievements.js?v=20260524-43"></script>
+<script src="js/data/missions.js?v=20260524-43"></script>
+<script src="main.js?v=20260524-43"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -283,18 +283,18 @@ ai_black_startup_save_v1
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.42
+ai-black-startup-2026.05.24.43
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-42` を付けて開く
+- URLに `?v=20260524-43` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-42` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-43` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -307,7 +307,7 @@ node --check sw.js
 pytest
 ```
 
-`pytest` では、cache busting/app versionの整合性、manifest読み込み、Service Worker更新処理、共有ボタン/共有処理、既存セーブへの新規社員・製品情報補完、会社Lv5でのSecurity-06表示、v0.3製品パイプライン最小実装の定義を確認しています。
+`pytest` では、cache busting/app versionの整合性、manifest読み込み、Service Worker更新処理、共有ボタン/共有処理、既存セーブへの新規社員・製品情報補完、製品パイプライン、社長判断イベント、実績、デバッグ導線、runtime tickの回帰を確認しています。
 
 ## 今後の改善予定
 
