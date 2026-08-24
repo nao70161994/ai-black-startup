@@ -203,5 +203,25 @@ window.AIBS_DECISION_EVENTS = [
       approveImpact: "承認: 開発進捗UP / 製品バグ+6 / 費用-¥1.2K",
       rejectImpact: "却下: 変化なし。内製を続けます。",
       riskLevel: "warning"
+    },
+    {
+      id: "sales_contract_followup",
+      label: "大型契約の納品確認",
+      workerId: "sales02",
+      message: "Sales-02「先日の大型契約、約束した内容の確認が来ています。ここで追加対応しますか？」",
+      approveImpact: "追加対応: 費用-¥800 / 品質+4 / 製品バグ-6 / 満足度+5",
+      rejectImpact: "見送り: 製品炎上+10 / 満足度-6",
+      riskLevel: "warning",
+      followup: true
+    },
+    {
+      id: "campaign_aftershock",
+      label: "広告キャンペーンの余波",
+      workerId: "buzz03",
+      message: "Buzz-03「先日の広告がまだ伸びています。訂正文を出すか、このまま乗りますか？」",
+      approveImpact: "訂正する: 炎上-10 / 製品炎上-8 / 認知度-4",
+      rejectImpact: "乗り続ける: 認知度+10 / 炎上+8 / 製品炎上+6",
+      riskLevel: "warning",
+      followup: true
     }
   ];

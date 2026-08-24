@@ -728,3 +728,33 @@ button.share {
     width: 100%;
   }
 }
+
+
+/* Strategy, insights, save management, and accessibility */
+.strategy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.strategy-option { display: flex; flex-direction: column; gap: 3px; min-height: 76px; text-align: left; border: 2px solid #b8dce6; background: #fff; color: #17333c; }
+.strategy-option span { font-size: 0.78rem; line-height: 1.45; font-weight: 500; }
+.strategy-option.selected { border-color: #087d9b; background: #e3f8fd; box-shadow: inset 0 0 0 1px #087d9b; }
+.operations-bonuses { margin-top: 12px; padding: 10px; border-radius: 12px; background: #f4fbfd; }
+.operations-bonuses h3 { margin: 0 0 6px; font-size: 0.9rem; }
+.operations-bonuses ul { margin: 0; padding-left: 20px; font-size: 0.78rem; line-height: 1.55; }
+.metric-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.metric-chart { padding: 9px; border: 1px solid #cce2e8; border-radius: 12px; background: #fff; }
+.metric-chart div { display: flex; justify-content: space-between; gap: 8px; font-size: 0.75rem; }
+.metric-chart svg { display: block; width: 100%; height: 48px; margin-top: 4px; }
+.metric-chart polyline { stroke-width: 2.5; }
+.chart-baseline { stroke: #c8d5d9; stroke-width: 1; }
+.save-manager-panel label { display: inline-block; margin-right: 8px; font-weight: 700; }
+.save-manager-panel select { min-height: 42px; padding: 6px 10px; border: 1px solid #8ebac5; border-radius: 9px; background: #fff; }
+.save-manager-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.save-manager-actions button { min-height: 44px; }
+.risk-chip-symbol, .risk-symbol { margin-right: 0.25em; font-weight: 900; }
+:focus-visible { outline: 3px solid #f08a00; outline-offset: 3px; }
+button, select, input { touch-action: manipulation; }
+@media (max-width: 420px) {
+  .strategy-grid, .metric-chart-grid, .save-manager-actions { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .pulse-ring { display: none !important; }
+}

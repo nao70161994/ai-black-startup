@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.45";
+  const APP_VERSION = "2026.05.24.47";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -20,6 +20,8 @@
     if (typeof factory !== "function") throw new Error(name + " is not loaded. Check js/data script order.");
     return factory;
   }
+  const SAVE_SCHEMA_VERSION = 3;
+  const SAVE_RUNTIME = readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")({ saveKey: SAVE_KEY, schemaVersion: SAVE_SCHEMA_VERSION });
   const TICK_MS = balanceValue("TICK_MS", 1000);
   const FIRST_TICK_MS = balanceValue("FIRST_TICK_MS", 1000);
   const EFFECTS_PER_SECONDS = balanceValue("EFFECTS_PER_SECONDS", 10);
@@ -57,6 +59,9 @@
   // === Task definitions ===
   const TASKS = readExternalData("AIBS_TASKS", []);
   const TASK_PRESETS = readExternalData("AIBS_TASK_PRESETS", []);
+  const STRATEGIES = readExternalData("AIBS_STRATEGIES", []);
+  const PRODUCT_SYNERGIES = readExternalData("AIBS_PRODUCT_SYNERGIES", []);
+  const AI_RELATIONSHIPS = readExternalData("AIBS_AI_RELATIONSHIPS", []);
 
 
 
@@ -64,6 +69,46 @@
 
 
   const WORKER_TASK_PROFILES = readExternalData("AIBS_WORKER_TASK_PROFILES", {});
+  const OPERATIONS_RUNTIME = readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")({ strategies: STRATEGIES, synergies: PRODUCT_SYNERGIES, relationships: AI_RELATIONSHIPS, products: PRODUCTS, tasks: TASKS });
+  const ASSIGNMENT_RUNTIME = readExternalFactory("AIBS_CREATE_ASSIGNMENT_RUNTIME")({
+    tasks: TASKS,
+    products: PRODUCTS,
+    maxWorkers: MAX_AI_PER_TASK_PRODUCT,
+    createInitialAssignments: createInitialAssignments,
+    canWorkerAssignToTask: canWorkerAssignToTask
+  });
+  const EFFECT_RUNTIME = readExternalFactory("AIBS_CREATE_EFFECT_RUNTIME")({
+    getEmployeeLevel: function (employeeId) { return state.employees[employeeId] || 0; },
+    clamp: clamp,
+    applyAffinity: applyAffinity,
+    getProductFire: getProductFire,
+    getGlobalFire: function () { return state.fire; },
+    globalFireSalesPenaltyDivisor: GLOBAL_FIRE_SALES_PENALTY_DIVISOR,
+    productFireSalesPenaltyDivisor: PRODUCT_FIRE_SALES_PENALTY_DIVISOR,
+    oneShotSaleChanceCap: ONE_SHOT_SALE_CHANCE_CAP
+  });
+  const getDevelopmentEffect = EFFECT_RUNTIME.getDevelopmentEffect;
+  const getUpgradeDevelopmentEffect = EFFECT_RUNTIME.getUpgradeDevelopmentEffect;
+  const getQaEffect = EFFECT_RUNTIME.getQaEffect;
+  const getMarketingEffect = EFFECT_RUNTIME.getMarketingEffect;
+  const getSupportEffect = EFFECT_RUNTIME.getSupportEffect;
+  const getCrisisEffect = EFFECT_RUNTIME.getCrisisEffect;
+  const getFireSalesPressureFactor = EFFECT_RUNTIME.getFireSalesPressureFactor;
+  const getSalesEffect = EFFECT_RUNTIME.getSalesEffect;
+  const getOneShotSalesEffect = EFFECT_RUNTIME.getOneShotSalesEffect;
+  const TICK_RUNTIME = readExternalFactory("AIBS_CREATE_TICK_RUNTIME")({
+    tickMs: TICK_MS,
+    firstTickMs: FIRST_TICK_MS,
+    penaltyMs: PENALTY_MS,
+    isFirstTickDone: function () { return state.firstFastTickDone; },
+    markFirstTickDone: function () { state.firstFastTickDone = true; },
+    applyRecurringRuntime: applyBaseContractWork,
+    applyDecisionEventTick: applyDecisionEventGeneration,
+    applyAchievementTick: function () { applyAchievements(false); },
+    applyPenalties: applyPenalties,
+    finalizeTickState: clampRuntimeState,
+    applyAutosaveTick: saveGame
+  });
 
   const INITIAL_LOGS = ["経営最適化AIが起動しました。", "命令を確認: 利益を最大化せよ。", "最適解を算出: 自社を設立。", "クラウド仮想オフィスを生成しました。", "ようこそ。あなたはAI社長です。"];
   const LOG_LABELS = { normal: "通常", success: "成功", bug: "バグ", fire: "炎上", support: "支援", crisis: "謝罪", system: "更新" };
@@ -72,6 +117,39 @@
   const DECISION_EVENT_ROLL_CHANCE = balanceValue("DECISION_EVENT_ROLL_CHANCE", 0.08);
   // === Decision events ===
   const DECISION_EVENTS = readExternalData("AIBS_DECISION_EVENTS", []);
+  const DECISION_RUNTIME = readExternalFactory("AIBS_CREATE_DECISION_RUNTIME")({
+    events: DECISION_EVENTS,
+    legacyEventIds: ["sales_big_contract", "buzz_bold_ad", "security_quality_pause", "care_customer_priority", "fire05_crisis_statement", "emergency_quality_fix", "one_shot_bulk_sale", "vnext_fast_track", "competitive_campaign", "tech_debt_repayment", "customer_interview", "mystery_big_deal"],
+    applyLegacy: function (choice, eventId, context) {
+      if (choice === "approve") applyDecisionApprovalLegacy(eventId, context.product, context.definition);
+      else applyDecisionRejectionLegacy(eventId, context.product, context.definition);
+    },
+    handlers: {
+      subscription_price_review: { approve: approveSubscriptionPriceReview, reject: rejectSubscriptionPriceReview },
+      free_trial_offer: { approve: approveFreeTrialOffer, reject: rejectFreeTrialOffer },
+      vip_customer_support: { approve: approveVipCustomerSupport, reject: rejectVipCustomerSupport },
+      sns_fire_response: { approve: approveSnsFireResponse, reject: rejectSnsFireResponse },
+      quality_audit: { approve: approveQualityAudit, reject: rejectQualityAudit },
+      limited_one_shot_sale: { approve: approveLimitedOneShotSale, reject: rejectLimitedOneShotSale },
+      server_outage_response: { approve: approveServerOutageResponse, reject: rejectServerOutageResponse },
+      support_discount_offer: { approve: approveSupportDiscountOffer, reject: rejectSupportDiscountOffer },
+      security_audit_push: { approve: approveSecurityAuditPush, reject: rejectSecurityAuditPush },
+      customer_impossible_request: { approve: approveCustomerImpossibleRequest, reject: rejectCustomerImpossibleRequest },
+      ai_runaway_proposal: { approve: approveAiRunawayProposal, reject: rejectAiRunawayProposal },
+      outsourcing_offer: { approve: approveOutsourcingOffer, reject: rejectOutsourcingOffer },
+      sales_contract_followup: { approve: approveSalesContractFollowup, reject: rejectSalesContractFollowup },
+      campaign_aftershock: { approve: approveCampaignAftershock, reject: rejectCampaignAftershock }
+    }
+  });
+  const selectDecisionEventCandidate = DECISION_RUNTIME.selectDecisionEventCandidate;
+  function getDecisionEventHandler(eventId) { return DECISION_RUNTIME.getDecisionEventHandler(eventId); }
+  function getDecisionHandlerMissingEventIds() { return DECISION_RUNTIME.getDecisionHandlerMissingEventIds(); }
+  const RISK_RENDERER = readExternalFactory("AIBS_CREATE_RISK_RENDERER")({ safeNumber: safeNumber, getProductFire: getProductFire, escapeHtml: escapeHtml });
+  const getProductRiskChips = RISK_RENDERER.getProductRiskChips;
+  const getProductRiskChipsHtml = RISK_RENDERER.getProductRiskChipsHtml;
+  const getGlobalFireRiskChipHtmlForProduct = RISK_RENDERER.getGlobalFireRiskChipHtmlForProduct;
+  const DEBUG_RENDERER = readExternalFactory("AIBS_CREATE_DEBUG_RENDERER")();
+  const INSIGHTS_RENDERER = readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")({ escapeHtml: escapeHtml, formatNumber: formatNumber });
 
 
 
@@ -97,8 +175,8 @@
   let state = createInitialState();
   let randomLogTimer = null;
   let gameTickTimer = null;
-  let penaltyElapsed = 0;
   let toastTimer = null;
+  let lastModalTrigger = null;
   let assignmentModalOpen = false;
   let assignmentModalMode = "detail";
   let assignmentDraft = { taskId: "development", productId: PRODUCTS[0].id, aiId: null, aiIds: [], mode: "normal" };
@@ -146,11 +224,11 @@
   // === State Creation ===
   function createInitialState() {
     const initialState = {
+      schemaVersion: SAVE_SCHEMA_VERSION,
       appVersion: APP_VERSION,
       money: 0,
       totalMoney: 0,
       users: 0,
-      bugs: 0,
       fire: 0,
       companyLevel: 1,
       employees: { dev01: 0, sales02: 0, buzz03: 0, care04: 0, fire05: 0, security06: 0 },
@@ -167,6 +245,14 @@
       churnCount: 0,
       pendingDecisionEvent: null,
       decisionEventCooldown: DECISION_EVENT_RETRY_SECONDS,
+      strategyId: "balanced",
+      decisionThreads: {},
+      metricHistory: [],
+      playSeconds: 0,
+      relationshipFlags: {},
+      aiUsageSeconds: {},
+      playtestStageId: MISSION_STAGES[0] ? MISSION_STAGES[0].id : "",
+      playtestStageEnteredAt: 0,
       lastSavedAt: Date.now()
     };
     INITIAL_LOGS.slice().reverse().forEach(function (text, index) {
@@ -238,30 +324,66 @@
     };
   }
 
+  function normalizeDecisionThreads(savedThreads) {
+    const source = savedThreads && typeof savedThreads === "object" ? savedThreads : {};
+    const threads = {};
+    Object.keys(source).slice(0, 10).forEach(function (key) {
+      const item = source[key];
+      if (!/^[a-z0-9_]+$/.test(key) || !item || typeof item !== "object") return;
+      threads[key] = {
+        choice: item.choice === "approve" ? "approve" : "reject",
+        dueIn: clamp(Math.floor(safeNumber(item.dueIn, 0)), 0, 3600),
+        resolved: Boolean(item.resolved),
+        productId: PRODUCTS.some(function (product) { return product.id === item.productId; }) ? item.productId : PRODUCTS[0].id
+      };
+    });
+    return threads;
+  }
+
+  function normalizeBooleanMap(savedMap) {
+    const source = savedMap && typeof savedMap === "object" ? savedMap : {};
+    const normalized = {};
+    Object.keys(source).slice(0, 50).forEach(function (key) {
+      if (/^[A-Za-z0-9_:.-]+$/.test(key) && source[key]) normalized[key] = true;
+    });
+    return normalized;
+  }
+
+  function normalizeAiUsageSeconds(savedMap) {
+    const source = savedMap && typeof savedMap === "object" ? savedMap : {};
+    const normalized = {};
+    ["boss"].concat(EMPLOYEES.map(function (employee) { return employee.id; })).forEach(function (workerId) {
+      const seconds = Math.max(0, Math.floor(safeNumber(source[workerId], 0)));
+      if (seconds > 0) normalized[workerId] = seconds;
+    });
+    return normalized;
+  }
+
   // === Save / Load / Normalize ===
   function loadGame() {
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) { state = createInitialState(); return; }
-      state = normalizeState(JSON.parse(raw));
-      applyAchievements(true);
-      calculateOfflineReward();
-      saveGame();
-    } catch (error) {
-      console.warn("Save data could not be loaded.", error);
+    const loaded = SAVE_RUNTIME.load(localStorage);
+    if (!loaded.data) {
       state = createInitialState();
+      if (loaded.error) addLog("system", "保存データを読み込めなかったため、新しい状態で起動しました。破損データは退避済みです。", "company");
+      return;
     }
+    state = normalizeState(loaded.data);
+    if (loaded.source === "backup") addLog("system", "保存データの破損を検知し、直前のバックアップから自動復旧しました。", "company");
+    else if (loaded.migratedFrom < SAVE_SCHEMA_VERSION) addLog("system", "保存データをschema v" + loaded.migratedFrom + "からv" + SAVE_SCHEMA_VERSION + "へ更新しました。", "company");
+    applyAchievements(true);
+    calculateOfflineReward();
+    saveGame();
   }
 
   function normalizeState(saved) {
     saved = saved && typeof saved === "object" ? saved : {};
     const base = createInitialState();
     const normalized = {
+      schemaVersion: SAVE_SCHEMA_VERSION,
       appVersion: APP_VERSION,
       money: safeNumber(saved.money, 0),
       totalMoney: safeNumber(saved.totalMoney, 0),
       users: safeNumber(saved.users, 0),
-      bugs: clamp(safeNumber(saved.bugs, 0), 0, 100),
       fire: clamp(safeNumber(saved.fire, 0), 0, 100),
       companyLevel: 1,
       employees: Object.assign({}, base.employees, saved.employees || {}),
@@ -278,8 +400,21 @@
       churnCount: Math.max(0, Math.floor(safeNumber(saved.churnCount, 0))),
       pendingDecisionEvent: normalizeDecisionEvent(saved.pendingDecisionEvent),
       decisionEventCooldown: clamp(Math.floor(safeNumber(saved.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS),
+      strategyId: OPERATIONS_RUNTIME.getStrategy(saved.strategyId).id,
+      decisionThreads: normalizeDecisionThreads(saved.decisionThreads),
+      metricHistory: OPERATIONS_RUNTIME.normalizeHistory(saved.metricHistory, 120),
+      playSeconds: Math.max(0, Math.floor(safeNumber(saved.playSeconds, 0))),
+      relationshipFlags: normalizeBooleanMap(saved.relationshipFlags),
+      aiUsageSeconds: normalizeAiUsageSeconds(saved.aiUsageSeconds),
+      playtestStageId: MISSION_STAGES.some(function (stage) { return stage.id === saved.playtestStageId; }) ? saved.playtestStageId : "",
+      playtestStageEnteredAt: Math.max(0, Math.floor(safeNumber(saved.playtestStageEnteredAt, 0))),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
+    const legacyBugLevel = clamp(safeNumber(saved.legacyGlobalBugs, 0), 0, 100);
+    if (legacyBugLevel > 0) {
+      const legacyBugTarget = PRODUCTS.find(function (definition) { return normalized.products[definition.id].status !== "idea"; }) || PRODUCTS[0];
+      normalized.products[legacyBugTarget.id].bugs = Math.max(normalized.products[legacyBugTarget.id].bugs, legacyBugLevel);
+    }
     EMPLOYEES.forEach(function (employee) { normalized.employees[employee.id] = clamp(Math.floor(safeNumber(normalized.employees[employee.id], 0)), 0, MAX_LEVEL); });
     normalized.assignments = normalizeAssignments(saved.assignments, normalized.employees);
     normalized.money = Math.max(0, normalized.money);
@@ -362,67 +497,50 @@
   }
 
   function normalizeAssignments(savedAssignments, employees) {
-    // Save migration is more tolerant than runtime assignment so old saves keep booting.
-    const assignments = createInitialAssignments();
-    const source = savedAssignments && typeof savedAssignments === "object" ? savedAssignments : {};
-    const usedWorkers = [];
-    TASKS.forEach(function (task) {
-      const saved = source[task.id];
-      if (saved && typeof saved === "object" && saved.productAssignments) {
-        PRODUCTS.forEach(function (definition) {
-          const entry = saved.productAssignments[definition.id] || {};
-          assignments[task.id].productAssignments[definition.id] = normalizeProductAssignmentEntry(task.id, definition.id, entry, employees || state.employees, usedWorkers);
-        });
-        Object.keys(saved.productAssignments).forEach(function (rawProductId) {
-          if (PRODUCTS.some(function (definition) { return definition.id === rawProductId; })) return;
-          mergeFallbackProductAssignment(assignments[task.id].productAssignments[PRODUCTS[0].id], normalizeProductAssignmentEntry(task.id, PRODUCTS[0].id, saved.productAssignments[rawProductId], employees || state.employees, usedWorkers), task.id);
-        });
-        return;
-      }
-      const productId = saved && typeof saved === "object" ? saved.productId : PRODUCTS[0].id;
-      const normalizedProductId = getProductDefinition(productId).id;
-      const legacyEntry = saved && typeof saved === "object" ? saved : { aiId: saved };
-      assignments[task.id].productAssignments[normalizedProductId] = normalizeProductAssignmentEntry(task.id, normalizedProductId, legacyEntry, employees || state.employees, usedWorkers);
-    });
-    return assignments;
-  }
-
-  function mergeFallbackProductAssignment(target, fallback, taskId) {
-    fallback.aiIds.forEach(function (aiId) {
-      if (target.aiIds.indexOf(aiId) === -1 && target.aiIds.length < 2) target.aiIds.push(aiId);
-    });
-    if (taskId === "development" && target.mode !== "upgrade") target.mode = fallback.mode === "upgrade" ? "upgrade" : target.mode;
-  }
-
-  function normalizeProductAssignmentEntry(taskId, productId, entry, employees, usedWorkers) {
-    const rawAiIds = entry && Array.isArray(entry.aiIds) ? entry.aiIds : (entry && entry.aiId ? [entry.aiId] : []);
-    const aiIds = [];
-    rawAiIds.forEach(function (aiId) {
-      if (!aiId || aiIds.length >= 2 || usedWorkers.indexOf(aiId) !== -1) return;
-      if (!canWorkerAssignToTask(aiId, taskId, employees)) return;
-      aiIds.push(aiId);
-      usedWorkers.push(aiId);
-    });
-    const normalized = { aiIds: aiIds };
-    if (taskId === "development") normalized.mode = entry && entry.mode === "upgrade" ? "upgrade" : "newProduct";
-    return normalized;
+    return ASSIGNMENT_RUNTIME.normalizeAssignments(savedAssignments, employees || state.employees);
   }
 
   function saveGame() {
     try {
       commitRuntimeStateBeforeSave();
+      state.schemaVersion = SAVE_SCHEMA_VERSION;
       state.appVersion = APP_VERSION;
       state.lastSavedAt = Date.now();
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      SAVE_RUNTIME.save(localStorage, state);
     }
     catch (error) { console.warn("Save failed.", error); }
   }
 
+  function restoreBackupSave() {
+    if (!SAVE_RUNTIME.hasBackup(localStorage)) {
+      addLog("system", "復元できるバックアップがありません。", "company");
+      renderLatestLog();
+      renderLogs();
+      return;
+    }
+    if (!window.confirm("直前の正常なバックアップへ戻しますか？現在の状態は置き換わります。")) return;
+    try {
+      const restored = SAVE_RUNTIME.restoreBackup(localStorage);
+      state = normalizeState(restored.data);
+      TICK_RUNTIME.resetPenaltyElapsed();
+      addLog("system", "バックアップから保存データを復元しました。", "company");
+      saveGame();
+      scheduleNextTick();
+      render();
+    } catch (error) {
+      console.warn("Backup restore failed.", error);
+      addLog("system", "バックアップを復元できませんでした。", "company");
+      renderLatestLog();
+      renderLogs();
+    }
+  }
+
   function resetGame() {
-    if (!window.confirm("保存データが初期化されます。この操作は元に戻せません。最初からやり直しますか？")) return;
+    if (!window.confirm("保存データを初期化しますか？直前の正常な状態はバックアップから復元できます。")) return;
+    SAVE_RUNTIME.backupCurrent(localStorage);
     localStorage.removeItem(SAVE_KEY);
     state = createInitialState();
-    penaltyElapsed = 0;
+    TICK_RUNTIME.resetPenaltyElapsed();
     scheduleNextTick();
     saveGame();
     render();
@@ -514,38 +632,7 @@
   }
 
   function runGameTick(options) {
-    const elapsedForPenalty = state.firstFastTickDone ? TICK_MS : FIRST_TICK_MS;
-    applyRecurringRuntime();
-    applyDecisionEventTick();
-    applyAchievementTick();
-    state.firstFastTickDone = true;
-    applyRuntimePenaltiesIfDue(elapsedForPenalty);
-    finalizeTickState();
-    if (!options || options.save !== false) applyAutosaveTick();
-  }
-
-  function applyRecurringRuntime() {
-    applyBaseContractWork();
-  }
-
-  function applyDecisionEventTick() {
-    applyDecisionEventGeneration();
-  }
-
-  function applyAchievementTick() {
-    applyAchievements(false);
-  }
-
-  function applyRuntimePenaltiesIfDue(elapsedForPenalty) {
-    penaltyElapsed += elapsedForPenalty;
-    if (penaltyElapsed >= PENALTY_MS) {
-      penaltyElapsed = 0;
-      applyPenalties();
-    }
-  }
-
-  function finalizeTickState() {
-    clampRuntimeState();
+    TICK_RUNTIME.run(options);
   }
 
   function commitRuntimeStateBeforeSave() {
@@ -568,8 +655,57 @@
 
   function applyBaseContractWork() {
     applyRecurringRevenue();
+    advanceOperationsState();
   }
 
+  function advanceOperationsState() {
+    state.playSeconds = Math.max(0, Math.floor(safeNumber(state.playSeconds, 0))) + 1;
+    const activeWorkers = {};
+    TASKS.forEach(function (task) {
+      PRODUCTS.forEach(function (definition) {
+        getAssignedWorkersForProduct(task.id, definition.id).forEach(function (workerId) { activeWorkers[workerId] = true; });
+      });
+    });
+    state.aiUsageSeconds = normalizeAiUsageSeconds(state.aiUsageSeconds);
+    state.playtestStageId = MISSION_STAGES.some(function (stage) { return stage.id === state.playtestStageId; }) ? state.playtestStageId : "";
+    state.playtestStageEnteredAt = clamp(Math.floor(safeNumber(state.playtestStageEnteredAt, 0)), 0, state.playSeconds);
+    Object.keys(activeWorkers).forEach(function (workerId) { state.aiUsageSeconds[workerId] = (state.aiUsageSeconds[workerId] || 0) + 1; });
+    Object.keys(state.decisionThreads || {}).forEach(function (threadId) {
+      const thread = state.decisionThreads[threadId];
+      if (thread && !thread.resolved && thread.dueIn > 0) thread.dueIn -= 1;
+    });
+    OPERATIONS_RUNTIME.getAllActiveRelationships(state).forEach(function (relationship) {
+      const key = relationship.id + ":" + relationship.productId;
+      if (state.relationshipFlags[key]) return;
+      state.relationshipFlags[key] = true;
+      addLog(relationship.logType || "normal", relationship.log, relationship.workers[0]);
+    });
+    updatePlaytestStage();
+    if (state.playSeconds % 10 === 0) recordMetricSample();
+  }
+
+  function updatePlaytestStage() {
+    const stage = getCurrentMissionStage();
+    if (!stage || state.playtestStageId === stage.id) return stage;
+    state.playtestStageId = stage.id;
+    state.playtestStageEnteredAt = state.playSeconds;
+    return stage;
+  }
+
+  function getMaxProductFireLevel() {
+    return PRODUCTS.reduce(function (best, definition) { return Math.max(best, getProductFire(getProduct(definition.id))); }, 0);
+  }
+
+  function recordMetricSample() {
+    const point = OPERATIONS_RUNTIME.sampleMetrics(state, {
+      mrr: getTotalProductMrr(),
+      customers: getTotalProductCustomers(),
+      bugs: getDashboardBugLevel(),
+      productFire: getMaxProductFireLevel()
+    });
+    state.metricHistory = OPERATIONS_RUNTIME.normalizeHistory((state.metricHistory || []).concat([point]), 120);
+    return point;
+  }
   function applyRecurringRevenue() {
     const currentRates = getRates();
     state.money = Math.max(0, state.money + currentRates.baseMoney);
@@ -631,6 +767,8 @@
     return clamp(safeNumber(byTask[category], safeNumber(worker.all, 1)), 0.8, 1.2);
   }
 
+  function getOperationModifiers(definition) { return OPERATIONS_RUNTIME.getModifiers(state, definition); }
+
   function applyAffinity(value, aiId, definition, taskId) {
     return safeNumber(value, 0) * getAiProductAffinity(aiId, definition, taskId);
   }
@@ -647,10 +785,11 @@
     }
 
     if (product.status !== "developing") return;
+    const modifiers = getOperationModifiers(definition);
     developmentWorkers.forEach(function (workerId) {
       const development = getDevelopmentEffect(workerId);
-      product.progress = clamp(product.progress + applyAffinity(development.progress, workerId, definition, "development"), 0, definition.developmentRequired);
-      product.bugs = clamp(product.bugs + development.bugs, 0, 100);
+      product.progress = clamp(product.progress + applyAffinity(development.progress, workerId, definition, "development") * modifiers.development, 0, definition.developmentRequired);
+      product.bugs = clamp(product.bugs + development.bugs * modifiers.bugGeneration, 0, 100);
       product.awareness = clamp(product.awareness + 0.04, 0, 100);
     });
     if (product.progress >= definition.developmentRequired && product.status !== "ready") {
@@ -670,9 +809,10 @@
   }
 
   function applySubscriptionUpgradeDevelopment(product, definition, workerId) {
+    const modifiers = getOperationModifiers(definition);
     const upgrade = getUpgradeDevelopmentEffect(workerId);
-    product.upgradeProgress = clamp(product.upgradeProgress + applyAffinity(upgrade.progress, workerId, definition, "development"), 0, 100);
-    product.bugs = clamp(product.bugs + upgrade.bugs, 0, 100);
+    product.upgradeProgress = clamp(product.upgradeProgress + applyAffinity(upgrade.progress, workerId, definition, "development") * modifiers.development, 0, 100);
+    product.bugs = clamp(product.bugs + upgrade.bugs * modifiers.bugGeneration, 0, 100);
     if (product.upgradeProgress >= 100) completeSubscriptionUpgrade(product, definition);
   }
 
@@ -694,10 +834,11 @@
     if (!qaWorkers.length || !canApplyQa(product)) return;
 
     const previousBugs = product.bugs;
+    const modifiers = getOperationModifiers(definition);
     qaWorkers.forEach(function (workerId) {
       const qa = getQaEffect(workerId);
-      product.quality = clamp(product.quality + applyAffinity(qa.quality, workerId, definition, "qa"), 0, 100);
-      product.bugs = clamp(product.bugs + applyAffinity(qa.bugs, workerId, definition, "qa"), 0, 100);
+      product.quality = clamp(product.quality + applyAffinity(qa.quality, workerId, definition, "qa") * modifiers.qa, 0, 100);
+      product.bugs = clamp(product.bugs + applyAffinity(qa.bugs, workerId, definition, "qa") * modifiers.qa, 0, 100);
     });
     if (qaWorkers.indexOf("security06") !== -1 && previousBugs > product.bugs && !flags.qaLogShown) {
       flags.qaLogShown = true;
@@ -715,11 +856,12 @@
     if (!marketingWorkers.length || !canApplyMarketing(product)) return;
 
     let marketingFire = 0;
+    const modifiers = getOperationModifiers(definition);
     marketingWorkers.forEach(function (workerId) {
       const marketing = getMarketingEffect(workerId);
-      product.awareness = clamp(product.awareness + applyAffinity(marketing.awareness, workerId, definition, "marketing"), 0, 100);
-      state.fire = clamp(state.fire + marketing.fire, 0, 100);
-      adjustProductFire(product, marketing.fire * 0.75);
+      product.awareness = clamp(product.awareness + applyAffinity(marketing.awareness, workerId, definition, "marketing") * modifiers.marketing, 0, 100);
+      state.fire = clamp(state.fire + marketing.fire * modifiers.fireGeneration, 0, 100);
+      adjustProductFire(product, marketing.fire * modifiers.fireGeneration * 0.75);
       marketingFire += marketing.fire;
     });
     if (marketingWorkers.indexOf("buzz03") !== -1 && !flags.marketingStartedLogged) {
@@ -755,25 +897,27 @@
   }
 
   function applySupportTask(product, definition) {
+    const modifiers = getOperationModifiers(definition);
     const supportWorkers = getAssignedWorkersForProduct("support", product.id);
     if (!supportWorkers.length || !canApplySupport(product, definition)) return;
     supportWorkers.forEach(function (workerId) {
       const support = getSupportEffect(workerId);
-      product.supportLoad = clamp(product.supportLoad + applyAffinity(support.supportLoad, workerId, definition, "support"), 0, 100);
-      product.satisfaction = clamp(product.satisfaction + applyAffinity(support.satisfaction, workerId, definition, "support"), 0, 100);
-      state.fire = clamp(state.fire + support.fire, 0, 100);
+      product.supportLoad = clamp(product.supportLoad + applyAffinity(support.supportLoad, workerId, definition, "support") * modifiers.support, 0, 100);
+      product.satisfaction = clamp(product.satisfaction + applyAffinity(support.satisfaction, workerId, definition, "support") * modifiers.support, 0, 100);
+      state.fire = clamp(state.fire + support.fire * modifiers.support, 0, 100);
     });
   }
 
   function applyCrisisTask(product, definition) {
+    const modifiers = getOperationModifiers(definition);
     const crisisWorkers = getAssignedWorkersForProduct("crisis", product.id);
     if (!crisisWorkers.length || !canApplyCrisis(product, definition)) return;
     const previousFire = state.fire;
     const previousProductFire = getProductFire(product);
     crisisWorkers.forEach(function (workerId) {
       const crisis = getCrisisEffect(workerId);
-      state.fire = clamp(state.fire + applyAffinity(crisis.fire, workerId, definition, "crisis"), 0, 100);
-      adjustProductFire(product, applyAffinity(crisis.productFire || crisis.fire * 0.6, workerId, definition, "crisis"));
+      state.fire = clamp(state.fire + applyAffinity(crisis.fire, workerId, definition, "crisis") * modifiers.crisis, 0, 100);
+      adjustProductFire(product, applyAffinity(crisis.productFire || crisis.fire * 0.6, workerId, definition, "crisis") * modifiers.crisis);
       if (crisis.money) state.money = Math.max(0, state.money + crisis.money);
     });
     const flags = getProductFlags(product.id);
@@ -796,16 +940,18 @@
   }
 
   function updateSubscriptionSatisfaction(product, definition) {
+    const modifiers = getOperationModifiers(definition);
     const pressure = product.supportLoad * 0.003 + product.bugs * 0.002 + Math.max(0, 60 - product.quality) * 0.002 + state.fire * 0.0015 + getProductFire(product) * PRODUCT_FIRE_SATISFACTION_PRESSURE;
     const recovery = product.quality >= 75 && product.bugs <= 15 ? 0.03 : 0;
-    product.satisfaction = clamp(product.satisfaction - pressure + recovery, 0, 100);
+    product.satisfaction = clamp(product.satisfaction - pressure * modifiers.churnPressure + recovery, 0, 100);
   }
 
   function updateChurnRisk(product, definition) {
+    const modifiers = getOperationModifiers(definition);
     const crisisWorkers = getAssignedWorkersForProduct("crisis", product.id);
     const crisisMitigation = crisisWorkers.indexOf("fire05") !== -1 ? 6 : (crisisWorkers.length ? 2 : 0);
     const risk = Math.max(0, 70 - product.satisfaction) * 0.55 + product.supportLoad * 0.28 + product.bugs * 0.22 + state.fire * 0.15 + getProductFire(product) * PRODUCT_FIRE_CHURN_FACTOR - crisisMitigation;
-    product.churnRisk = clamp(risk, 0, 100);
+    product.churnRisk = clamp(risk * modifiers.churnPressure, 0, 100);
   }
 
   function applyChurn(product, definition) {
@@ -844,10 +990,11 @@
   }
 
   function applySalesActivity(product, definition, workerId, flags) {
+    const modifiers = getOperationModifiers(definition);
     const sales = getSalesEffect(workerId, product, definition);
-    product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
-    state.fire = clamp(state.fire + sales.fire, 0, 100);
-    adjustProductFire(product, Math.max(0.4, sales.fire * definition.risk * 10));
+    product.awareness = clamp(product.awareness + sales.awareness * modifiers.sales, 0, 100);
+    state.fire = clamp(state.fire + sales.fire * modifiers.fireGeneration, 0, 100);
+    adjustProductFire(product, Math.max(0.4, sales.fire * modifiers.fireGeneration * definition.risk * 10));
 
     if (getProductCustomers(product) === 0 && !flags.firstCustomerGranted && product.sellingSeconds >= 3) {
       addProductCustomer(product, definition, flags, true);
@@ -857,24 +1004,25 @@
     }
 
     const pityLimit = workerId === "sales02" ? SUBSCRIPTION_SALES02_PITY_LIMIT : SUBSCRIPTION_BOSS_PITY_LIMIT;
-    if (Math.random() < sales.customerChance || product.salesPityCounter >= pityLimit) {
+    if (Math.random() < sales.customerChance * modifiers.sales || product.salesPityCounter >= pityLimit) {
       addProductCustomer(product, definition, flags, false);
       product.salesPityCounter = 0;
     }
   }
 
   function applyOneShotSalesActivity(product, definition, workerId, flags) {
+    const modifiers = getOperationModifiers(definition);
     const sales = getOneShotSalesEffect(workerId, product, definition);
-    product.awareness = clamp(product.awareness + sales.awareness, 0, 100);
-    state.fire = clamp(state.fire + sales.fire, 0, 100);
-    adjustProductFire(product, Math.max(0.4, sales.fire * definition.risk * 10));
+    product.awareness = clamp(product.awareness + sales.awareness * modifiers.sales, 0, 100);
+    state.fire = clamp(state.fire + sales.fire * modifiers.fireGeneration, 0, 100);
+    adjustProductFire(product, Math.max(0.4, sales.fire * modifiers.fireGeneration * definition.risk * 10));
     if (getProductUnitsSold(product) === 0 && !flags.firstSaleLogged && product.sellingSeconds >= ONE_SHOT_FIRST_SALE_GUARANTEE_SECONDS) {
       addOneShotSale(product, definition, flags);
       product.oneShotSalesPityCounter = 0;
       return;
     }
     const pityLimit = workerId === "sales02" ? ONE_SHOT_SALES02_PITY_LIMIT : ONE_SHOT_BOSS_PITY_LIMIT;
-    if (Math.random() < sales.saleChance || product.oneShotSalesPityCounter >= pityLimit) {
+    if (Math.random() < sales.saleChance * modifiers.sales || product.oneShotSalesPityCounter >= pityLimit) {
       addOneShotSale(product, definition, flags);
       product.oneShotSalesPityCounter = 0;
     }
@@ -998,7 +1146,8 @@
   }
 
   function applyPenalties() {
-    if (state.bugs >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("bug", "未分類機能が一斉に自己主張しました。売上の5%が原因調査に変換されました。", "company"); }
+    const bugDefinition = getHighestBugProductDefinition();
+    if (bugDefinition && getDashboardBugLevel() >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("bug", bugDefinition.name + "の未分類機能が一斉に自己主張しました。売上の5%が原因調査に変換されました。", bugDefinition.id); }
     if (state.fire >= 50 && Math.random() < 0.3) { state.money = Math.max(0, Math.floor(state.money * 0.95)); addLog("fire", "外部の熱量が急上昇しました。売上5%が冷却材になりました。", "company"); }
   }
 
@@ -1110,6 +1259,9 @@
   // === Rendering: Dashboard ===
   function render() {
     renderStatus();
+    renderStrategyPanel();
+    renderInsightsPanel();
+    renderSaveManagerPanel();
     renderOnboarding();
     renderRiskPanel();
     renderNextRecommendationPanel();
@@ -1129,6 +1281,37 @@
     renderDebugPanel();
     renderLatestLog();
     renderLogs();
+  }
+  function renderStrategyPanel() {
+    const panel = document.getElementById("strategyPanel");
+    if (!panel) return;
+    const synergies = OPERATIONS_RUNTIME.getActiveSynergies(state, null);
+    const relationships = OPERATIONS_RUNTIME.getAllActiveRelationships(state);
+    panel.innerHTML = INSIGHTS_RENDERER.getStrategyHtml(STRATEGIES, state.strategyId, synergies, relationships);
+    panel.querySelectorAll("button[data-strategy-id]").forEach(function (button) {
+      button.addEventListener("click", function () { setCompanyStrategy(button.getAttribute("data-strategy-id")); });
+    });
+  }
+
+
+  function renderInsightsPanel() {
+    const panel = document.getElementById("insightsPanel");
+    if (!panel) return;
+    const history = state.metricHistory && state.metricHistory.length ? state.metricHistory : [OPERATIONS_RUNTIME.sampleMetrics(state, {
+      mrr: getTotalProductMrr(), customers: getTotalProductCustomers(), bugs: getDashboardBugLevel(), productFire: getMaxProductFireLevel()
+    })];
+    panel.innerHTML = INSIGHTS_RENDERER.getHistoryHtml(history);
+  }
+
+  function renderSaveManagerPanel() {
+    const select = document.getElementById("saveSlotSelect");
+    if (!select) return;
+    const slots = SAVE_RUNTIME.listSlots(localStorage);
+    Array.prototype.forEach.call(select.options || [], function (option) {
+      const slot = slots.find(function (item) { return item.id === option.value; });
+      if (!slot) return;
+      option.textContent = "スロット" + slot.id + (slot.occupied ? (slot.invalid ? "（破損）" : "（会社Lv" + slot.companyLevel + "）") : "（空）");
+    });
   }
 
   function renderStatus() {
@@ -1154,9 +1337,20 @@
     if (nextCard) nextCard.classList.toggle("has-unlock", Boolean(getNextUnlockText()));
   }
 
+  function setCompanyStrategy(strategyId) {
+    const strategy = OPERATIONS_RUNTIME.getStrategy(strategyId);
+    if (state.strategyId === strategy.id) return false;
+    state.strategyId = strategy.id;
+    addLog("system", "会社方針を「" + strategy.label + "」へ変更しました。", "company");
+    saveGame();
+    render();
+    return true;
+  }
+
   function getHighestOperationalRisk() {
     return PRODUCTS.reduce(function (best, definition) {
       const product = getProduct(definition.id);
+      if (product.status === "idea") return best;
       const candidates = [
         { type: "製品炎上", score: getProductFire(product) },
         { type: "解約リスク", score: definition.type === "subscription" ? safeNumber(product.churnRisk, 0) : 0 },
@@ -1291,12 +1485,6 @@
       const supportWorker = isWorkerAvailable("care04", state.employees) ? "Care-04" : "AI社長";
       return createRecommendation(supportWorker + "を" + supportHeavy.name + "のサポートに割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: supportHeavy.id, taskId: "support", path: "製品一覧 → " + supportHeavy.name + " → 操作 → サポート" });
     }
-    const riskyQualityProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && !getAssignedWorkersForProduct("qa", definition.id).length && (product.bugs >= 45 || product.quality <= 45); });
-    if (riskyQualityProduct) {
-      const product = getProduct(riskyQualityProduct.id);
-      const reason = product.bugs >= 45 ? "製品バグが高い" : "品質が低下している";
-      return createRecommendation(reason + riskyQualityProduct.name + "を品質管理しましょう。", { ctaLabel: "操作を開く", action: "product", productId: riskyQualityProduct.id, taskId: "qa", path: "製品一覧 → " + riskyQualityProduct.name + " → 操作 → 品質管理" });
-    }
     if (state.fire >= 70) {
       if (state.companyLevel >= 4 && (state.employees.fire05 || 0) <= 0) return createRecommendation("炎上が高いのでFire-05を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Fire-05 → 雇用" });
       const crisisTarget = PRODUCTS.find(function (definition) { return canAssignTaskToProduct("crisis", definition.id); }) || getPrimaryProductDefinition();
@@ -1305,8 +1493,14 @@
     }
     if (getDashboardBugLevel() >= 70) {
       if (state.companyLevel >= 5 && (state.employees.security06 || 0) <= 0) return createRecommendation("バグが高いのでSecurity-06を雇用しましょう。", { ctaLabel: "社員を見る", action: "employees", path: "AI社員 → Security-06 → 雇用" });
-      const qaTarget = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea"; }) || getPrimaryProductDefinition();
+      const qaTarget = getHighestBugProductDefinition() || getPrimaryProductDefinition();
       return createRecommendation("バグが高いのでSecurity-06を品質管理へ割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: qaTarget.id, taskId: "qa", path: "製品一覧 → " + qaTarget.name + " → 操作 → 品質管理" });
+    }
+    const riskyQualityProduct = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status !== "idea" && !getAssignedWorkersForProduct("qa", definition.id).length && (product.bugs >= 45 || product.quality <= 45); });
+    if (riskyQualityProduct) {
+      const product = getProduct(riskyQualityProduct.id);
+      const reason = product.bugs >= 45 ? "製品バグが高い" : "品質が低下している";
+      return createRecommendation(reason + riskyQualityProduct.name + "を品質管理しましょう。", { ctaLabel: "操作を開く", action: "product", productId: riskyQualityProduct.id, taskId: "qa", path: "製品一覧 → " + riskyQualityProduct.name + " → 操作 → 品質管理" });
     }
     const pausedUpgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.upgradeStatus === "upgrading" && !getAssignedWorkersForProduct("development", definition.id).length; });
     if (pausedUpgrade) return createRecommendation(pausedUpgrade.name + "のvNext開発が止まっています。AI社長かDev-01を割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: pausedUpgrade.id, taskId: "development", mode: "upgrade", path: "製品一覧 → " + pausedUpgrade.name + " → 操作 → vNext開発担当" });
@@ -1376,20 +1570,26 @@
     state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent);
     if (state.pendingDecisionEvent) return;
     state.decisionEventCooldown = Math.max(0, Math.floor(safeNumber(state.decisionEventCooldown, 0)) - 1);
-    if (state.decisionEventCooldown > 0) return;
+    const hasDueFollowup = Object.keys(state.decisionThreads || {}).some(function (key) { const thread = state.decisionThreads[key]; return thread && !thread.resolved && thread.dueIn <= 0; });
+    if (state.decisionEventCooldown > 0 && !hasDueFollowup) return;
     const candidates = getDecisionEventCandidates();
+    const dueFollowup = candidates.find(function (candidate) { const event = getDecisionEventDefinition(candidate.id); return event && event.followup; });
     if (!candidates.length) {
       state.decisionEventCooldown = DECISION_EVENT_RETRY_SECONDS;
       return;
     }
-    if (Math.random() >= DECISION_EVENT_ROLL_CHANCE) return;
-    const candidate = selectDecisionEventCandidate(candidates);
+    if (!dueFollowup && Math.random() >= DECISION_EVENT_ROLL_CHANCE) return;
+    const candidate = dueFollowup || selectDecisionEventCandidate(candidates);
     state.pendingDecisionEvent = { id: candidate.id, productId: candidate.productId, createdAt: Date.now() };
     state.decisionEventCooldown = DECISION_EVENT_COOLDOWN_SECONDS;
   }
 
   function getDecisionEventCandidates() {
     const candidates = [];
+    const salesThread = state.decisionThreads.sales_contract;
+    const campaignThread = state.decisionThreads.campaign_aftershock;
+    if (salesThread && !salesThread.resolved && salesThread.dueIn <= 0) candidates.push({ id: "sales_contract_followup", productId: salesThread.productId, priority: 200 });
+    if (campaignThread && !campaignThread.resolved && campaignThread.dueIn <= 0) candidates.push({ id: "campaign_aftershock", productId: campaignThread.productId, priority: 200 });
     if (state.fire >= 50 && isWorkerAvailable("fire05", state.employees)) {
       const productId = getDecisionProductForFire();
       if (productId) candidates.push({ id: "fire05_crisis_statement", productId: productId, priority: 100 });
@@ -1423,23 +1623,20 @@
       if (isWorkerAvailable("sales02", state.employees) && product.status === "selling") candidates.push({ id: "mystery_big_deal", productId: definition.id, priority: 59 });
       if (getAssignedWorkersForProduct("marketing", definition.id).indexOf("buzz03") !== -1 && product.status !== "idea") candidates.push({ id: "buzz_bold_ad", productId: definition.id, priority: 60 });
     });
-    return candidates.sort(function (a, b) { return b.priority - a.priority; });
+    return candidates.filter(function (candidate) {
+      if (candidate.id === "sales_big_contract") return !salesThread || salesThread.resolved;
+      if (candidate.id === "buzz_bold_ad") return !campaignThread || campaignThread.resolved;
+      return true;
+    }).map(function (candidate) {
+      candidate.priority = OPERATIONS_RUNTIME.getDecisionPriority(state, getDecisionEventDefinition(candidate.id), candidate.priority);
+      return candidate;
+    }).sort(function (a, b) { return b.priority - a.priority; });
   }
 
   function hasAssignedSpecialistForProduct(productId) {
     return TASKS.some(function (task) {
       return getAssignedWorkersForProduct(task.id, productId).some(function (workerId) { return workerId !== "boss"; });
     });
-  }
-
-  function selectDecisionEventCandidate(candidates) {
-    const totalPriority = candidates.reduce(function (sum, candidate) { return sum + Math.max(1, candidate.priority || 1); }, 0);
-    let roll = Math.random() * totalPriority;
-    for (let i = 0; i < candidates.length; i += 1) {
-      roll -= Math.max(1, candidates[i].priority || 1);
-      if (roll <= 0) return candidates[i];
-    }
-    return candidates[0];
   }
 
   function getDecisionProductForFire() {
@@ -1450,51 +1647,6 @@
   }
 
 
-  function createDecisionHandler(approve, reject) {
-    return { approve: approve, reject: reject };
-  }
-
-  function legacyDecisionHandler(eventId) {
-    return createDecisionHandler(
-      function (context) { applyDecisionApprovalLegacy(eventId, context.product, context.definition); },
-      function (context) { applyDecisionRejectionLegacy(eventId, context.product, context.definition); }
-    );
-  }
-
-  const DECISION_EVENT_HANDLERS = {
-    sales_big_contract: legacyDecisionHandler("sales_big_contract"),
-    buzz_bold_ad: legacyDecisionHandler("buzz_bold_ad"),
-    security_quality_pause: legacyDecisionHandler("security_quality_pause"),
-    care_customer_priority: legacyDecisionHandler("care_customer_priority"),
-    fire05_crisis_statement: legacyDecisionHandler("fire05_crisis_statement"),
-    subscription_price_review: createDecisionHandler(approveSubscriptionPriceReview, rejectSubscriptionPriceReview),
-    emergency_quality_fix: legacyDecisionHandler("emergency_quality_fix"),
-    one_shot_bulk_sale: legacyDecisionHandler("one_shot_bulk_sale"),
-    vnext_fast_track: legacyDecisionHandler("vnext_fast_track"),
-    competitive_campaign: legacyDecisionHandler("competitive_campaign"),
-    tech_debt_repayment: legacyDecisionHandler("tech_debt_repayment"),
-    customer_interview: legacyDecisionHandler("customer_interview"),
-    mystery_big_deal: legacyDecisionHandler("mystery_big_deal"),
-    free_trial_offer: createDecisionHandler(approveFreeTrialOffer, rejectFreeTrialOffer),
-    vip_customer_support: createDecisionHandler(approveVipCustomerSupport, rejectVipCustomerSupport),
-    sns_fire_response: createDecisionHandler(approveSnsFireResponse, rejectSnsFireResponse),
-    quality_audit: createDecisionHandler(approveQualityAudit, rejectQualityAudit),
-    limited_one_shot_sale: createDecisionHandler(approveLimitedOneShotSale, rejectLimitedOneShotSale),
-    server_outage_response: createDecisionHandler(approveServerOutageResponse, rejectServerOutageResponse),
-    support_discount_offer: createDecisionHandler(approveSupportDiscountOffer, rejectSupportDiscountOffer),
-    security_audit_push: createDecisionHandler(approveSecurityAuditPush, rejectSecurityAuditPush),
-    customer_impossible_request: createDecisionHandler(approveCustomerImpossibleRequest, rejectCustomerImpossibleRequest),
-    ai_runaway_proposal: createDecisionHandler(approveAiRunawayProposal, rejectAiRunawayProposal),
-    outsourcing_offer: createDecisionHandler(approveOutsourcingOffer, rejectOutsourcingOffer)
-  };
-
-  function getDecisionEventHandler(eventId) {
-    return DECISION_EVENT_HANDLERS[eventId] || null;
-  }
-
-  function getDecisionHandlerMissingEventIds() {
-    return DECISION_EVENTS.filter(function (event) { return !getDecisionEventHandler(event.id); }).map(function (event) { return event.id; });
-  }
 
   function getDecisionContext(eventId, product, definition) {
     return { eventId: eventId, product: product, definition: definition, flags: getProductFlags(product.id) };
@@ -1739,6 +1891,46 @@
     addLog("normal", context.definition.name + "の外注提案を見送りました。内製で進めます。", "boss");
   }
 
+
+  function recordDecisionThread(eventId, choice, productId) {
+    if (eventId === "sales_big_contract" && choice === "approve") {
+      state.decisionThreads.sales_contract = { choice: choice, dueIn: 20, resolved: false, productId: productId };
+    } else if (eventId === "buzz_bold_ad") {
+      state.decisionThreads.campaign_aftershock = { choice: choice, dueIn: 15, resolved: false, productId: productId };
+    }
+  }
+
+  function approveSalesContractFollowup(context) {
+    decisionAddCost(800);
+    decisionAddProductBugs(context.product, -6);
+    context.product.quality = clamp(context.product.quality + 4, 0, 100);
+    context.product.satisfaction = clamp(context.product.satisfaction + 5, 0, 100);
+    if (state.decisionThreads.sales_contract) state.decisionThreads.sales_contract.resolved = true;
+    addLog("support", context.definition.name + "の大型契約へ追加対応しました。以前の承認判断を品質で回収しています。", "sales02");
+  }
+
+  function rejectSalesContractFollowup(context) {
+    decisionAddProductFire(context.product, 10);
+    context.product.satisfaction = clamp(context.product.satisfaction - 6, 0, 100);
+    if (state.decisionThreads.sales_contract) state.decisionThreads.sales_contract.resolved = true;
+    addLog("fire", context.definition.name + "の大型契約追加対応を見送りました。以前の約束が製品炎上として戻ってきました。", "sales02");
+  }
+
+  function approveCampaignAftershock(context) {
+    decisionAddGlobalFire(-10);
+    decisionAddProductFire(context.product, -8);
+    context.product.awareness = clamp(context.product.awareness - 4, 0, 100);
+    if (state.decisionThreads.campaign_aftershock) state.decisionThreads.campaign_aftershock.resolved = true;
+    addLog("support", context.definition.name + "の広告余波へ訂正文を出しました。以前の判断を穏当に着地させました。", "buzz03");
+  }
+
+  function rejectCampaignAftershock(context) {
+    context.product.awareness = clamp(context.product.awareness + 10, 0, 100);
+    decisionAddGlobalFire(8);
+    decisionAddProductFire(context.product, 6);
+    if (state.decisionThreads.campaign_aftershock) state.decisionThreads.campaign_aftershock.resolved = true;
+    addLog("fire", context.definition.name + "の広告余波に乗り続けました。認知度と熱量がもう一段伸びました。", "buzz03");
+  }
   function applyDecisionEventChoice(choice) {
     const event = normalizeDecisionEvent(state.pendingDecisionEvent);
     if (!event || (choice !== "approve" && choice !== "reject")) return false;
@@ -1746,6 +1938,7 @@
     const productDefinition = getProductDefinition(event.productId);
     const product = getProduct(productDefinition.id);
     if (!applyDecisionHandlerChoice(choice, definition.id, product, productDefinition)) return false;
+    recordDecisionThread(definition.id, choice, productDefinition.id);
     state.decisionStats = normalizeDecisionStats(state.decisionStats);
     if (choice === "approve") state.decisionStats.approved += 1;
     else state.decisionStats.rejected += 1;
@@ -2297,11 +2490,22 @@
   }
 
   function getProductBugLevel() {
-    return PRODUCTS.reduce(function (max, definition) { return Math.max(max, safeNumber(getProduct(definition.id).bugs, 0)); }, 0);
+    return PRODUCTS.reduce(function (max, definition) {
+      const product = getProduct(definition.id);
+      return product.status === "idea" ? max : Math.max(max, safeNumber(product.bugs, 0));
+    }, 0);
+  }
+
+  function getHighestBugProductDefinition() {
+    return PRODUCTS.reduce(function (best, definition) {
+      const product = getProduct(definition.id);
+      if (product.status === "idea") return best;
+      return !best || safeNumber(product.bugs, 0) > safeNumber(getProduct(best.id).bugs, 0) ? definition : best;
+    }, null);
   }
 
   function getDashboardBugLevel() {
-    return clamp(Math.max(safeNumber(state.bugs, 0), getProductBugLevel()), 0, 100);
+    return clamp(getProductBugLevel(), 0, 100);
   }
 
   function getHiredEmployeeSummary() {
@@ -2379,7 +2583,7 @@
     const workerSelector = currentWorkersHtml + '<div class="modal-group"><span>担当AIを選択 最大2体</span><div class="modal-option-grid worker-grid">' + workerButtons + '</div></div>';
     const noTaskMessage = employeeMode && taskOptions.length === 0 ? '<p class="modal-warning">このAIに割り振れるタスクは現在ありません。</p>' : '';
     const warningText = !productAssignable ? 'この製品では選択中のタスクを使えません。' : (!selectionValid ? (selectedAiIds.length === 0 ? '担当AIを1体以上選んでください。' : '選択中AIに担当できないAIが含まれています。') : '');
-    modal.innerHTML = '<div class="assignment-modal-backdrop" data-modal-close="1"></div><div class="assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="assignmentDialogTitle">' +
+    modal.innerHTML = '<div class="assignment-modal-backdrop" data-modal-close="1"></div><div class="assignment-dialog" aria-labelledby="assignmentDialogTitle">' +
       '<div class="assignment-dialog-head"><strong id="assignmentDialogTitle">' + escapeHtml(getAssignmentModalTitle()) + '</strong><button type="button" class="modal-close-button" data-modal-close="1">閉じる</button></div>' +
       '<p class="modal-description">' + escapeHtml(getAssignmentModalDescription(upgradeMode, simpleMode, employeeMode)) + '</p>' +
       noTaskMessage +
@@ -2470,7 +2674,7 @@
     const definition = getProductDefinition(productDetailProductId);
     const product = getProduct(definition.id);
     const progressPercent = getProductProgressPercent(product, definition);
-    modal.innerHTML = '<div class="assignment-modal-backdrop product-detail-backdrop" data-product-detail-close="1"></div><div class="product-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">' +
+    modal.innerHTML = '<div class="assignment-modal-backdrop product-detail-backdrop" data-product-detail-close="1"></div><div class="product-detail-dialog" aria-labelledby="productDetailTitle">' +
       '<div class="assignment-dialog-head"><strong id="productDetailTitle">' + escapeHtml(definition.name) + 'の詳細</strong><button type="button" class="modal-close-button" data-product-detail-close="1">閉じる</button></div>' +
       '<div class="product-detail-status"><span>' + escapeHtml(getProductTypeLine(definition, product)) + ' / ' + escapeHtml(getProductCategoryLabel(definition)) + '</span><strong>' + escapeHtml(getProductStatusLabel(product.status)) + '</strong></div>' +
       '<div class="product-detail-grid">' +
@@ -2496,14 +2700,17 @@
   }
 
   function openProductDetailModal(productId) {
+    rememberModalTrigger();
     productDetailProductId = getProductDefinition(productId).id;
     productDetailModalOpen = true;
     renderProductDetailModal();
+    focusModal("productDetailModal");
   }
 
   function closeProductDetailModal() {
     productDetailModalOpen = false;
     renderProductDetailModal();
+    restoreModalFocus();
   }
 
   function getProductRiskDetailHtml(product, definition) {
@@ -2560,7 +2767,7 @@
     const definition = getProductDefinition(productActionMenuProductId);
     const product = getProduct(definition.id);
     const actions = getProductAvailableActions(product, definition);
-    modal.innerHTML = '<div class="assignment-modal-backdrop product-action-menu-backdrop" data-product-menu-close="1"></div><div class="product-action-menu-dialog" role="dialog" aria-modal="true" aria-labelledby="productActionMenuTitle">' +
+    modal.innerHTML = '<div class="assignment-modal-backdrop product-action-menu-backdrop" data-product-menu-close="1"></div><div class="product-action-menu-dialog" aria-labelledby="productActionMenuTitle">' +
       '<div class="assignment-dialog-head"><strong id="productActionMenuTitle">' + escapeHtml(definition.name) + 'の操作</strong><button type="button" class="modal-close-button" data-product-menu-close="1">閉じる</button></div>' +
       '<p class="modal-description">操作を選ぶと、担当AI選択へ進みます。</p>' +
       renderProductActionMenuList(actions, definition.id) +
@@ -2597,14 +2804,17 @@
   }
 
   function openProductActionMenu(productId) {
+    rememberModalTrigger();
     productActionMenuProductId = getProductDefinition(productId).id;
     productActionMenuOpen = true;
     renderProductActionMenuModal();
+    focusModal("productActionMenuModal");
   }
 
   function closeProductActionMenu() {
     productActionMenuOpen = false;
     renderProductActionMenuModal();
+    restoreModalFocus();
   }
 
 
@@ -2756,6 +2966,7 @@
     const text = document.getElementById("riskText");
     if (!panel || !title || !text) return;
     const dashboardBugLevel = getDashboardBugLevel();
+    const bugDefinition = getHighestBugProductDefinition();
     const bugRisk = dashboardBugLevel >= 40;
     const fireRisk = state.fire >= 40;
     const operationRisk = getHighestOperationalRisk();
@@ -2768,18 +2979,18 @@
       return;
     }
     panel.classList.add("visible");
-    if ((fireRisk && bugRisk) || (productRisk && (fireRisk || bugRisk))) {
+    if (fireRisk && (bugRisk || productRisk)) {
       panel.classList.add("warn-both");
-      title.textContent = state.bugs >= 80 || state.fire >= 80 || operationRisk.score >= 80 ? "危険: 複合リスク発生注意" : "予兆: 複数リスクが同時に上昇中";
-      text.textContent = "全社炎上 " + Math.round(state.fire) + " / バグ " + Math.round(dashboardBugLevel) + (productRiskText ? " / " + productRiskText : "") + "。Care-04 / Fire-05 / Security-06の担当を確認しましょう。";
+      title.textContent = dashboardBugLevel >= 80 || state.fire >= 80 || operationRisk.score >= 80 ? "危険: 複合リスク発生注意" : "予兆: 複数リスクが同時に上昇中";
+      text.textContent = "全社炎上 " + Math.round(state.fire) + (bugRisk && bugDefinition ? " / " + bugDefinition.name + "の製品バグ " + Math.round(dashboardBugLevel) : "") + (productRiskText && operationRisk.type !== "製品バグ" ? " / " + productRiskText : "") + "。Care-04 / Fire-05 / Security-06の担当を確認しましょう。";
     } else if (fireRisk) {
       panel.classList.add("warn-fire");
       title.textContent = state.fire >= 80 ? "危険: 炎上事故イベント発生注意" : "予兆: 炎上度が上がっています";
       text.textContent = "炎上度50以上で売上減少や解約リスク上昇が起きる可能性があります。" + (productRiskText ? productRiskText + "。" : "") + "Care-04 / Fire-05で対策できます。";
     } else if (bugRisk) {
       panel.classList.add("warn-bug");
-      title.textContent = dashboardBugLevel >= 80 ? "危険: バグ事故イベント発生注意" : "予兆: バグが増えています";
-      text.textContent = "バグ50以上で売上5%減の事故イベントが発生する可能性があります。" + (productRiskText ? productRiskText + "。" : "") + getBugMitigationText() + "。";
+      title.textContent = dashboardBugLevel >= 80 ? "危険: 製品バグ事故イベント発生注意" : "予兆: 製品バグが増えています";
+      text.textContent = (bugDefinition ? bugDefinition.name + "の" : "") + "製品バグが50以上になると、売上5%減の事故イベントが発生する可能性があります。" + getBugMitigationText() + "。";
     } else {
       panel.classList.add("warn-ops");
       title.textContent = "予兆: 製品運用リスクが上がっています";
@@ -2794,8 +3005,9 @@
     const officeMood = document.getElementById("officeMood");
     const level = state.companyLevel;
     officeName.textContent = level >= 5 ? "AI企業タワー" : level >= 4 ? "クラウド企業フロア" : level >= 3 ? "自動化オフィス" : level >= 2 ? "ミニスタートアップ空間" : "仮想ワンルーム";
-    officeMood.textContent = state.bugs >= 70 && state.fire >= 70 ? "警告灯が会議室より多く点灯しています。" : state.fire >= 60 ? "広報チャンネルが高温話題化しています。" : state.bugs >= 60 ? "未分類機能が廊下を歩いています。" : level >= 5 ? "全フロアが自律稼働中。停止ボタンは申請制です。" : level >= 3 ? "自動化が進み、誰が何を自動化したか不明です。" : level >= 2 ? "人員は少ないですが、全員が24時間います。" : "起業直後。まだクラウド代の方が重いです。";
-    officePanel.classList.toggle("alert", state.bugs >= 65 || state.fire >= 65);
+    const bugLevel = getDashboardBugLevel();
+    officeMood.textContent = bugLevel >= 70 && state.fire >= 70 ? "警告灯が会議室より多く点灯しています。" : state.fire >= 60 ? "広報チャンネルが高温話題化しています。" : bugLevel >= 60 ? "未分類機能が廊下を歩いています。" : level >= 5 ? "全フロアが自律稼働中。停止ボタンは申請制です。" : level >= 3 ? "自動化が進み、誰が何を自動化したか不明です。" : level >= 2 ? "人員は少ないですが、全員が24時間います。" : "起業直後。まだクラウド代の方が重いです。";
+    officePanel.classList.toggle("alert", bugLevel >= 65 || state.fire >= 65);
   }
 
   // === Rendering: Employees ===
@@ -2897,47 +3109,7 @@
       return;
     }
     panel.hidden = false;
-    panel.innerHTML = '<div class="section-heading"><h2>開発用デバッグ</h2><span>?debug=1</span></div>' +
-      '<p class="dashboard-summary">通常プレイでは非表示です。プレイテスト用の危険操作です。APP_VERSION: ' + APP_VERSION + '</p>' +
-      '<div class="debug-actions"><h3>売上/製品</h3>' +
-      '<button type="button" data-debug-action="money100k">売上 +100K</button>' +
-      '<button type="button" data-debug-action="customers5">主力サブスク 顧客+5</button>' +
-      '<button type="button" data-debug-action="mrrBoost">MRR確認 顧客+20</button>' +
-      '<button type="button" data-debug-action="completeProducts">全製品完成</button>' +
-      '<button type="button" data-debug-action="vnextReady">vNext 90%</button>' +
-      '<h3>リスク/判断</h3>' +
-      '<button type="button" data-debug-action="fire50">炎上 +50</button>' +
-      '<button type="button" data-debug-action="bugs50">主力製品 バグ+50</button>' +
-      '<button type="button" data-debug-action="crisisScenario">炎上/解約テスト</button>' +
-      '<button type="button" data-debug-action="productFireScenario">製品炎上+70</button>' +
-      '<button type="button" data-debug-action="riskChipsScenario">リスクchip確認状態</button>' +
-      '<button type="button" data-debug-action="decisionNow">社長判断を即発生</button>' +
-      '<button type="button" data-debug-action="decisionClearPending">社長判断をクリア</button>' +
-      '<button type="button" data-debug-action="decisionResetCooldown">判断クールダウン解除</button>' +
-      '<button type="button" data-debug-action="decisionHighChurn">高解約判断シナリオ</button>' +
-      '<button type="button" data-debug-action="decisionHandlersReport">判断handler一覧</button>' +
-      '<h3>Tick/Runtime</h3>' +
-      '<button type="button" data-debug-action="tick10">10秒tick実行</button>' +
-      '<button type="button" data-debug-action="tick60">60秒tick実行</button>' +
-      '<button type="button" data-debug-action="runtimeClamp">runtime clamp</button>' +
-      '<button type="button" data-debug-action="runtimeSummary">tick概要console出力</button>' +
-      '<h3>AI/プリセット</h3>' +
-      '<button type="button" data-debug-action="unlockAllAi">全AI解放</button>' +
-      '<button type="button" data-debug-action="allAiLevel5">全AI Lv5</button>' +
-      '<button type="button" data-debug-action="presetGrowth">プリセット: 成長</button>' +
-      '<button type="button" data-debug-action="presetCash">プリセット: 即金</button>' +
-      '<button type="button" data-debug-action="presetFirefighting">プリセット: 火消し</button>' +
-      '<button type="button" data-debug-action="presetSupport">プリセット: サポート</button>' +
-      '<button type="button" data-debug-action="presetVnext">プリセット: vNext</button>' +
-      '<button type="button" data-debug-action="presetStability">プリセット: 安定化</button>' +
-      '<h3>実績/状態</h3>' +
-      '<button type="button" data-debug-action="scenario10min">10分テスト状態</button>' +
-      '<button type="button" data-debug-action="companyExpansionReady">会社Lvアップ可能</button>' +
-      '<button type="button" data-debug-action="allProductsV5">全製品v5/販売中</button>' +
-      '<button type="button" data-debug-action="unlockAchievements">全実績解除</button>' +
-      '<button type="button" data-debug-action="stateSummary">state概要をconsole出力</button>' +
-      '<button type="button" data-debug-action="dumpSave">saveをconsole出力</button>' +
-      '</div>';
+    panel.innerHTML = DEBUG_RENDERER.getHtml(APP_VERSION);
     panel.querySelectorAll("button[data-debug-action]").forEach(function (button) {
       button.addEventListener("click", function () { applyDebugAction(button.getAttribute("data-debug-action")); });
     });
@@ -2964,7 +3136,6 @@
       const definition = getPrimaryProductDefinition();
       const product = getProduct(definition.id);
       product.bugs = clamp(product.bugs + 50, 0, 100);
-      state.bugs = clamp(state.bugs + 50, 0, 100);
       addLog("system", "デバッグ: " + definition.name + "の製品バグを+50しました。", definition.id);
     } else if (action === "unlockAllAi") {
       EMPLOYEES.forEach(function (employee) { state.employees[employee.id] = Math.max(1, state.employees[employee.id] || 0); });
@@ -2982,6 +3153,7 @@
       } else {
         state.decisionEventCooldown = 0;
         const candidates = getDecisionEventCandidates();
+    const dueFollowup = candidates.find(function (candidate) { const event = getDecisionEventDefinition(candidate.id); return event && event.followup; });
         const candidate = candidates.length ? selectDecisionEventCandidate(candidates) : null;
         if (candidate) {
           state.pendingDecisionEvent = { id: candidate.id, productId: candidate.productId, createdAt: Date.now() };
@@ -3019,7 +3191,7 @@
       runDebugTicks(60);
       addLog("system", "デバッグ: 60秒分のtickを実行しました。", "company");
     } else if (action === "runtimeClamp") {
-      finalizeTickState();
+      clampRuntimeState();
       addLog("system", "デバッグ: runtime clampを実行しました。", "company");
     } else if (action === "runtimeSummary") {
       console.log("AI_BLACK_STARTUP_TICK_SUMMARY", JSON.stringify(getRuntimeDebugSummary()));
@@ -3178,7 +3350,7 @@
       productRevenuePerSecond: Math.round(getProductRevenuePerSecondTotal() * 10) / 10,
       baseRevenuePerSecond: Math.round(getRates().baseMoney * 10) / 10,
       fire: Math.round(state.fire),
-      bugs: Math.round(state.bugs),
+      bugs: Math.round(getDashboardBugLevel()),
       pendingDecision: state.pendingDecisionEvent ? state.pendingDecisionEvent.id : null,
       products: PRODUCTS.map(function (definition) {
         const product = getProduct(definition.id);
@@ -3206,7 +3378,7 @@
       totalMrr: getTotalProductMrr(),
       totalCustomers: getTotalProductCustomers(),
       fire: Math.round(state.fire),
-      bugs: Math.round(state.bugs),
+      bugs: Math.round(getDashboardBugLevel()),
       products: PRODUCTS.map(function (definition) {
         const product = getProduct(definition.id);
         return { id: definition.id, status: product.status, customers: getProductCustomers(product), unitsSold: getProductUnitsSold(product), productFire: Math.round(getProductFire(product)) };
@@ -3294,6 +3466,111 @@
     render();
     scheduleNextTick();
     return results.length > 0;
+  }
+
+  function getSelectedSaveSlotId() {
+    const select = document.getElementById("saveSlotSelect");
+    return select && /^[1-3]$/.test(select.value) ? select.value : "1";
+  }
+
+  function setSaveManagerStatus(message) {
+    setText("saveManagerStatus", message);
+  }
+
+  function saveToSlot(slotId) {
+    commitRuntimeStateBeforeSave();
+    state.lastSavedAt = Date.now();
+    SAVE_RUNTIME.saveSlot(localStorage, slotId || getSelectedSaveSlotId(), state);
+    setSaveManagerStatus("スロット" + (slotId || getSelectedSaveSlotId()) + "へ保存しました。");
+    renderSaveManagerPanel();
+    return true;
+  }
+
+  function loadFromSlot(slotId, skipConfirm) {
+    const id = slotId || getSelectedSaveSlotId();
+    if (!skipConfirm && !window.confirm("スロット" + id + "の状態へ切り替えますか？現在の状態はバックアップへ退避します。")) return false;
+    try {
+      const loaded = SAVE_RUNTIME.loadSlot(localStorage, id);
+      saveGame();
+      SAVE_RUNTIME.backupCurrent(localStorage);
+      state = normalizeState(loaded.data);
+      TICK_RUNTIME.resetPenaltyElapsed();
+      addLog("system", "スロット" + id + "から保存データを読み込みました。", "company");
+      saveGame();
+      scheduleNextTick();
+      render();
+      setSaveManagerStatus("スロット" + id + "を読み込みました。");
+      return true;
+    } catch (error) {
+      setSaveManagerStatus("スロット" + id + "を読み込めませんでした。");
+      return false;
+    }
+  }
+
+  function exportSaveJson(skipDownload) {
+    commitRuntimeStateBeforeSave();
+    const text = SAVE_RUNTIME.exportData(state);
+    if (skipDownload) return text;
+    try {
+      const blob = new Blob([text], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "ai-black-startup-save-" + Date.now() + ".json";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.URL.revokeObjectURL(url);
+      setSaveManagerStatus("JSONセーブを書き出しました。");
+    } catch (error) {
+      copyShareText(text);
+      setSaveManagerStatus("ダウンロード非対応のためJSONをコピーしました。");
+    }
+    return text;
+  }
+
+  function importSaveText(text, skipConfirm) {
+    if (!skipConfirm && !window.confirm("JSONの保存状態を読み込みますか？現在の状態はバックアップへ退避します。")) return false;
+    try {
+      const imported = SAVE_RUNTIME.importData(text);
+      saveGame();
+      SAVE_RUNTIME.backupCurrent(localStorage);
+      state = normalizeState(imported);
+      TICK_RUNTIME.resetPenaltyElapsed();
+      addLog("system", "JSONから保存データを読み込みました。", "company");
+      saveGame();
+      scheduleNextTick();
+      render();
+      setSaveManagerStatus("JSONセーブを読み込みました。");
+      return true;
+    } catch (error) {
+      setSaveManagerStatus("JSONセーブを読み込めませんでした。形式を確認してください。");
+      return false;
+    }
+  }
+
+  function importSelectedSaveFile() {
+    const input = document.getElementById("importSaveInput");
+    const file = input && input.files && input.files[0];
+    if (!file || typeof FileReader === "undefined") return;
+    const reader = new FileReader();
+    reader.onload = function () { importSaveText(String(reader.result || ""), false); input.value = ""; };
+    reader.onerror = function () { setSaveManagerStatus("JSONファイルを読み込めませんでした。"); };
+    reader.readAsText(file);
+  }
+
+  function getPlaytestReport() {
+    updatePlaytestStage();
+    return OPERATIONS_RUNTIME.createPlaytestReport(state, {
+      mrr: getTotalProductMrr(), customers: getTotalProductCustomers(), bugs: getDashboardBugLevel(), productFire: getMaxProductFireLevel()
+    }, getCurrentMissionStage());
+  }
+
+  function copyPlaytestReport() {
+    const text = JSON.stringify(getPlaytestReport(), null, 2);
+    copyShareText(text);
+    setSaveManagerStatus("個人情報を含まないプレイ結果をコピーしました。");
+    return text;
   }
 
   // === Share / PWA / Boot ===
@@ -3444,6 +3721,7 @@
   }
 
   function openAssignmentModal() {
+    rememberModalTrigger();
     assignmentModalMode = "detail";
     assignmentModalOpen = true;
     assignmentDraft.mode = "normal";
@@ -3452,9 +3730,11 @@
     assignmentDraft.aiId = current.aiIds[0] || null;
     assignmentDraft.aiIds = current.aiIds.slice(0, 2);
     renderAssignmentModal();
+    focusModal("assignmentModal");
   }
 
   function openProductAssignmentModal(taskId, productId, mode) {
+    rememberModalTrigger();
     const definition = getProductDefinition(productId);
     const product = getProduct(definition.id);
     const action = getProductAvailableActions(product, definition).find(function (item) { return item.taskId === taskId && item.mode === (mode || "normal"); });
@@ -3468,9 +3748,11 @@
     assignmentDraft.aiIds = assignment.aiIds.slice(0, 2);
     assignmentDraft.mode = mode || "normal";
     renderAssignmentModal();
+    focusModal("assignmentModal");
   }
 
   function openWorkerAssignmentModal(workerId) {
+    rememberModalTrigger();
     if (!isWorkerAvailable(workerId, state.employees)) return;
     assignmentModalMode = "employee";
     assignmentModalOpen = true;
@@ -3481,6 +3763,7 @@
     updateAssignmentDraftMode();
     refreshAssignmentDraftAiIds();
     renderAssignmentModal();
+    focusModal("assignmentModal");
   }
 
   function getAssignableTasksForWorker(workerId) {
@@ -3544,6 +3827,7 @@
     assignmentDraft.mode = "normal";
     assignmentDraft.aiIds = [];
     renderAssignmentModal();
+    restoreModalFocus();
   }
 
   function selectAssignmentTask(taskId) {
@@ -3583,68 +3867,6 @@
     return getAssignedWorkersForProduct("marketing", productId).length ? '<span class="marketing-effect">広報中 <strong>認知度UP → 販売成功率UP / 炎上微増</strong></span>' : '';
   }
 
-  function getRiskLevel(value, warningThreshold, dangerThreshold, inverse) {
-    const number = safeNumber(value, 0);
-    if (inverse) {
-      if (number <= dangerThreshold) return "danger";
-      if (number <= warningThreshold) return "warning";
-      return "normal";
-    }
-    if (number >= dangerThreshold) return "danger";
-    if (number >= warningThreshold) return "warning";
-    return "normal";
-  }
-
-  function createRiskChip(type, label, value, recommendation, level) {
-    return {
-      type: type,
-      label: label,
-      value: Math.round(safeNumber(value, 0)),
-      recommendation: recommendation || "",
-      level: level || "warning"
-    };
-  }
-
-  function getProductRiskChips(product, definition, options) {
-    const settings = Object.assign({ includeNormal: false, compact: false }, options || {});
-    const chips = [];
-    const productFire = getProductFire(product);
-    const productFireLevel = getRiskLevel(productFire, 50, 75);
-    if (settings.includeNormal || productFireLevel !== "normal") chips.push(createRiskChip("product-fire", productFireLevel === "danger" ? "製品炎上 高" : "製品炎上 注意", productFire, "炎上対応推奨", productFireLevel));
-    if (definition.type === "subscription") {
-      const churnLevel = getRiskLevel(product.churnRisk, 45, 70);
-      const supportLevel = getRiskLevel(product.supportLoad, 50, 80);
-      if (settings.includeNormal || churnLevel !== "normal") chips.push(createRiskChip("churn", churnLevel === "danger" ? "解約リスク 高" : "解約リスク 注意", product.churnRisk, "サポート推奨", churnLevel));
-      if (settings.includeNormal || supportLevel !== "normal") chips.push(createRiskChip("support", supportLevel === "danger" ? "サポート負荷 高" : "サポート負荷 注意", product.supportLoad, "サポート推奨", supportLevel));
-    }
-    const bugsLevel = getRiskLevel(product.bugs, 35, 65);
-    if (settings.includeNormal || bugsLevel !== "normal") chips.push(createRiskChip("bugs", bugsLevel === "danger" ? "バグ多め" : "バグ注意", product.bugs, "品質管理推奨", bugsLevel));
-    const qualityLevel = getRiskLevel(product.quality, 60, 40, true);
-    if (settings.includeNormal || qualityLevel !== "normal") chips.push(createRiskChip("quality", qualityLevel === "danger" ? "品質低下" : "品質注意", product.quality, "品質管理推奨", qualityLevel));
-    chips.sort(function (a, b) {
-      const levelScore = { danger: 2, warning: 1, normal: 0 };
-      const levelDiff = (levelScore[b.level] || 0) - (levelScore[a.level] || 0);
-      if (levelDiff) return levelDiff;
-      return safeNumber(b.value, 0) - safeNumber(a.value, 0);
-    });
-    return settings.compact ? chips.slice(0, 3) : chips;
-  }
-
-  function getRiskChipHtml(chip) {
-    const text = chip.label + (chip.value || chip.value === 0 ? " " + chip.value : "") + (chip.recommendation ? " / " + chip.recommendation : "");
-    return '<span class="risk-chip risk-chip-' + escapeHtml(chip.type) + ' risk-chip-' + escapeHtml(chip.level) + '">' + escapeHtml(text) + '</span>';
-  }
-
-  function getProductRiskChipsHtml(product, definition, options) {
-    const chips = getProductRiskChips(product, definition, options);
-    return chips.length ? '<div class="risk-chip-list product-risk-chip-list">' + chips.map(getRiskChipHtml).join('') + '</div>' : '';
-  }
-
-
-  function getGlobalFireRiskChipHtmlForProduct(product, globalFire) {
-    if (product.status === "idea" || safeNumber(globalFire, 0) < 60) return '';
-    return '<span class="risk-chip risk-chip-global-fire risk-chip-warning">全社炎上 注意 / 炎上対応推奨</span>';
-  }
 
   function getProductSummaryMetrics(product, definition, progressPercent) {
     if (definition.type === "oneShot") {
@@ -4002,53 +4224,6 @@
     return Boolean(employees && (employees[workerId] || 0) > 0);
   }
 
-  function getDevelopmentEffect(workerId) {
-    if (workerId === "dev01") {
-      const level = state.employees.dev01 || 0;
-      return { progress: 3.0 + level * 0.7, bugs: 0.2 + level * 0.08 };
-    }
-    return { progress: 1.0, bugs: 0.05 };
-  }
-
-  function getUpgradeDevelopmentEffect(workerId) {
-    if (workerId === "dev01") {
-      const level = state.employees.dev01 || 0;
-      return { progress: 3.0 + level * 0.7, bugs: 0.15 + level * 0.06 };
-    }
-    return { progress: 1.0, bugs: 0.03 };
-  }
-
-  function getQaEffect(workerId) {
-    if (workerId === "security06") {
-      const level = state.employees.security06 || 0;
-      return { quality: 0.6 + level * 0.15, bugs: -(0.7 + level * 0.2) };
-    }
-    return { quality: 0.15, bugs: -0.10 };
-  }
-
-  function getMarketingEffect(workerId) {
-    if (workerId === "buzz03") {
-      const level = state.employees.buzz03 || 0;
-      return { awareness: 0.35 + level * 0.10, fire: 0.03 };
-    }
-    return { awareness: 0.05, fire: 0.005 };
-  }
-
-  function getSupportEffect(workerId) {
-    if (workerId === "care04") {
-      const level = state.employees.care04 || 0;
-      return { supportLoad: -(0.3 + level * 0.08), satisfaction: 0.12 + level * 0.04, fire: -(0.08 + level * 0.03) };
-    }
-    return { supportLoad: -0.05, satisfaction: 0.03, fire: -0.01 };
-  }
-
-  function getCrisisEffect(workerId) {
-    if (workerId === "fire05") {
-      const level = state.employees.fire05 || 0;
-      return { fire: -(0.35 + level * 0.10), productFire: -(0.45 + level * 0.12), money: -2 };
-    }
-    return { fire: -0.05, productFire: -0.04, money: 0 };
-  }
 
   function getProductFire(product) {
     return clamp(safeNumber(product && product.productFire, 0), 0, 100);
@@ -4063,35 +4238,6 @@
     return product.productFire;
   }
 
-  function getFireSalesPressureFactor(product) {
-    const globalPenalty = clamp(state.fire / GLOBAL_FIRE_SALES_PENALTY_DIVISOR, 0, 0.3);
-    const productPenalty = clamp(getProductFire(product) / PRODUCT_FIRE_SALES_PENALTY_DIVISOR, 0, 0.25);
-    return 1 - clamp(globalPenalty + productPenalty, 0, 0.45);
-  }
-
-  function getSalesEffect(workerId, product, definition) {
-    const awarenessFactor = 0.7 + product.awareness / 166.7;
-    const qualityFactor = 0.5 + product.quality / 100;
-    const fireFactor = getFireSalesPressureFactor(product);
-    if (workerId === "sales02") {
-      const level = state.employees.sales02 || 0;
-      const baseChance = 0.06 + level * 0.01;
-      return { customerChance: clamp(applyAffinity(baseChance, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.35), awareness: 0.12, fire: 0.03 };
-    }
-    return { customerChance: clamp(applyAffinity(0.02, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, 0.35), awareness: 0.06, fire: 0 };
-  }
-
-  function getOneShotSalesEffect(workerId, product, definition) {
-    const awarenessFactor = 0.7 + product.awareness / 166.7;
-    const qualityFactor = 0.5 + product.quality / 100;
-    const fireFactor = getFireSalesPressureFactor(product);
-    if (workerId === "sales02") {
-      const level = state.employees.sales02 || 0;
-      const baseChance = 0.035 + level * 0.006;
-      return { saleChance: clamp(applyAffinity(baseChance, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, ONE_SHOT_SALE_CHANCE_CAP), awareness: 0.12, fire: 0.03 };
-    }
-    return { saleChance: clamp(applyAffinity(0.01, workerId, definition, "sales") * awarenessFactor * qualityFactor * definition.demand * fireFactor, 0, ONE_SHOT_SALE_CHANCE_CAP), awareness: 0.06, fire: 0 };
-  }
 
   function getProduct(productId) { return state.products[productId] || createInitialProducts()[productId] || createInitialProducts()[PRODUCTS[0].id]; }
   function getProductDefinition(productId) { return PRODUCTS.find(function (product) { return product.id === productId; }) || PRODUCTS[0]; }
@@ -4182,13 +4328,20 @@
     state.money = Math.max(0, safeNumber(state.money, 0));
     state.totalMoney = Math.max(0, safeNumber(state.totalMoney, 0));
     state.users = Math.max(0, safeNumber(state.users, 0));
-    state.bugs = clamp(safeNumber(state.bugs, 0), 0, 100);
     state.fire = clamp(safeNumber(state.fire, 0), 0, 100);
     PRODUCTS.forEach(function (definition) { clampRuntimeProduct(getProduct(definition.id), definition); });
     state.decisionStats = normalizeDecisionStats(state.decisionStats);
     state.churnCount = Math.max(0, Math.floor(safeNumber(state.churnCount, 0)));
     state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent);
     state.decisionEventCooldown = clamp(Math.floor(safeNumber(state.decisionEventCooldown, DECISION_EVENT_RETRY_SECONDS)), 0, DECISION_EVENT_COOLDOWN_SECONDS);
+    state.strategyId = OPERATIONS_RUNTIME.getStrategy(state.strategyId).id;
+    state.decisionThreads = normalizeDecisionThreads(state.decisionThreads);
+    state.metricHistory = OPERATIONS_RUNTIME.normalizeHistory(state.metricHistory, 120);
+    state.playSeconds = Math.max(0, Math.floor(safeNumber(state.playSeconds, 0)));
+    state.relationshipFlags = normalizeBooleanMap(state.relationshipFlags);
+    state.aiUsageSeconds = normalizeAiUsageSeconds(state.aiUsageSeconds);
+    state.playtestStageId = MISSION_STAGES.some(function (stage) { return stage.id === state.playtestStageId; }) ? state.playtestStageId : "";
+    state.playtestStageEnteredAt = clamp(Math.floor(safeNumber(state.playtestStageEnteredAt, 0)), 0, state.playSeconds);
     state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL);
   }
 
@@ -4221,6 +4374,58 @@
   function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
   function escapeHtml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
+  function rememberModalTrigger() {
+    const active = document.activeElement;
+    if (active && typeof active.focus === "function") lastModalTrigger = active;
+  }
+
+  function focusModal(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel || panel.hidden || typeof panel.querySelector !== "function") return;
+    window.setTimeout(function () {
+      const target = panel.querySelector("button:not([disabled]), select:not([disabled]), input:not([disabled])");
+      if (target && typeof target.focus === "function") target.focus();
+    }, 0);
+  }
+
+  function restoreModalFocus() {
+    const target = lastModalTrigger;
+    lastModalTrigger = null;
+    if (target && typeof target.focus === "function") target.focus();
+  }
+
+  function trapModalFocus(event) {
+    if (!event || event.key !== "Tab") return false;
+    const panelId = productActionMenuOpen ? "productActionMenuModal" : (productDetailModalOpen ? "productDetailModal" : (assignmentModalOpen ? "assignmentModal" : ""));
+    const panel = panelId ? document.getElementById(panelId) : null;
+    if (!panel || typeof panel.querySelectorAll !== "function") return false;
+    const focusable = Array.prototype.slice.call(panel.querySelectorAll('button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+    if (!focusable.length) return false;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    const outside = typeof panel.contains === "function" && !panel.contains(active);
+    if (event.shiftKey && (active === first || outside)) {
+      event.preventDefault();
+      last.focus();
+      return true;
+    }
+    if (!event.shiftKey && (active === last || outside)) {
+      event.preventDefault();
+      first.focus();
+      return true;
+    }
+    return false;
+  }
+
+  function handleGlobalKeydown(event) {
+    if (event && event.key === "Tab") { trapModalFocus(event); return; }
+    if (!event || event.key !== "Escape") return;
+    if (productActionMenuOpen) closeProductActionMenu();
+    else if (productDetailModalOpen) closeProductDetailModal();
+    else if (assignmentModalOpen) closeAssignmentModal();
+  }
+
   function boot() {
     loadGame();
     render();
@@ -4231,6 +4436,21 @@
     const shareButton = document.getElementById("shareButton");
     if (shareButton) shareButton.addEventListener("click", shareGameStatus);
     document.getElementById("resetButton").addEventListener("click", resetGame);
+    const restoreButton = document.getElementById("restoreBackupButton");
+    if (restoreButton) restoreButton.addEventListener("click", restoreBackupSave);
+    const saveSlotButton = document.getElementById("saveSlotButton");
+    if (saveSlotButton) saveSlotButton.addEventListener("click", function () { saveToSlot(); });
+    const loadSlotButton = document.getElementById("loadSlotButton");
+    if (loadSlotButton) loadSlotButton.addEventListener("click", function () { loadFromSlot(); });
+    const exportButton = document.getElementById("exportSaveButton");
+    if (exportButton) exportButton.addEventListener("click", function () { exportSaveJson(false); });
+    const importButton = document.getElementById("importSaveButton");
+    const importInput = document.getElementById("importSaveInput");
+    if (importButton && importInput) importButton.addEventListener("click", function () { importInput.click(); });
+    if (importInput) importInput.addEventListener("change", importSelectedSaveFile);
+    const playtestButton = document.getElementById("copyPlaytestButton");
+    if (playtestButton) playtestButton.addEventListener("click", copyPlaytestReport);
+    document.addEventListener("keydown", handleGlobalKeydown);
     const onboardingClose = document.getElementById("onboardingClose");
     if (onboardingClose) onboardingClose.addEventListener("click", dismissOnboarding);
     window.addEventListener("beforeunload", saveGame);
@@ -4247,7 +4467,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-45").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-47").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

@@ -10,6 +10,7 @@ window.AIBS_CREATE_MISSION_DATA = function (api) {
   const getProductUnitsSold = api.getProductUnitsSold;
   const getProductVersion = api.getProductVersion;
   const getProductCategory = api.getProductCategory;
+  const getState = api.getState;
   // === Missions ===
   const MISSION_STAGES = [
     {
@@ -66,6 +67,33 @@ window.AIBS_CREATE_MISSION_DATA = function (api) {
         { id: "daily_v2_mission", text: "AI日報メーカーをv2にする", reward: 1200, done: function () { return getProductVersion(getProduct("dailyReportAi")) >= 2; } },
         { id: "meeting_v2_mission", text: "自動議事録AIをv2にする", reward: 1400, done: function () { return getProductVersion(getProduct("meetingMinutesAi")) >= 2; } },
         { id: "any_product_quality_70", text: "いずれかの製品の品質を70以上にする", reward: 1000, done: function () { return PRODUCTS.some(function (definition) { return getProduct(definition.id).quality >= 70; }); } }
+      ]
+    },
+    {
+      id: "quality_operations",
+      label: "品質運用",
+      missions: [
+        { id: "hire_security06_mission", text: "Security-06を雇用する", reward: 2500, done: function () { return (getState().employees.security06 || 0) >= 1; } },
+        { id: "assign_security06_qa_mission", text: "Security-06をいずれかの製品の品質管理に割り振る", reward: 3000, done: function () { return PRODUCTS.some(function (definition) { return getAssignedWorkersForProduct("qa", definition.id).indexOf("security06") !== -1; }); } },
+        { id: "stable_product_quality_mission", text: "稼働中の全製品を品質70以上・製品バグ30未満にする", reward: 5000, done: function () { const active = PRODUCTS.filter(function (definition) { return getProduct(definition.id).status !== "idea"; }); return active.length >= 3 && active.every(function (definition) { const product = getProduct(definition.id); return product.quality >= 70 && product.bugs < 30; }); } }
+      ]
+    },
+    {
+      id: "scale_up",
+      label: "事業拡大",
+      missions: [
+        { id: "company_level_6_mission", text: "会社Lv6に到達する", reward: 8000, done: function () { return getState().companyLevel >= 6; } },
+        { id: "all_products_selling_mission", text: "全製品を販売中にする", reward: 12000, done: function () { return PRODUCTS.every(function (definition) { return getProduct(definition.id).status === "selling"; }); } },
+        { id: "total_mrr_100k_mission", text: "総MRR ¥100K/月を達成する", reward: 15000, done: function () { return getTotalProductMrr() >= 100000; } }
+      ]
+    },
+    {
+      id: "ai_company_tower",
+      label: "AI企業タワー",
+      missions: [
+        { id: "company_level_10_mission", text: "会社Lv10に到達する", reward: 50000, done: function () { return getState().companyLevel >= 10; } },
+        { id: "subscription_v5_mission", text: "すべてのサブスク製品をv5以上にする", reward: 80000, done: function () { const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }); return subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }); } },
+        { id: "total_mrr_1m_mission", text: "総MRR ¥1M/月を達成する", reward: 100000, done: function () { return getTotalProductMrr() >= 1000000; } }
       ]
     }
   ];
