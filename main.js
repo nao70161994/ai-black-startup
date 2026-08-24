@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.47";
+  const APP_VERSION = "2026.05.24.48";
+  const APP_ASSET_TOKEN = "20260524-48";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -52,6 +53,7 @@
 
   // === Employee definitions ===
   const EMPLOYEES = readExternalData("AIBS_EMPLOYEES", []);
+  const CHARACTER_ASSETS = readExternalData("AIBS_CHARACTER_ASSETS", {});
 
   // === Product definitions ===
   const PRODUCTS = readExternalData("AIBS_PRODUCTS", []);
@@ -149,7 +151,7 @@
   const getProductRiskChipsHtml = RISK_RENDERER.getProductRiskChipsHtml;
   const getGlobalFireRiskChipHtmlForProduct = RISK_RENDERER.getGlobalFireRiskChipHtmlForProduct;
   const DEBUG_RENDERER = readExternalFactory("AIBS_CREATE_DEBUG_RENDERER")();
-  const INSIGHTS_RENDERER = readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")({ escapeHtml: escapeHtml, formatNumber: formatNumber });
+  const INSIGHTS_RENDERER = readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")({ escapeHtml: escapeHtml, formatNumber: formatNumber, getCharacterAvatarHtml: getCharacterAvatarHtml });
 
 
 
@@ -1288,6 +1290,7 @@
     const synergies = OPERATIONS_RUNTIME.getActiveSynergies(state, null);
     const relationships = OPERATIONS_RUNTIME.getAllActiveRelationships(state);
     panel.innerHTML = INSIGHTS_RENDERER.getStrategyHtml(STRATEGIES, state.strategyId, synergies, relationships);
+    activateCharacterImageFallbacks(panel);
     panel.querySelectorAll("button[data-strategy-id]").forEach(function (button) {
       button.addEventListener("click", function () { setCompanyStrategy(button.getAttribute("data-strategy-id")); });
     });
@@ -1544,9 +1547,10 @@
     panel.hidden = false;
     panel.classList.toggle("decision-warning", definition.riskLevel === "warning");
     panel.innerHTML = '<div class="section-heading"><h2>社長判断</h2><span>' + escapeHtml(productDefinition.name) + '</span></div>' +
-      '<div class="decision-body"><strong>' + escapeHtml(definition.label) + (definition.riskLevel === "warning" ? ' <em class="decision-risk-label">リスクあり</em>' : '') + '</strong><p>' + escapeHtml(definition.message) + '</p>' +
-      '<span class="decision-impact-heading">影響</span><ul class="decision-impact-list"><li>' + escapeHtml(definition.approveImpact) + '</li><li>' + escapeHtml(definition.rejectImpact) + '</li></ul></div>' +
+      '<div class="decision-speaker">' + getCharacterAvatarHtml(definition.workerId || "boss", "decision-character-avatar", false) + '<div class="decision-body"><strong>' + escapeHtml(definition.label) + (definition.riskLevel === "warning" ? ' <em class="decision-risk-label">リスクあり</em>' : '') + '</strong><p>' + escapeHtml(definition.message) + '</p>' +
+      '<span class="decision-impact-heading">影響</span><ul class="decision-impact-list"><li>' + escapeHtml(definition.approveImpact) + '</li><li>' + escapeHtml(definition.rejectImpact) + '</li></ul></div></div>' +
       '<div class="decision-actions"><button type="button" id="approveDecisionButton" class="decision-approve-button' + (definition.riskLevel === "warning" ? ' decision-risk-button' : '') + '">承認する</button><button type="button" id="rejectDecisionButton" class="decision-reject-button">却下する</button></div>';
+    activateCharacterImageFallbacks(panel);
     const approveButton = document.getElementById("approveDecisionButton");
     const rejectButton = document.getElementById("rejectDecisionButton");
     if (approveButton) approveButton.addEventListener("click", function () { applyDecisionEventChoice("approve"); });
@@ -3022,6 +3026,7 @@
     const list = document.getElementById("employeeList");
     if (list) list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
     if (list) list.querySelectorAll("button[data-worker-assign]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-worker-assign")); }); });
+    if (list) activateCharacterImageFallbacks(list);
   }
 
   function getEmployeeCardsHtml() {
@@ -3034,16 +3039,16 @@
       const action = level === 0 ? "雇用" : "強化";
       const recommended = startupCredit && (employee.id === "dev01" || employee.id === "sales02");
       const profileHtml = getEmployeePipelineProfileHtml(employee.id);
-      if (locked) return '<article class="employee-card locked compact-locked"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div>' + profileHtml + '<span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span><div class="employee-action"><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button></div></article>';
+      if (locked) return '<article class="employee-card locked compact-locked"><div class="employee-top">' + getCharacterAvatarHtml(employee.id, "employee-character-avatar", true) + '<div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div>' + profileHtml + '<span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span><div class="employee-action"><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button></div></article>';
       if (level === 0) {
-        return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div>' + profileHtml + '<div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
+        return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top">' + getCharacterAvatarHtml(employee.id, "employee-character-avatar", true) + '<div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div>' + profileHtml + '<div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
       }
-      return '<article class="employee-card hired"><div class="employee-top"><div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div>' + profileHtml + '<div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" data-worker-assign="' + employee.id + '">仕事を割り振る</button></div></article>';
+      return '<article class="employee-card hired"><div class="employee-top">' + getCharacterAvatarHtml(employee.id, "employee-character-avatar", true) + '<div class="employee-name"><strong>' + escapeHtml(employee.code) + ' / ' + escapeHtml(employee.nickname) + '</strong><span>' + escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div>' + profileHtml + '<div class="quote compact-quote">「' + escapeHtml(employee.catchphrase) + '」</div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" data-worker-assign="' + employee.id + '">仕事を割り振る</button></div></article>';
     }).join("");
   }
 
   function getBossWorkerCardHtml() {
-    return '<article class="employee-card hired boss-worker-card"><div class="employee-top"><div class="employee-name"><strong>AI社長</strong><span>初期担当AI</span></div><div class="level-badge">常駐</div></div>' + getEmployeePipelineProfileHtml("boss") + '<div class="employee-action"><button type="button" class="worker-assign-button" data-worker-assign="boss">仕事を割り振る</button></div></article>';
+    return '<article class="employee-card hired boss-worker-card"><div class="employee-top">' + getCharacterAvatarHtml("boss", "employee-character-avatar", true) + '<div class="employee-name"><strong>AI社長</strong><span>初期担当AI</span></div><div class="level-badge">常駐</div></div>' + getEmployeePipelineProfileHtml("boss") + '<div class="employee-action"><button type="button" class="worker-assign-button" data-worker-assign="boss">仕事を割り振る</button></div></article>';
   }
 
   function getEmployeePipelineProfileHtml(workerId) {
@@ -3068,10 +3073,12 @@
     const text = document.getElementById("latestLogText");
     const type = document.getElementById("latestLogType");
     const panel = document.getElementById("latestLogPanel");
+    const avatar = document.getElementById("latestLogAvatar");
     if (!latest || !text || !type) return;
     const logType = LOG_LABELS[latest.type] ? latest.type : "normal";
     text.textContent = latest.text;
     type.textContent = LOG_LABELS[logType];
+    if (avatar) { avatar.innerHTML = getCharacterAvatarHtml(latest.employeeId, "latest-character-avatar", false); activateCharacterImageFallbacks(avatar); }
     if (panel) panel.className = "latest-log-panel latest-" + logType;
     const activityPanel = document.getElementById("activityPanel");
     if (activityPanel) activityPanel.classList.toggle("latest-danger", logType === "bug" || logType === "fire");
@@ -3084,13 +3091,14 @@
       '<div class="log-list" id="logList" aria-live="polite">' + (dashboardUi.logsExpanded ? getLogListHtml() : '') + '</div>';
     const toggle = document.getElementById("toggleLogsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("logsExpanded"); });
+    activateCharacterImageFallbacks(panel);
   }
 
   function getLogListHtml() {
     return state.logs.slice(1).map(function (log, index) {
       const type = LOG_LABELS[log.type] ? log.type : "normal";
       const ageClass = index >= 5 ? ' old-log' : '';
-      return '<article class="log-item log-' + type + ageClass + (log.boot ? ' boot-log' : '') + '"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></article>';
+      return '<article class="log-item log-' + type + ageClass + (log.boot ? ' boot-log' : '') + '">' + getCharacterAvatarHtml(log.employeeId, "log-character-avatar", false) + '<div class="log-content"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></div></article>';
     }).join("");
   }
 
@@ -4372,6 +4380,31 @@
   function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
   function safeNumber(value, fallback) { const number = Number(value); return Number.isFinite(number) ? number : fallback; }
   function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
+  function getCharacterAsset(sourceId) {
+    const id = sourceId === "company" ? "boss" : String(sourceId || "");
+    return CHARACTER_ASSETS[id] ? { id: id, asset: CHARACTER_ASSETS[id] } : null;
+  }
+
+  function getCharacterAvatarHtml(sourceId, className, descriptive) {
+    const match = getCharacterAsset(sourceId);
+    const classes = "character-avatar " + String(className || "");
+    if (!match) return '<span class="' + escapeHtml(classes + ' character-avatar-generic') + '" aria-hidden="true"><span class="character-avatar-fallback">AI</span></span>';
+    const asset = match.asset;
+    const alt = descriptive ? asset.label + "のキャラクター画像" : "";
+    return '<span class="' + escapeHtml(classes) + '" data-character-id="' + escapeHtml(match.id) + '"><span class="character-avatar-fallback" aria-hidden="true">' + escapeHtml(asset.shortLabel) + '</span><img data-character-image src="' + escapeHtml(asset.src + "?v=" + APP_ASSET_TOKEN) + '" alt="' + escapeHtml(alt) + '" width="128" height="128" loading="lazy" decoding="async"></span>';
+  }
+
+  function activateCharacterImageFallbacks(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll("img[data-character-image]").forEach(function (image) {
+      function showFallback() {
+        image.hidden = true;
+        if (image.parentElement) image.parentElement.classList.add("image-failed");
+      }
+      image.addEventListener("error", showFallback, { once: true });
+      if (image.complete && image.naturalWidth === 0) showFallback();
+    });
+  }
   function escapeHtml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
   function rememberModalTrigger() {
@@ -4467,7 +4500,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-47").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-48").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

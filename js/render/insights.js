@@ -4,6 +4,7 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
   const settings = options && typeof options === "object" ? options : {};
   const escapeHtml = settings.escapeHtml;
   const formatNumber = settings.formatNumber;
+  const getCharacterAvatarHtml = typeof settings.getCharacterAvatarHtml === "function" ? settings.getCharacterAvatarHtml : function () { return ""; };
 
   function sparkline(history, key, label, color, fixedMax) {
     const values = history.map(function (point) { return Math.max(0, Number(point[key]) || 0); });
@@ -42,7 +43,8 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
       return '<li><strong>連携中</strong> ' + escapeHtml(item.label) + ' — ' + escapeHtml(item.description) + '</li>';
     }).join("") : '<li>販売中の製品を増やすと製品間連携が解放されます。</li>';
     const relationshipHtml = relationships.length ? relationships.map(function (item) {
-      return '<li><strong>共同作業</strong> ' + escapeHtml(item.label) + ' — ' + escapeHtml(item.description) + '</li>';
+      const portraits = (Array.isArray(item.workers) ? item.workers : []).map(function (workerId) { return getCharacterAvatarHtml(workerId, "relationship-character-avatar", false); }).join("");
+      return '<li class="relationship-bonus"><span class="relationship-avatars" aria-hidden="true">' + portraits + '</span><span><strong>共同作業</strong> ' + escapeHtml(item.label) + ' — ' + escapeHtml(item.description) + '</span></li>';
     }).join("") : '<li>相性のあるAIを同じ製品の別タスクへ配置すると共同効果が発生します。</li>';
     return '<div class="section-heading"><h2>会社方針</h2><span>いつでも変更可能</span></div>' +
       '<div class="strategy-grid" role="group" aria-label="会社方針を選択">' + strategyButtons + '</div>' +

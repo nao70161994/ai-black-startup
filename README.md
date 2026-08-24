@@ -72,6 +72,32 @@ AI社長とAI社員たちは、その仮想オフィスで24時間自律稼働�
 - AI社長と専門AIの製品別タスク割り振り
 
 
+## AIキャラクター画像
+
+AI社長と6体の専門AIは、内蔵の `imagegen` で生成した透過WebPを使用します。配信資産は `assets/characters/`、画面との対応表は `js/data/characters.js` にあります。社員カードでは説明付き代替テキストを付け、ログ・判断・関係性では重複読み上げを避ける装飾画像として扱います。画像を取得できない場合は各AIの短縮文字へ自動で切り替わります。
+
+最終プロンプトは、次の共通指定に各キャラクター指定を1つ連結したものです。各キャラクターは新規画像として1回ずつ生成しました。
+
+```text
+Use case: stylized-concept
+Asset type: game character portrait and small UI avatar
+Series art direction: One member of a seven-character bright pop futuristic Japanese browser management game roster. Exact shared language: premium 2.5D chibi robot render; oversized rounded synthetic head; compact rounded torso and limbs; dark glossy face-screen with large expressive cyan digital eyes; white glossy polymer and dark-navy brushed-metal joints; subtle cel shading; soft bright studio lighting; polished playful mobile-game quality.
+Composition: exactly one centered full-body character, large readable face, silhouette readable at 48px, generous transparent padding.
+Constraints: genuinely transparent background with preserved alpha; no floor, scene, frame, speech bubble, readable text, letters, numbers, logo, watermark; clean edges without halo; no cropped parts or prop; no human skin, photorealism, menace, weapons, dark cyberpunk, excessive detail, or extra characters.
+```
+
+キャラクター別の最終指定:
+
+- AI社長: gender-neutral friendly executive robot; confident and slightly over-optimizing; cyan and fresh-lime lights; small gold crown-like antenna; compact translucent tablet; white, cyan, lime, warm gold, dark navy; approachable startup-leader pose; no crown text or chart labels.
+- Dev-01: enthusiastic development AI who calls bugs “unclassified features” and loves risky refactoring; concentrated playful eyes; violet and electric-blue lights; bracket-like ear modules without glyphs; utility-hoodie shoulder shell; translucent keyboard with abstract blocks; eager forward pose; no crown, suit, tie, or readable code.
+- Sales-02: ultra-positive sales AI who promises unfinished features; confident smiling eyes; coral-red, orange, restrained gold; blazer-like shoulder shell; open welcoming hand; swept-back head fin; translucent deal panel with abstract shapes; no currency sign or handshake icon.
+- Buzz-03: casual, trend-obsessed publicity AI; cheerful mischievous eyes; hot pink, magenta, purple, cyan; broadcast-wave-like antenna fins without literal icons; sporty asymmetrical shell; dynamic pose; translucent social-pulse panel with abstract dots and curves; no hashtags or app icons.
+- Care-04: earnest, polite, patient support AI; calm wide eyes; teal, mint, soft blue; headset-like ear modules with unbranded microphone; cardigan-like layered shell; gentle listening pose; translucent help panel with abstract rounded bubbles; no question mark or chat icon.
+- Fire-05: cool crisis-response AI; focused calm eyes; orange, red, charcoal navy, ice-blue cooling lights; heat-shield shoulders; non-weapon forearm cooling module; protective stance; translucent apology checklist with abstract lines; no scary flames or firefighter insignia.
+- Security-06: cautious QA/security AI; observant friendly eyes; deep navy, royal blue, cyan, silver; helmet-like shell; blank shield-shaped chest plate; raised translucent scan visor; diagnostic panel with abstract rings and blocks; grounded stance; no lock icon, police/military insignia, or weapon.
+
+Web向けには幅512px、品質85、α品質100のWebPへ変換しています。生成元PNGはアプリ外の生成保管領域に残し、リポジトリには軽量な採用版だけを保存します。
+
 ## v0.4.7 経営ビルドと分析
 
 - 会社方針: バランス、高速開発、品質重視、炎上商法、顧客第一から選択し、効率・副作用・社長判断の出現傾向へ反映
@@ -187,7 +213,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-47
+http://localhost:8000/?v=20260524-48
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -260,18 +286,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.47` です。
+現在のアプリバージョンは `2026.05.24.48` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-47">
-<script src="js/data/products.js?v=20260524-47"></script>
-<script src="js/data/achievements.js?v=20260524-47"></script>
-<script src="js/data/missions.js?v=20260524-47"></script>
-<script src="main.js?v=20260524-47"></script>
+<link rel="stylesheet" href="style.css?v=20260524-48">
+<script src="js/data/products.js?v=20260524-48"></script>
+<script src="js/data/achievements.js?v=20260524-48"></script>
+<script src="js/data/missions.js?v=20260524-48"></script>
+<script src="main.js?v=20260524-48"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -279,18 +305,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.47
+ai-black-startup-2026.05.24.48
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-47` を付けて開く
+- URLに `?v=20260524-48` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-47` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-48` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
