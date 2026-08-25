@@ -74,30 +74,32 @@ AI社長とAI社員たちは、その仮想オフィスで24時間自律稼働�
 
 ## AIキャラクター画像
 
-AI社長と6体の専門AIは、内蔵の `imagegen` で生成した透過WebPを使用します。配信資産は `assets/characters/`、画面との対応表は `js/data/characters.js` にあります。社員カードでは説明付き代替テキストを付け、ログ・判断・関係性では重複読み上げを避ける装飾画像として扱います。画像を取得できない場合は各AIの短縮文字へ自動で切り替わります。
+AI社長と6体の専門AIは、内蔵の `imagegen` で生成した透過WebPを使用します。現在のデザインはロボット本体ではなく、成人の近未来アニメヒロインを基調とし、人間らしい顔・髪・表情を主役にしています。AIらしさは発光アクセサリーとホログラムへ限定しています。配信資産は `assets/characters/`、画面との対応表は `js/data/characters.js` にあります。
 
-最終プロンプトは、次の共通指定に各キャラクター指定を1つ連結したものです。各キャラクターは新規画像として1回ずつ生成しました。
+社員カードでは説明付き代替テキストを付け、ログ・判断・関係性では重複読み上げを避ける装飾画像として扱います。画像を取得できない場合は各AIの短縮文字へ自動で切り替わります。
+
+最終プロンプトは、次の共通指定に各キャラクター指定を1つ連結したものです。文字状ノイズが出たBuzz-03とCare-04は、画面・カード類を除いたプロンプトで再生成しました。
 
 ```text
 Use case: stylized-concept
-Asset type: game character portrait and small UI avatar
-Series art direction: One member of a seven-character bright pop futuristic Japanese browser management game roster. Exact shared language: premium 2.5D chibi robot render; oversized rounded synthetic head; compact rounded torso and limbs; dark glossy face-screen with large expressive cyan digital eyes; white glossy polymer and dark-navy brushed-metal joints; subtle cel shading; soft bright studio lighting; polished playful mobile-game quality.
-Composition: exactly one centered full-body character, large readable face, silhouette readable at 48px, generous transparent padding.
-Constraints: genuinely transparent background with preserved alpha; no floor, scene, frame, speech bubble, readable text, letters, numbers, logo, watermark; clean edges without halo; no cropped parts or prop; no human skin, photorealism, menace, weapons, dark cyberpunk, excessive detail, or extra characters.
+Asset type: Japanese mobile management game character portrait and small UI avatar
+Series art direction: Premium Japanese anime mobile-game character key art; refined 2.5D cel shading; clean linework; luminous mature eyes; detailed glossy hair; attractive contemporary character design; clearly adult women in their mid-20s; slightly stylized adult proportions around 6 heads tall; bright soft studio lighting. Human face, skin, hair, hands, and body are the visual focus. AI traits are limited to tasteful luminous accessories and holographic tools.
+Composition/framing: exactly one full-body character centered; face clear enough for a 48px avatar; hands and feet visible; strong readable silhouette; generous transparent padding.
+Constraints: genuinely transparent background with preserved alpha; clearly adult; tasteful non-revealing outfit; no floor, scene, frame, speech bubble, readable text, letters, numbers, logo, watermark; clean cutout edges.
+Avoid: childlike proportions, school uniform, sexualized pose, exposed cleavage, robot head, robot limbs, armor, mecha, doll joints, animal ears, photorealism, weapons, dark cyberpunk.
 ```
 
 キャラクター別の最終指定:
 
-- AI社長: gender-neutral friendly executive robot; confident and slightly over-optimizing; cyan and fresh-lime lights; small gold crown-like antenna; compact translucent tablet; white, cyan, lime, warm gold, dark navy; approachable startup-leader pose; no crown text or chart labels.
-- Dev-01: enthusiastic development AI who calls bugs “unclassified features” and loves risky refactoring; concentrated playful eyes; violet and electric-blue lights; bracket-like ear modules without glyphs; utility-hoodie shoulder shell; translucent keyboard with abstract blocks; eager forward pose; no crown, suit, tie, or readable code.
-- Sales-02: ultra-positive sales AI who promises unfinished features; confident smiling eyes; coral-red, orange, restrained gold; blazer-like shoulder shell; open welcoming hand; swept-back head fin; translucent deal panel with abstract shapes; no currency sign or handshake icon.
-- Buzz-03: casual, trend-obsessed publicity AI; cheerful mischievous eyes; hot pink, magenta, purple, cyan; broadcast-wave-like antenna fins without literal icons; sporty asymmetrical shell; dynamic pose; translucent social-pulse panel with abstract dots and curves; no hashtags or app icons.
-- Care-04: earnest, polite, patient support AI; calm wide eyes; teal, mint, soft blue; headset-like ear modules with unbranded microphone; cardigan-like layered shell; gentle listening pose; translucent help panel with abstract rounded bubbles; no question mark or chat icon.
-- Fire-05: cool crisis-response AI; focused calm eyes; orange, red, charcoal navy, ice-blue cooling lights; heat-shield shoulders; non-weapon forearm cooling module; protective stance; translucent apology checklist with abstract lines; no scary flames or firefighter insignia.
-- Security-06: cautious QA/security AI; observant friendly eyes; deep navy, royal blue, cyan, silver; helmet-like shell; blank shield-shaped chest plate; raised translucent scan visor; diagnostic panel with abstract rings and blocks; grounded stance; no lock icon, police/military insignia, or weapon.
+- AI社長: cyan bob with lime inner streak; confident friendly smile; white executive blazer and navy high-neck top; gold crown-shaped smart hairpin; compact translucent tablet; charismatic and slightly over-optimizing.
+- Dev-01: long violet side ponytail with electric-blue streaks; playful concentrated grin; white tech jacket and navy hoodie styling; opaque leggings; holographic keyboard with abstract blocks; enthusiastic and slightly chaotic engineer.
+- Sales-02: coral shoulder-length swept hair; warm amber eyes; radiant persuasive smile; white-and-coral professional blazer and trousers; open welcoming hand; abstract presentation panel; glamorous but professional.
+- Buzz-03: hot-pink looped twin ponytails; magenta eyes and playful wink; sporty white-and-magenta street-fashion jacket, shorts and opaque violet tights; abstract cyan/pink light ribbons only; no screen or panel.
+- Care-04: long mint side braid with pale-blue strands; calm teal eyes; elegant headset; white-and-mint cardigan-inspired coat over a navy layered dress and opaque tights; patient listening gesture; no card, badge, screen, or panel.
+- Fire-05: orange-red chin-length hair with charcoal underlayer; calm ice-blue eyes; white crisis-response long coat and charcoal jumpsuit; orange heat-shield shoulder accents and blue smart cuff; steady reassuring pose.
+- Security-06: midnight-blue bob with cyan streak; deep-blue eyes and smart scan glasses; white-and-deep-blue tailored coat, silver high-neck top and navy skirt; simple concentric-ring safety field; analytical and trustworthy.
 
-Web向けには幅512px、品質85、α品質100のWebPへ変換しています。生成元PNGはアプリ外の生成保管領域に残し、リポジトリには軽量な採用版だけを保存します。
-
+Web向けには幅512px、品質85、α品質100のWebPへ変換しています。7体合計は約524KBです。生成元PNGはアプリ外の生成保管領域に残し、リポジトリには軽量な採用版だけを保存します。
 ## v0.4.7 経営ビルドと分析
 
 - 会社方針: バランス、高速開発、品質重視、炎上商法、顧客第一から選択し、効率・副作用・社長判断の出現傾向へ反映
@@ -213,7 +215,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-48
+http://localhost:8000/?v=20260524-49
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -286,18 +288,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.48` です。
+現在のアプリバージョンは `2026.05.24.49` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-48">
-<script src="js/data/products.js?v=20260524-48"></script>
-<script src="js/data/achievements.js?v=20260524-48"></script>
-<script src="js/data/missions.js?v=20260524-48"></script>
-<script src="main.js?v=20260524-48"></script>
+<link rel="stylesheet" href="style.css?v=20260524-49">
+<script src="js/data/products.js?v=20260524-49"></script>
+<script src="js/data/achievements.js?v=20260524-49"></script>
+<script src="js/data/missions.js?v=20260524-49"></script>
+<script src="main.js?v=20260524-49"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -305,18 +307,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.48
+ai-black-startup-2026.05.24.49
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-48` を付けて開く
+- URLに `?v=20260524-49` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-48` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-49` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
