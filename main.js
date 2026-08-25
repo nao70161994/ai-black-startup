@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.53";
-  const APP_ASSET_TOKEN = "20260524-53";
+  const APP_VERSION = "2026.05.24.54";
+  const APP_ASSET_TOKEN = "20260524-54";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -222,6 +222,7 @@
   let randomLogTimer = null;
   let gameTickTimer = null;
   let toastTimer = null;
+  let appToastTimer = null;
   let lastModalTrigger = null;
   let assignmentModalOpen = false;
   let assignmentModalMode = "detail";
@@ -234,11 +235,11 @@
   let tutorialReplayStep = 0;
   const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, companyDetailsExpanded: null, presetResult: "" };
   const APP_PAGES = {
-    home: { label: "オフィス", title: "オフィス | AI社長のブラック起業" },
-    products: { label: "製品", title: "製品 | AI社長のブラック起業" },
-    team: { label: "チーム", title: "チーム | AI社長のブラック起業" },
-    management: { label: "経営", title: "経営 | AI社長のブラック起業" },
-    records: { label: "記録", title: "記録 | AI社長のブラック起業" }
+    home: { label: "オフィス", description: "会社の今と、次の一手を確認します", title: "オフィス | AI社長のブラック起業" },
+    products: { label: "製品", description: "開発・販売・運用を製品ごとに進めます", title: "製品 | AI社長のブラック起業" },
+    team: { label: "チーム", description: "AI社員の担当と配置を整えます", title: "チーム | AI社長のブラック起業" },
+    management: { label: "経営", description: "会社方針・実績・ミッションを確認します", title: "経営 | AI社長のブラック起業" },
+    records: { label: "記録", description: "ログ・保存・復旧・共有を管理します", title: "記録 | AI社長のブラック起業" }
   };
   const ELEMENT_PAGE_MAP = {
     homePage: "home", statusGrid: "home", activityPanel: "home", nextRecommendationPanel: "home", decisionPanel: "home", riskPanel: "home", officePanel: "home",
@@ -428,6 +429,7 @@
     applyAchievements(false);
     saveGame();
     render();
+    showAppToast(level === 0 ? employee.code + "を雇用しました" : employee.code + "をLv" + (level + 1) + "へ強化しました", "success");
   }
 
   function showFirstHireHelp(employee) {
@@ -1014,6 +1016,19 @@
     }, 3600);
   }
 
+  function showAppToast(message, tone) {
+    const toast = document.getElementById("appToast");
+    if (!toast || !message) return;
+    window.clearTimeout(appToastTimer);
+    toast.textContent = message;
+    toast.className = "app-toast show " + (tone === "warning" ? "warning" : "success");
+    toast.hidden = false;
+    appToastTimer = window.setTimeout(function () {
+      toast.classList.remove("show");
+      toast.hidden = true;
+    }, 2800);
+  }
+
   function addUpgradeLog(employee, nextLevel) {
     const latest = state.logs[0];
     const now = Date.now();
@@ -1138,6 +1153,7 @@
       });
     }
     setText("currentPageTitle", APP_PAGES[nextPage].label);
+    setText("currentPageDescription", APP_PAGES[nextPage].description);
     document.title = APP_PAGES[nextPage].title;
     renderOnboarding();
     return nextPage;
@@ -1265,7 +1281,7 @@
     if (!select) return;
     const slots = SAVE_RUNTIME.listSlots(STORAGE);
     const saveStatus = document.getElementById("saveManagerStatus");
-    if (!STORAGE.isPersistent() && saveStatus && !saveStatus.textContent) saveStatus.textContent = getStorageModeNotice();
+    if (saveStatus && !saveStatus.textContent) saveStatus.textContent = getStorageModeNotice() || "自動保存は有効です。重要な節目はスロット保存やJSON書き出しも利用できます。";
     Array.prototype.forEach.call(select.options || [], function (option) {
       const slot = slots.find(function (item) { return item.id === option.value; });
       if (!slot) return;
@@ -1303,6 +1319,7 @@
     addLog("system", "会社方針を「" + strategy.label + "」へ変更しました。", "company");
     saveGame();
     render();
+    showAppToast("会社方針を「" + strategy.label + "」へ変更しました", "success");
     return true;
   }
 
@@ -1995,6 +2012,7 @@
     applyAchievements(false);
     saveGame();
     render();
+    showAppToast(choice === "approve" ? "社長判断を承認しました" : "社長判断を見送りました", choice === "approve" ? "success" : "warning");
     scheduleNextTick();
     return true;
   }
@@ -2585,6 +2603,7 @@
     applyAchievements(false);
     saveGame();
     render();
+    showAppToast("ミッション報酬 " + formatCurrency(mission.reward) + " を受け取りました", "success");
   }
 
   function isMissionClaimed(missionId) {
@@ -3996,6 +4015,7 @@
     applyAchievements(false);
     saveGame();
     render();
+    showAppToast("担当を更新しました。AIが新しい仕事を開始します", "success");
     scheduleNextTick();
   }
 
@@ -4022,6 +4042,7 @@
     clearTaskProductAssignment(taskId, productId);
     saveGame();
     render();
+    showAppToast("担当を解除しました", "warning");
   }
 
   function removeAiFromTask(taskId, productId, aiId) {
@@ -4250,7 +4271,7 @@
     scheduleRandomReport();
     scheduleNextTick();
     window.setInterval(saveGame, AUTO_SAVE_MS);
-    document.getElementById("saveButton").addEventListener("click", function () { addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); saveGame(); renderLatestLog(); renderLogs(); });
+    document.getElementById("saveButton").addEventListener("click", function () { addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); saveGame(); renderLatestLog(); renderLogs(); showAppToast("ゲームを保存しました", "success"); });
     const shareButton = document.getElementById("shareButton");
     if (shareButton) shareButton.addEventListener("click", shareGameStatus);
     document.getElementById("resetButton").addEventListener("click", resetGame);
@@ -4293,7 +4314,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-53").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-54").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

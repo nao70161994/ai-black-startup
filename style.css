@@ -930,3 +930,238 @@ button, select, input { touch-action: manipulation; }
 }
 
 body.modal-active { overflow: hidden; overscroll-behavior: none; }
+
+
+/* Product-quality UI/UX pass: accessibility, hierarchy and responsive layout. */
+:root {
+  --primary: #087d9b;
+  --primary-hover: #006f8f;
+  --focus: #b45309;
+  --muted: #566f7b;
+}
+
+button,
+select,
+.employee-task-profile summary {
+  min-height: 44px;
+}
+
+button:not(.office-worker):not(.nav-item):not(.secondary-button):not(.danger) {
+  border-color: #087d9b;
+  background: linear-gradient(135deg, #087d9b, #006f8f);
+  color: #fff;
+}
+
+button.share {
+  border-color: #48d66d;
+  background: #48d66d;
+  color: #052a19;
+}
+
+button.secondary-button,
+.details-toggle {
+  border-color: rgba(8, 125, 155, .3);
+  background: #f3f8fa;
+  color: #245866;
+}
+
+button.danger {
+  min-height: 44px;
+  color: #8c1d18;
+}
+
+:where(button, select, summary, [tabindex]):focus-visible {
+  outline: 3px solid #b45309;
+  outline-offset: 3px;
+}
+
+.eyebrow,
+.section-heading span,
+.story-kicker {
+  color: #087d9b;
+}
+
+.status-card span,
+.page-location span,
+.page-location p {
+  color: #566f7b;
+}
+
+.level-pill span { color: #755300; }
+.level-pill strong { color: #b45f00; }
+.latest-log-label span { color: #143b47; }
+
+.page-location {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 8px 12px;
+}
+
+.page-location > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.page-location h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.page-location p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.app-toast {
+  position: fixed;
+  z-index: 1100;
+  left: 50%;
+  bottom: calc(82px + env(safe-area-inset-bottom));
+  width: min(calc(100% - 24px), 480px);
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: 13px;
+  background: #164e3a;
+  box-shadow: 0 14px 36px rgba(0, 28, 37, .28);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.45;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 10px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+
+.app-toast.warning { background: #78350f; }
+.app-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.section-block,
+.mission-panel,
+.risk-panel,
+.office-panel {
+  scroll-margin-top: 12px;
+}
+
+@media (hover: hover) {
+  button:not(:disabled):hover { filter: brightness(.96); }
+  button:not(:disabled):active { transform: translateY(1px); }
+}
+
+@media (max-width: 430px) {
+  .page-location {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .page-location p {
+    padding-left: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+  }
+
+  .hero .eyebrow { display: none; }
+  .hero h1 {
+    grid-column: 1;
+    overflow: visible;
+    font-size: 16px;
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  .hero .tagline {
+    grid-column: 1 / -1;
+    font-size: 10px;
+  }
+
+  .hero .level-pill {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+@media (min-width: 960px) {
+  .app-shell,
+  .bottom-nav {
+    width: min(calc(100% - 32px), 1040px);
+  }
+
+  .app-page {
+    gap: 12px;
+  }
+
+  #homePage {
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+    align-items: start;
+  }
+
+  #homePage .office-panel {
+    grid-column: 1;
+    grid-row: 1 / span 7;
+    position: sticky;
+    top: 12px;
+  }
+
+  #homePage > :not(.office-panel) { grid-column: 2; }
+
+  #productsPage,
+  #managementPage,
+  #recordsPage,
+  #teamPage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  #productsPage .company-expansion-panel,
+  #productsPage .product-objective-panel,
+  #teamPage .employee-panel,
+  #managementPage .strategy-panel {
+    grid-column: 1 / -1;
+  }
+
+  #recordsPage .log-panel {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  #recordsPage .save-manager-panel,
+  #recordsPage .actions {
+    grid-column: 2;
+  }
+
+  .employee-list,
+  .portfolio-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .log-list { max-height: 560px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-toast { transition: none; }
+}
+
+/* Keep every visible action at the WCAG target size after component overrides. */
+button:not([hidden]),
+select:not([hidden]),
+.employee-task-profile summary { min-height: 44px; }
+
+.bottom-nav a[aria-current="page"] { color: #006f8f; }
