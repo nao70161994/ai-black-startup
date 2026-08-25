@@ -946,7 +946,7 @@ select,
   min-height: 44px;
 }
 
-button:not(.office-worker):not(.nav-item):not(.secondary-button):not(.danger) {
+button {
   border-color: #087d9b;
   background: linear-gradient(135deg, #087d9b, #006f8f);
   color: #fff;
@@ -1165,3 +1165,10 @@ select:not([hidden]),
 .employee-task-profile summary { min-height: 44px; }
 
 .bottom-nav a[aria-current="page"] { color: #006f8f; }
+
+/* Preserve semantic button hierarchy after the accessible base color. */
+.assign-button.active,
+.assignment-target-button.active { color: #052a19; }
+.strategy-option { position: relative; }
+.strategy-option.selected { padding-right: 78px; border-color: #006f8f; background: #e3f8fd; color: #17333c; box-shadow: inset 0 0 0 1px #006f8f; }
+.strategy-option.selected::after { content: "✓ 選択中"; position: absolute; top: 8px; right: 8px; padding: 3px 7px; border-radius: 999px; background: #006f8f; color: #fff; font-size: 10px; font-style: normal; font-weight: 900; line-height: 1.3; }

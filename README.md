@@ -228,7 +228,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-54
+http://localhost:8000/?v=20260524-55
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -301,18 +301,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.54` です。
+現在のアプリバージョンは `2026.05.24.55` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-54">
-<script src="js/data/products.js?v=20260524-54"></script>
-<script src="js/data/achievements.js?v=20260524-54"></script>
-<script src="js/data/missions.js?v=20260524-54"></script>
-<script src="main.js?v=20260524-54"></script>
+<link rel="stylesheet" href="style.css?v=20260524-55">
+<script src="js/data/products.js?v=20260524-55"></script>
+<script src="js/data/achievements.js?v=20260524-55"></script>
+<script src="js/data/missions.js?v=20260524-55"></script>
+<script src="main.js?v=20260524-55"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -320,18 +320,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.54
+ai-black-startup-2026.05.24.55
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-54` を付けて開く
+- URLに `?v=20260524-55` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-54` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-55` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -344,12 +344,15 @@ node --check sw.js
 find js -name '*.js' -exec node --check {} \;
 node scripts/evaluate_balance.js --assert
 python scripts/public_experience_check.py
+python scripts/ui_experience_check.py
 pytest -q
 ```
 
 `evaluate_balance.js --assert` は固定seedで10分・30分・2時間を高速再生し、成長、最大停滞秒、製品到達状況、AI稼働率、1社員1担当の上限違反を検査します。同じ入力から同じJSONが出ることも回帰テストで確認します。
 
 `public_experience_check.py` は一時的なローカルHTTPサーバーを起動し、HTMLから参照されるCSS/JS/manifest/icon、manifestのstart URL、Service Workerの全APP_SHELL資産を取得します。app versionとcache bustingの一致、全scriptのオフラインキャッシュ収録も検査します。
+
+`ui_experience_check.py` は実Chromiumで、初回・中盤状態の全5ページを320 / 390 / 768 / 1280pxで検査します。横はみ出し、44px操作領域、アクセシブルネーム、重複ID、固定ナビ余白、現在地、選択状態の視覚差に加え、製品詳細・担当変更モーダルのフォーカストラップ、Escape、背景隔離も確認します。
 
 `pytest` では保存schema移行・バックアップ・破損復旧、製品バグ統合、担当不変条件、製品パイプライン、社長判断、ミッション、実績、デバッグ導線、tick、共有処理、Service Worker runtimeを回帰確認します。
 

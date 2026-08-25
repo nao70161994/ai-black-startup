@@ -1,7 +1,7 @@
 {
   "name": "AI社長のブラック起業",
   "short_name": "AI社長",
-  "start_url": "./index.html?v=20260524-54",
+  "start_url": "./index.html?v=20260524-55",
   "scope": "./",
   "display": "standalone",
   "background_color": "#effbff",
@@ -9,13 +9,13 @@
   "description": "AI社長と専門AIを製品ごとのタスクへ割り振り、製品開発・販売・広報・サポートを回してMRRと即時売上を伸ばす放置型AI会社経営ゲーム。",
   "icons": [
     {
-      "src": "./icon.svg?v=20260524-54",
+      "src": "./icon.svg?v=20260524-55",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "./icon-512.png?v=20260524-54",
+      "src": "./icon-512.png?v=20260524-55",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
