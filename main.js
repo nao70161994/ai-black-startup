@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.49";
-  const APP_ASSET_TOKEN = "20260524-49";
+  const APP_VERSION = "2026.05.24.50";
+  const APP_ASSET_TOKEN = "20260524-50";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -187,6 +187,21 @@
   let productActionMenuOpen = false;
   let productActionMenuProductId = PRODUCTS[0].id;
   const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, presetResult: "" };
+  const APP_PAGES = {
+    home: { label: "オフィス", title: "オフィス | AI社長のブラック起業" },
+    products: { label: "製品", title: "製品 | AI社長のブラック起業" },
+    team: { label: "チーム", title: "チーム | AI社長のブラック起業" },
+    management: { label: "経営", title: "経営 | AI社長のブラック起業" },
+    records: { label: "記録", title: "記録 | AI社長のブラック起業" }
+  };
+  const ELEMENT_PAGE_MAP = {
+    homePage: "home", statusGrid: "home", activityPanel: "home", nextRecommendationPanel: "home", decisionPanel: "home", riskPanel: "home", officePanel: "home",
+    productsPage: "products", companyExpansionPanel: "products", primaryProductPanel: "products", productPanel: "products", productObjectivePanel: "products",
+    teamPage: "team", assignmentPanel: "team", taskPresetPanel: "team", employeePanel: "team",
+    managementPage: "management", strategyPanel: "management", insightsPanel: "management", achievementPanel: "management", missionPanel: "management",
+    recordsPage: "records", logPanel: "records", debugPanel: "records", saveManagerPanel: "records"
+  };
+  let currentAppPage = "home";
 
   function getAssignmentDraftSnapshotForTest() {
     return JSON.parse(JSON.stringify(assignmentDraft));
@@ -1258,6 +1273,94 @@
     randomLogTimer = window.setTimeout(addRandomReportLog, 10000 + Math.floor(Math.random() * 20000));
   }
 
+  function getPageFromLocation() {
+    const hash = typeof window !== "undefined" && window.location ? String(window.location.hash || "").replace(/^#/, "") : "";
+    return APP_PAGES[hash] ? hash : "home";
+  }
+
+  function setAppPage(pageId) {
+    const nextPage = APP_PAGES[pageId] ? pageId : "home";
+    currentAppPage = nextPage;
+    if (typeof document.querySelectorAll === "function") {
+      document.querySelectorAll("[data-app-page]").forEach(function (page) { page.hidden = page.getAttribute("data-app-page") !== nextPage; });
+      document.querySelectorAll("[data-page-link]").forEach(function (link) {
+        const active = link.getAttribute("data-page-link") === nextPage;
+        if (active) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+    }
+    setText("currentPageTitle", APP_PAGES[nextPage].label);
+    document.title = APP_PAGES[nextPage].title;
+    renderOnboarding();
+    return nextPage;
+  }
+
+  function navigateToPage(pageId, options) {
+    const nextPage = setAppPage(pageId);
+    const settings = options || {};
+    if (settings.updateHistory !== false && typeof window !== "undefined" && window.location) {
+      const nextHash = "#" + nextPage;
+      if (window.location.hash !== nextHash) {
+        if (window.history && typeof window.history.pushState === "function") window.history.pushState({ page: nextPage }, "", nextHash);
+        else window.location.hash = nextHash;
+      }
+    }
+    if (settings.scrollTop && typeof window !== "undefined" && typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: settings.smooth ? "smooth" : "auto" });
+    return nextPage;
+  }
+
+  function focusMainContent() {
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent && typeof mainContent.focus === "function") mainContent.focus({ preventScroll: true });
+  }
+
+  function initializePageNavigation() {
+    const initialPage = getPageFromLocation();
+    if (typeof window !== "undefined" && window.location && !APP_PAGES[String(window.location.hash || "").replace(/^#/, "")] && window.history && typeof window.history.replaceState === "function") window.history.replaceState({ page: initialPage }, "", "#" + initialPage);
+    setAppPage(initialPage);
+    if (typeof document.querySelectorAll === "function") document.querySelectorAll("[data-page-link]").forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        const pageId = link.getAttribute("data-page-link");
+        if (!APP_PAGES[pageId]) return;
+        event.preventDefault();
+        navigateToPage(pageId, { updateHistory: true, scrollTop: true });
+        focusMainContent();
+      });
+    });
+    const productHotspot = document.getElementById("officeProductHotspot");
+    if (productHotspot) productHotspot.addEventListener("click", function () { navigateToPage("products", { updateHistory: true, scrollTop: true }); focusMainContent(); });
+    const decisionHotspot = document.getElementById("officeDecisionHotspot");
+    if (decisionHotspot) decisionHotspot.addEventListener("click", function () { scrollToElement("decisionPanel"); });
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("popstate", function () { setAppPage(getPageFromLocation()); });
+      window.addEventListener("hashchange", function () { setAppPage(getPageFromLocation()); });
+    }
+  }
+
+  function setNavigationBadge(pageId, count, label) {
+    if (typeof document.querySelector !== "function") return;
+    const badge = document.querySelector('[data-nav-badge="' + pageId + '"]');
+    const link = document.querySelector('[data-page-link="' + pageId + '"]');
+    if (!badge || !link) return;
+    const safeCount = Math.max(0, Math.floor(safeNumber(count, 0)));
+    badge.hidden = safeCount === 0;
+    badge.textContent = safeCount > 9 ? "9+" : String(safeCount);
+    const baseLabel = APP_PAGES[pageId].label;
+    link.setAttribute("aria-label", safeCount ? baseLabel + "、" + label + safeCount + "件" : baseLabel);
+  }
+
+  function renderNavigationBadges() {
+    const riskCount = PRODUCTS.filter(function (definition) {
+      const product = getProduct(definition.id);
+      return product.status !== "idea" && (safeNumber(product.bugs, 0) >= 55 || getProductFire(product) >= 55 || safeNumber(product.churnRisk, 0) >= 55 || safeNumber(product.supportLoad, 0) >= 55);
+    }).length + (state.fire >= 65 ? 1 : 0);
+    setNavigationBadge("home", state.pendingDecisionEvent ? 1 : 0, "未判断");
+    setNavigationBadge("products", riskCount, "リスク");
+    setNavigationBadge("team", 0, "通知");
+    setNavigationBadge("management", getClaimableMissions().length, "未受取報酬");
+    setNavigationBadge("records", 0, "通知");
+  }
+
   // === Rendering: Dashboard ===
   function render() {
     renderStatus();
@@ -1283,6 +1386,7 @@
     renderDebugPanel();
     renderLatestLog();
     renderLogs();
+    renderNavigationBadges();
   }
   function renderStrategyPanel() {
     const panel = document.getElementById("strategyPanel");
@@ -1405,7 +1509,7 @@
   function renderOnboarding() {
     const panel = document.getElementById("onboardingPanel");
     if (!panel) return;
-    const shouldHide = state.onboardingDismissed || hasAnyEmployee() || hasActiveAssignment();
+    const shouldHide = currentAppPage !== "home" || state.onboardingDismissed || hasAnyEmployee() || hasActiveAssignment();
     panel.hidden = shouldHide;
     panel.classList.toggle("hidden", shouldHide);
   }
@@ -1463,8 +1567,15 @@
   }
 
   function scrollToElement(elementId) {
+    const pageId = ELEMENT_PAGE_MAP[elementId];
+    const pageChanged = Boolean(pageId && currentAppPage !== pageId);
+    if (pageId) navigateToPage(pageId, { updateHistory: currentAppPage !== pageId, scrollTop: false });
+    if (pageChanged) focusMainContent();
     const element = document.getElementById(elementId);
-    if (element && element.scrollIntoView) element.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!element || !element.scrollIntoView) return;
+    const run = function () { element.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(run);
+    else run();
   }
 
   function getNextRecommendation() {
@@ -3003,15 +3114,87 @@
   }
 
 
+  function getOfficeLevel() {
+    return Math.min(5, Math.max(1, Math.floor(safeNumber(state.companyLevel, 1))));
+  }
+
+  function getOfficeWorkerAssignment(workerId) {
+    for (let taskIndex = 0; taskIndex < TASKS.length; taskIndex += 1) {
+      const task = TASKS[taskIndex];
+      for (let productIndex = 0; productIndex < PRODUCTS.length; productIndex += 1) {
+        const definition = PRODUCTS[productIndex];
+        const assignment = getProductAssignment(task.id, definition.id);
+        if (assignment.aiIds.indexOf(workerId) >= 0) return { task: task, definition: definition, mode: assignment.mode };
+      }
+    }
+    return null;
+  }
+
+  function getOfficeTaskSymbol(taskId) {
+    return { development: "{ }", qa: "✓", sales: "↗", marketing: "✦", support: "♡", crisis: "!" }[taskId] || "…";
+  }
+
+  function getOfficeWorkerHtml(workerId, index) {
+    const character = CHARACTER_ASSETS[workerId] || {};
+    const assignment = getOfficeWorkerAssignment(workerId);
+    const label = character.label || getWorkerLabel(workerId);
+    const detail = assignment ? assignment.definition.name + "の" + assignment.task.label + "を担当中" : "待機中。タップして仕事を割り振る";
+    const src = character.officeSrc || character.src || "";
+    return '<button type="button" class="office-worker" data-office-worker="' + escapeHtml(workerId) + '" data-task="' + escapeHtml(assignment ? assignment.task.id : "idle") + '" style="--worker-index:' + index + '" aria-label="' + escapeHtml(label + "、" + detail) + '"><span class="office-worker-fallback" aria-hidden="true">' + escapeHtml(character.shortLabel || "AI") + '</span>' + (src ? '<img data-office-character-image src="' + escapeHtml(src + "?v=" + APP_ASSET_TOKEN) + '" alt="" width="512" height="768" decoding="async">' : '') + '<span class="office-worker-status"><span aria-hidden="true">' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "…") + '</span> ' + escapeHtml(assignment ? assignment.task.label : "待機中") + '</span></button>';
+  }
+
+  function activateOfficeImageFallbacks(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll("img[data-office-character-image]").forEach(function (image) {
+      function showFallback() { image.hidden = true; if (image.parentElement) image.parentElement.classList.add("image-failed"); }
+      image.addEventListener("error", showFallback, { once: true });
+      if (image.complete && image.naturalWidth === 0) showFallback();
+    });
+  }
+
   function renderOffice() {
     const officePanel = document.getElementById("officePanel");
     const officeName = document.getElementById("officeName");
     const officeMood = document.getElementById("officeMood");
+    if (!officePanel || !officeName || !officeMood) return;
+    const officeLevel = getOfficeLevel();
+    const officeNames = ["仮想ワンルーム", "ミニスタートアップ空間", "自動化オフィス", "クラウド企業フロア", "AI企業タワー"];
     const level = state.companyLevel;
-    officeName.textContent = level >= 5 ? "AI企業タワー" : level >= 4 ? "クラウド企業フロア" : level >= 3 ? "自動化オフィス" : level >= 2 ? "ミニスタートアップ空間" : "仮想ワンルーム";
+    officeName.textContent = officeNames[officeLevel - 1];
     const bugLevel = getDashboardBugLevel();
     officeMood.textContent = bugLevel >= 70 && state.fire >= 70 ? "警告灯が会議室より多く点灯しています。" : state.fire >= 60 ? "広報チャンネルが高温話題化しています。" : bugLevel >= 60 ? "未分類機能が廊下を歩いています。" : level >= 5 ? "全フロアが自律稼働中。停止ボタンは申請制です。" : level >= 3 ? "自動化が進み、誰が何を自動化したか不明です。" : level >= 2 ? "人員は少ないですが、全員が24時間います。" : "起業直後。まだクラウド代の方が重いです。";
     officePanel.classList.toggle("alert", bugLevel >= 65 || state.fire >= 65);
+    const background = document.getElementById("officeBackground");
+    if (background && typeof background.getAttribute === "function") {
+      const nextSrc = "assets/office/backgrounds/office-level-" + officeLevel + ".webp?v=" + APP_ASSET_TOKEN;
+      if (background.getAttribute("src") !== nextSrc) { background.hidden = false; background.setAttribute("src", nextSrc); }
+      background.onerror = function () { background.hidden = true; officePanel.classList.add("office-background-failed"); };
+      background.onload = function () { background.hidden = false; officePanel.classList.remove("office-background-failed"); };
+    }
+    const hiredWorkerIds = ["boss"].concat(EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; }));
+    const workers = document.getElementById("officeWorkers");
+    if (workers) {
+      const workerSignature = hiredWorkerIds.map(function (workerId) {
+        const assignment = getOfficeWorkerAssignment(workerId);
+        return workerId + ":" + (assignment ? assignment.task.id + ":" + assignment.definition.id + ":" + assignment.mode : "idle");
+      }).join("|");
+      const canTrackSignature = typeof workers.getAttribute === "function" && typeof workers.setAttribute === "function";
+      if (!canTrackSignature || workers.getAttribute("data-office-signature") !== workerSignature) {
+        if (canTrackSignature) {
+          workers.setAttribute("data-worker-count", String(hiredWorkerIds.length));
+          workers.setAttribute("data-office-signature", workerSignature);
+        }
+        workers.innerHTML = hiredWorkerIds.map(getOfficeWorkerHtml).join("");
+        workers.querySelectorAll("button[data-office-worker]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-office-worker")); }); });
+        activateOfficeImageFallbacks(workers);
+      }
+    }
+    const workingCount = hiredWorkerIds.filter(function (workerId) { return Boolean(getOfficeWorkerAssignment(workerId)); }).length;
+    const summary = document.getElementById("officeSummary");
+    const summaryText = "稼働中 " + workingCount + "体 / 待機中 " + (hiredWorkerIds.length - workingCount) + "体。キャラクターをタップすると担当を変更できます。";
+    if (summary && summary.textContent !== summaryText) summary.textContent = summaryText;
+    const decisionHotspot = document.getElementById("officeDecisionHotspot");
+    if (decisionHotspot) decisionHotspot.hidden = !state.pendingDecisionEvent;
   }
 
   // === Rendering: Employees ===
@@ -4461,6 +4644,7 @@
 
   function boot() {
     loadGame();
+    initializePageNavigation();
     render();
     scheduleRandomReport();
     scheduleNextTick();
@@ -4500,7 +4684,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-49").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-50").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

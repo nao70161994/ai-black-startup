@@ -36,25 +36,25 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.49"' in index
-    assert 'style.css?v=20260524-49' in index
-    assert 'main.js?v=20260524-49' in index
-    assert 'manifest.webmanifest?v=20260524-49' in index
-    assert 'icon.svg?v=20260524-49' in index
-    assert 'ogp.png?v=20260524-49' in index
-    assert 'icon-512.png?v=20260524-49' in index
+    assert 'content="2026.05.24.50"' in index
+    assert 'style.css?v=20260524-50' in index
+    assert 'main.js?v=20260524-50' in index
+    assert 'manifest.webmanifest?v=20260524-50' in index
+    assert 'icon.svg?v=20260524-50' in index
+    assert 'ogp.png?v=20260524-50' in index
+    assert 'icon-512.png?v=20260524-50' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.49"' in main
-    assert 'const APP_VERSION = "2026.05.24.49"' in sw
-    assert 'sw.js?v=20260524-49' in main
+    assert 'const APP_VERSION = "2026.05.24.50"' in main
+    assert 'const APP_VERSION = "2026.05.24.50"' in sw
+    assert 'sw.js?v=20260524-50' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-49"
+    assert manifest["start_url"] == "./index.html?v=20260524-50"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-49" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-50" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -74,13 +74,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "characters", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-49')
+    main_pos = index.index('main.js?v=20260524-50')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-49' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-49') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-49' in sw
+        assert f'js/data/{name}.js?v=20260524-50' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-50') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-50' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_CHARACTER_ASSETS", {})' in main
@@ -137,11 +137,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-49" in sw
-    assert "icon.svg?v=20260524-49" in sw
-    assert "ogp.svg?v=20260524-49" in sw
-    assert "ogp.png?v=20260524-49" in sw
-    assert "icon-512.png?v=20260524-49" in sw
+    assert "manifest.webmanifest?v=20260524-50" in sw
+    assert "icon.svg?v=20260524-50" in sw
+    assert "ogp.svg?v=20260524-50" in sw
+    assert "ogp.png?v=20260524-50" in sw
+    assert "icon-512.png?v=20260524-50" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -187,7 +187,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/save.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -315,7 +315,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.49"
+    assert output["save"]["appVersion"] == "2026.05.24.50"
 
 
 def test_security06_visible_at_company_level_5():
@@ -841,10 +841,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.49"' in index
-    assert 'main.js?v=20260524-49' in index
-    assert 'sw.js?v=20260524-49' in main
-    assert 'const APP_VERSION = "2026.05.24.49"' in sw
+    assert 'content="2026.05.24.50"' in index
+    assert 'main.js?v=20260524-50' in index
+    assert 'sw.js?v=20260524-50' in main
+    assert 'const APP_VERSION = "2026.05.24.50"' in sw
 
 
 
@@ -911,7 +911,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/save.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -2489,7 +2489,7 @@ def test_continuous_tasks_are_not_auto_released_when_development_completes():
         "employees": {"dev01": 1, "sales02": 1, "buzz03": 1, "care04": 1, "fire05": 1, "security06": 1},
         "assignments": {
             "development": {"productAssignments": {"dailyReportAi": {"aiIds": ["dev01"], "mode": "newProduct"}}},
-            "sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}},
+            "sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}},
             "qa": {"productAssignments": {"dailyReportAi": {"aiIds": ["security06"]}}},
             "marketing": {"productAssignments": {"dailyReportAi": {"aiIds": ["buzz03"]}}},
             "support": {"productAssignments": {"dailyReportAi": {"aiIds": ["care04"]}}},
@@ -2698,7 +2698,7 @@ def test_decision_event_generation_can_queue_sales_event():
         "totalMoney": 0,
         "employees": {"sales02": 1},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "ready", "customers": 0}},
-        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}},
+        "assignments": {"sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}}},
         "pendingDecisionEvent": None,
         "decisionEventCooldown": 0,
     }, "Math.random = function () { return 0; }; window.__testApi.applyDecisionEventGeneration(); window.__testApi.saveGame();")
@@ -2915,7 +2915,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-49" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-50" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3218,7 +3218,7 @@ def test_decision_event_runtime_has_customer_request_and_ai_runaway_paths():
     runaway = run_game_action_smoke({
         "employees": {"sales02": 1},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 2, "productFire": 0}},
-        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}},
+        "assignments": {"sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}}},
         "pendingDecisionEvent": {"id": "ai_runaway_proposal", "productId": "dailyReportAi", "createdAt": 1},
     }, "window.__testApi.applyDecisionEventChoice('approve'); window.__testApi.saveGame();")
     assert runaway["save"]["products"]["dailyReportAi"]["productFire"] >= 7
@@ -3317,11 +3317,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.49"' in index
+    assert 'content="2026.05.24.50"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.49"' in main
-    assert 'const APP_VERSION = "2026.05.24.49"' in sw
-    assert 'sw.js?v=20260524-49' in main
+    assert 'const APP_VERSION = "2026.05.24.50"' in main
+    assert 'const APP_VERSION = "2026.05.24.50"' in sw
+    assert 'sw.js?v=20260524-50' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4の内部構成' in readme
     assert '製品別炎上' in readme
@@ -3523,7 +3523,7 @@ def test_normal_task_preset_uses_idle_ai_without_state_boost_or_reassigning_acti
             "slideKitAi": {"id": "slideKitAi", "status": "idea", "progress": 0},
         },
         "assignments": {
-            "sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}},
+            "sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}},
             "marketing": {"productAssignments": {"dailyReportAi": {"aiIds": ["buzz03"]}}},
         },
     }, "window.__testApi.applyTaskPreset('cash', { allowStateBoost: false }); window.__testApi.saveGame();")
@@ -3796,7 +3796,7 @@ const context = {
   fetch: function (request) { fetchCount += 1; return request && request.mode === 'navigate' ? Promise.reject(new Error('offline')) : Promise.resolve({ status: 200, clone() { return this; } }); },
   caches: {
     open: function () { return Promise.resolve(cacheStore); },
-    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.49']); },
+    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.50']); },
     delete: function (key) { deleted.push(key); return Promise.resolve(true); },
     match: function (request) { if (request === './index.html') indexFallbackMatched = true; return Promise.resolve(request === './index.html' ? 'cached-index' : undefined); }
   },
@@ -3815,7 +3815,7 @@ events.activate({ waitUntil: function (promise) { waits.push(promise); } });
 events.message({ data: { type: 'SKIP_WAITING' } });
 const fetchResponses = [];
 events.fetch({
-  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-49', mode: 'same-origin' },
+  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-50', mode: 'same-origin' },
   respondWith: function (promise) { fetchResponses.push(promise); }
 });
 events.fetch({
@@ -3832,8 +3832,8 @@ Promise.all(waits.concat(fetchResponses)).then(function () {
     assert data["skipped"] >= 2
     assert data["claimed"] == 1
     assert "ai-black-startup-old" in data["deleted"]
-    assert "./main.js?v=20260524-49" in data["assets"]
-    assert "./js/data/missions.js?v=20260524-49" in data["assets"]
+    assert "./main.js?v=20260524-50" in data["assets"]
+    assert "./js/data/missions.js?v=20260524-50" in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
     assert data["cachePutCount"] == 1
@@ -3953,13 +3953,13 @@ def test_product_fire_reduces_subscription_sales_chance():
         "employees": {"sales02": 1},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 0, "sellingSeconds": 0, "awareness": 100, "quality": 100, "productFire": 0}},
         "productFlags": {"dailyReportAi": {"firstCustomerGranted": True}},
-        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}}
+        "assignments": {"sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}}}
     }, "Math.random = function () { return 0.09; }; window.__testApi.tick(); window.__testApi.saveGame();")
     high_fire = run_game_action_smoke({
         "employees": {"sales02": 1},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 0, "sellingSeconds": 0, "awareness": 100, "quality": 100, "productFire": 100}},
         "productFlags": {"dailyReportAi": {"firstCustomerGranted": True}},
-        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}}
+        "assignments": {"sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}}}
     }, "Math.random = function () { return 0.09; }; window.__testApi.tick(); window.__testApi.saveGame();")
     assert low_fire["save"]["products"]["dailyReportAi"]["customers"] == 1
     assert high_fire["save"]["products"]["dailyReportAi"]["customers"] == 0
@@ -4030,7 +4030,7 @@ def test_debug_risk_chip_scenario_is_hidden_by_default_and_sets_all_risks():
 def test_render_does_not_mutate_saved_state_or_runtime_state_shape():
     output = run_game_action_smoke({
         "pendingDecisionEvent": {"id": "technical_debt_paydown", "productId": "dailyReportAi", "createdAt": 1},
-        "assignments": {"sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}}},
+        "assignments": {"sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}}},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 3, "productFire": 70, "supportLoad": 60, "churnRisk": 55}},
     }, "const before = localStorage.getItem('ai_black_startup_save_v1'); const draftBefore = JSON.stringify(window.__testApi.getAssignmentDraftSnapshotForTest()); window.__testApi.render(); const draftAfter = JSON.stringify(window.__testApi.getAssignmentDraftSnapshotForTest()); window.__testResult = {sameSave: before === localStorage.getItem('ai_black_startup_save_v1'), sameDraft: draftBefore === draftAfter}; window.__testApi.saveGame();")
     assert output["testResult"]["sameSave"] is True
@@ -4080,7 +4080,7 @@ def test_global_fire_risk_chip_dependency_is_explicit():
 def test_manifest_has_stable_pwa_id_when_start_url_is_cache_busted():
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["id"] == "./"
-    assert manifest["start_url"] == "./index.html?v=20260524-49"
+    assert manifest["start_url"] == "./index.html?v=20260524-50"
 
 
 def test_product_bug_and_quality_risks_are_in_operational_risk_panel_and_recommendation():
@@ -4303,7 +4303,7 @@ console.log(JSON.stringify({
 def test_game_save_has_explicit_schema_version_after_legacy_migration():
     output = run_browser_smoke({"money": 123, "appVersion": "legacy"})
     assert output["save"]["schemaVersion"] == 3
-    assert output["save"]["appVersion"] == "2026.05.24.49"
+    assert output["save"]["appVersion"] == "2026.05.24.50"
     assert output["save"]["money"] >= 123
 
 
@@ -4312,9 +4312,9 @@ def test_save_recovery_ui_and_runtime_are_precached_before_main():
     sw = (ROOT / "sw.js").read_text()
     main = (ROOT / "main.js").read_text()
     assert 'id="restoreBackupButton"' in index
-    assert 'js/runtime/save.js?v=20260524-49' in index
-    assert index.index('js/runtime/save.js?v=20260524-49') < index.index('main.js?v=20260524-49')
-    assert './js/runtime/save.js?v=20260524-49' in sw
+    assert 'js/runtime/save.js?v=20260524-50' in index
+    assert index.index('js/runtime/save.js?v=20260524-50') < index.index('main.js?v=20260524-50')
+    assert './js/runtime/save.js?v=20260524-50' in sw
     assert 'const SAVE_SCHEMA_VERSION = 3;' in main
     assert 'readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")' in main
     assert 'function restoreBackupSave()' in main
@@ -4383,7 +4383,7 @@ def test_public_experience_http_asset_graph_check_passes():
     report = json.loads(result.stdout)
 
     assert report["status"] == "ok"
-    assert report["appVersion"] == "2026.05.24.49"
+    assert report["appVersion"] == "2026.05.24.50"
     assert report["checkedAssets"] >= 20
     assert report["serviceWorkerAssets"] >= 20
 
@@ -4399,9 +4399,9 @@ def test_strategy_synergy_relationship_and_insights_assets_are_precached():
         "js/runtime/operations.js",
         "js/render/insights.js",
     ]:
-        assert f'{asset}?v=20260524-49' in index
-        assert f'./{asset}?v=20260524-49' in sw
-        assert index.index(f'{asset}?v=20260524-49') < index.index("main.js?v=20260524-49")
+        assert f'{asset}?v=20260524-50' in index
+        assert f'./{asset}?v=20260524-50' in sw
+        assert index.index(f'{asset}?v=20260524-50') < index.index("main.js?v=20260524-50")
     assert 'readExternalData("AIBS_STRATEGIES", [])' in main
     assert 'readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")' in main
     assert 'readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")' in main
@@ -4480,7 +4480,7 @@ def test_product_synergy_and_ai_relationship_apply_real_tick_effects():
         "employees": {"sales02": 1, "buzz03": 1},
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "awareness": 40}},
         "assignments": {
-            "sales": {"productAssignments": {"dailyReportAi": {"aiIds": ["sales02"]}}},
+            "sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}},
             "marketing": {"productAssignments": {"dailyReportAi": {"aiIds": ["buzz03"]}}},
         },
     }, "window.__testResult = window.__testApi.getOperationModifiers({id:'dailyReportAi',type:'subscription'});")
@@ -4611,8 +4611,8 @@ def test_ai_character_assets_are_release_ready_and_precached():
     index = (ROOT / "index.html").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'js/data/characters.js?v=20260524-49' in index
-    assert './js/data/characters.js?v=20260524-49' in sw
+    assert 'js/data/characters.js?v=20260524-50' in index
+    assert './js/data/characters.js?v=20260524-50' in sw
     for character_id in character_ids:
         path = ROOT / "assets" / "characters" / f"{character_id}.webp"
         data = path.read_bytes()
@@ -4620,7 +4620,7 @@ def test_ai_character_assets_are_release_ready_and_precached():
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
         assert b"ALPH" in data
         assert f'assets/characters/{character_id}.webp' in character_data
-        assert f'./assets/characters/{character_id}.webp?v=20260524-49' in sw
+        assert f'./assets/characters/{character_id}.webp?v=20260524-50' in sw
 
 
 def test_ai_character_portraits_cover_gameplay_surfaces_and_fallbacks():
@@ -4637,3 +4637,110 @@ def test_ai_character_portraits_cover_gameplay_surfaces_and_fallbacks():
     assert "function activateCharacterImageFallbacks(root)" in main
     assert "character-avatar-fallback" in main and ".character-avatar-fallback" in css
     assert "onerror=" not in main
+
+
+def test_five_page_navigation_groups_every_primary_feature_and_keeps_modals_global():
+    index = (ROOT / "index.html").read_text()
+    expected = {
+        "home": ["status-grid", "activityPanel", "nextRecommendationPanel", "decisionPanel", "riskPanel", "officePanel"],
+        "products": ["companyExpansionPanel", "primaryProductPanel", "productPanel", "productObjectivePanel"],
+        "team": ["assignmentPanel", "taskPresetPanel", "employeePanel"],
+        "management": ["strategyPanel", "insightsPanel", "achievementPanel", "missionPanel"],
+        "records": ["logPanel", "debugPanel", "saveManagerPanel", "saveButton", "shareButton", "restoreBackupButton", "resetButton"],
+    }
+    page_order = list(expected)
+    for page_index, page_id in enumerate(page_order):
+        start = index.index(f'data-app-page="{page_id}"')
+        end = index.index(f'data-app-page="{page_order[page_index + 1]}"') if page_index + 1 < len(page_order) else index.index('id="assignmentModal"')
+        page_html = index[start:end]
+        for element_id in expected[page_id]:
+            assert element_id in page_html
+    assert index.count("data-page-link=") == 5
+    assert index.count("data-nav-badge=") == 5
+    assert index.index('id="officePanel"') < index.index('class="status-grid')
+    for modal_id in ["assignmentModal", "productDetailModal", "productActionMenuModal"]:
+        assert index.index(f'id="{modal_id}"') > index.index('data-app-page="records"')
+
+
+def test_page_router_history_location_badges_and_cross_page_reachability_contract():
+    main = app_source()
+    css = (ROOT / "style.css").read_text()
+    index = (ROOT / "index.html").read_text()
+    assert "function initializePageNavigation()" in main
+    assert "function setAppPage(pageId)" in main
+    assert "function navigateToPage(pageId, options)" in main
+    assert 'window.history.pushState({ page: nextPage }' in main
+    assert 'window.history.replaceState({ page: initialPage }' in main
+    assert 'window.addEventListener("popstate"' in main
+    assert 'window.addEventListener("hashchange"' in main
+    assert "ELEMENT_PAGE_MAP[elementId]" in main
+    assert 'setNavigationBadge("home", state.pendingDecisionEvent ? 1 : 0' in main
+    assert 'setNavigationBadge("products", riskCount' in main
+    assert 'setNavigationBadge("management", getClaimableMissions().length' in main
+    assert 'id="currentPageTitle"' in index
+    assert 'id="mainContent" tabindex="-1" aria-labelledby="currentPageTitle"' in index
+    assert 'mainContent.focus({ preventScroll: true })' in main
+    assert 'aria-current="page"' in index
+    assert "env(safe-area-inset-bottom)" in css
+    assert ".bottom-nav a" in css and "min-height: 52px" in css
+    assert ".bottom-nav { position: fixed; z-index: 15;" in css
+    assert ".app-page[hidden]" in css
+
+
+def test_office_assets_are_optimized_transparent_precached_and_mapped():
+    sw = (ROOT / "sw.js").read_text()
+    characters = (ROOT / "js" / "data" / "characters.js").read_text()
+    ids = ["ai-ceo", "dev-01", "sales-02", "buzz-03", "care-04", "fire-05", "security-06"]
+    for character_id in ids:
+        path = ROOT / "assets" / "office" / "characters" / f"{character_id}.webp"
+        data = path.read_bytes()
+        assert 20_000 < len(data) < 120_000
+        assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and b"ALPH" in data
+        assert f'office/characters/{character_id}.webp' in characters
+        assert f'./assets/office/characters/{character_id}.webp?v=20260524-50' in sw
+    for level in range(1, 6):
+        path = ROOT / "assets" / "office" / "backgrounds" / f"office-level-{level}.webp"
+        data = path.read_bytes()
+        assert 20_000 < len(data) < 160_000
+        assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+        assert f'./assets/office/backgrounds/office-level-{level}.webp?v=20260524-50' in sw
+
+
+def test_office_runtime_uses_level_hired_cast_and_real_assignment_status():
+    output = run_game_action_smoke(
+        {
+            "companyLevel": 7,
+            "employees": {"dev01": 1, "sales02": 1},
+            "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "developing"}, "launchPageAi": {"id": "launchPageAi", "status": "selling"}},
+            "assignments": {
+                "development": {"productAssignments": {"dailyReportAi": {"aiIds": ["dev01"], "mode": "newProduct"}}},
+                "sales": {"productAssignments": {"launchPageAi": {"aiIds": ["sales02"]}}},
+            },
+        },
+        "window.__testApi.render(); const teamPage=window.__testApi.setAppPage('team'); window.__testResult={teamPage,location:document.getElementById('currentPageTitle').textContent,officeName:document.getElementById('officeName').textContent,workers:document.getElementById('officeWorkers').innerHTML,level:window.__testApi.getOfficeLevel(),devTask:window.__testApi.getOfficeWorkerAssignment('dev01').task.id};",
+    )
+    result = output["testResult"]
+    assert result["teamPage"] == "team" and result["location"] == "チーム"
+    assert result["level"] == 5 and result["officeName"] == "AI企業タワー"
+    assert 'data-office-worker="boss"' in result["workers"]
+    assert 'data-office-worker="dev01"' in result["workers"]
+    assert 'data-office-worker="sales02"' in result["workers"]
+    for unhired in ["buzz03", "care04", "fire05", "security06"]:
+        assert f'data-office-worker="{unhired}"' not in result["workers"]
+    assert result["devTask"] == "development"
+    assert 'data-task="development"' in result["workers"] and "開発" in result["workers"]
+    assert 'data-task="sales"' in result["workers"] and "販売" in result["workers"]
+
+
+def test_office_image_failure_and_reduced_motion_fallback_contract():
+    main = app_source()
+    css = (ROOT / "style.css").read_text()
+    index = (ROOT / "index.html").read_text()
+    assert "function activateOfficeImageFallbacks(root)" in main
+    assert 'data-office-signature' in main
+    assert 'summary.textContent !== summaryText' in main
+    assert "office-background-failed" in main
+    assert "office-worker-fallback" in main and ".office-worker.image-failed" in css
+    assert 'width="1280" height="721"' in index
+    assert 'width="512" height="768"' in main
+    assert '@media (prefers-reduced-motion: reduce) { .office-worker { animation: none; } }' in css

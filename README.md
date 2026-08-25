@@ -100,6 +100,19 @@ Avoid: childlike proportions, school uniform, sexualized pose, exposed cleavage,
 - Security-06: midnight-blue bob with cyan streak; deep-blue eyes and smart scan glasses; white-and-deep-blue tailored coat, silver high-neck top and navy skirt; simple concentric-ring safety field; analytical and trustworthy.
 
 Web向けには幅512px、品質85、α品質100のWebPへ変換しています。7体合計は約524KBです。生成元PNGはアプリ外の生成保管領域に残し、リポジトリには軽量な採用版だけを保存します。
+
+### デフォルメAIとレベル別オフィス
+
+最初に表示される「オフィス」では、会社Lvに応じて `仮想ワンルーム`、`ミニスタートアップ空間`、`自動化オフィス`、`クラウド企業フロア`、`AI企業タワー` の5背景へ変化します。AI社長と雇用済みAIだけを表示し、保存済みの実配置から開発・品質管理・販売・広報・サポート・炎上対応・待機中を表示します。キャラクターを押すと担当変更、設備ボタンから製品・社長判断へ移動できます。画像失敗時は短縮文字とCSS背景へ切り替わります。
+
+オフィス用素材も内蔵 `imagegen` で生成しました。採用版は `assets/office/characters/` の透過WebP 7枚と、`assets/office/backgrounds/` の16:9 WebP 5枚です。合計は約884KBです。共通プロンプトは以下を基準に、髪色・衣装・小物を既存7体に合わせました。
+
+```text
+Character: production-ready transparent PNG for a Japanese mobile business simulation; one full-body super-deformed chibi adult anime woman, about 2.5 heads tall, clearly an adult professional; human and appealing; role-specific work prop; polished game illustration, soft cel shading, crisp silhouette, cohesive cast proportions; centered with generous transparent padding; no background, floor, shadow, readable text, logo, or watermark.
+Office: wide 16:9 Japanese mobile AI-startup game background; polished anime environment, slightly isometric front-facing cutaway; clearly readable growth stage and equipment; broad uncluttered lower/middle floor for overlaid chibi sprites; no people, humanoid robots, mascots, readable text, logos, or watermark; important details away from edges; mobile-readable and not visually noisy.
+```
+
+背景別には、Lv1を暖色の小部屋と1デスク、Lv2を木目の小規模スタジオと3ワークステーション、Lv3を濃紺・シアンの自動化設備、Lv4を白・空色の高層クラウドフロア、Lv5を夜景・濃紺・紫・控えめな金のAIタワー司令フロアとして指定しています。Web向け変換はキャラクターが幅512px・品質82・α品質90、背景が幅1280px・品質78です。生成元PNGはアプリ外の生成保管領域に残しています。
 ## v0.4.7 経営ビルドと分析
 
 - 会社方針: バランス、高速開発、品質重視、炎上商法、顧客第一から選択し、効率・副作用・社長判断の出現傾向へ反映
@@ -158,7 +171,7 @@ v0.3では、AI社長と専門AIを製品ごとのタスクへ割り振り、製
 
 AI社員カードもv0.3向けに、売上や顧客の直接増減ではなく「得意タスク」「現在担当中の製品」「Lvアップで伸びる担当効果」を中心に表示します。Dev-01は開発、Sales-02は販売、Buzz-03は広報、Care-04はサポート、Security-06は品質管理、Fire-05は炎上対応タスクの役割として確認できます。社員カードの「仕事を割り振る」からも、そのAIに任せられるタスクと対象製品を選べます。
 
-v0.3のホーム画面はダッシュボード型UIに整理しています。ホームでは売上、総MRR、総顧客、バグ、炎上を中心に表示し、「現在の動き」と「次のおすすめ」で次に取る行動を確認できます。詳しい製品一覧、業務報告ログ、AI社員一覧、製品目標、実績は折りたたみボタンから確認します。これにより、スマホでは初期表示で全製品カード、ログ50件、社員カード一覧が一度に並ばない構成です。
+現在のUIは単一ダッシュボードではなく、固定下部ナビで5ページに分けています。「オフィス」は会社状態・次のおすすめ・社長判断・リスク、「製品」は会社拡張・主力製品・製品一覧・製品目標、「チーム」は担当・配置プリセット・AI社員、「経営」は会社方針・推移・実績・ミッション、「記録」はログ・保存管理・共有・復旧を担当します。URLは `#home`、`#products`、`#team`、`#management`、`#records` と同期するため、再読込とブラウザの戻る操作でも現在ページを維持します。未判断、製品リスク、未受取報酬はナビの件数バッジでも確認できます。
 
 社長判断イベントでは、AI社員からの提案に対して承認/却下を選びます。小さな売上機会、広報、品質改善、顧客対応、炎上対応、価格調整などの判断が発生し、選択に応じて認知度、満足度、製品バグ、全社炎上、製品炎上、即時売上、現在月額価格などが変化します。実績/称号は報酬なしの長期目標として追加され、初顧客、総MRR、売り切り販売、v2到達、社長判断、製品炎上、Fire-05/Care-04の初出動などの節目を記録します。
 
@@ -215,7 +228,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-49
+http://localhost:8000/?v=20260524-50
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -288,18 +301,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.49` です。
+現在のアプリバージョンは `2026.05.24.50` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-49">
-<script src="js/data/products.js?v=20260524-49"></script>
-<script src="js/data/achievements.js?v=20260524-49"></script>
-<script src="js/data/missions.js?v=20260524-49"></script>
-<script src="main.js?v=20260524-49"></script>
+<link rel="stylesheet" href="style.css?v=20260524-50">
+<script src="js/data/products.js?v=20260524-50"></script>
+<script src="js/data/achievements.js?v=20260524-50"></script>
+<script src="js/data/missions.js?v=20260524-50"></script>
+<script src="main.js?v=20260524-50"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -307,18 +320,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.49
+ai-black-startup-2026.05.24.50
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-49` を付けて開く
+- URLに `?v=20260524-50` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-49` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-50` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
