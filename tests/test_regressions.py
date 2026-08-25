@@ -36,25 +36,25 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.51"' in index
-    assert 'style.css?v=20260524-51' in index
-    assert 'main.js?v=20260524-51' in index
-    assert 'manifest.webmanifest?v=20260524-51' in index
-    assert 'icon.svg?v=20260524-51' in index
-    assert 'ogp.png?v=20260524-51' in index
-    assert 'icon-512.png?v=20260524-51' in index
+    assert 'content="2026.05.24.53"' in index
+    assert 'style.css?v=20260524-53' in index
+    assert 'main.js?v=20260524-53' in index
+    assert 'manifest.webmanifest?v=20260524-53' in index
+    assert 'icon.svg?v=20260524-53' in index
+    assert 'ogp.png?v=20260524-53' in index
+    assert 'icon-512.png?v=20260524-53' in index
     assert '<meta name="theme-color" content="#19bde8">' in index
-    assert 'const APP_VERSION = "2026.05.24.51"' in main
-    assert 'const APP_VERSION = "2026.05.24.51"' in sw
-    assert 'sw.js?v=20260524-51' in main
+    assert 'const APP_VERSION = "2026.05.24.53"' in main
+    assert 'const APP_VERSION = "2026.05.24.53"' in sw
+    assert 'sw.js?v=20260524-53' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-51"
+    assert manifest["start_url"] == "./index.html?v=20260524-53"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#19bde8"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-51" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-53" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -74,13 +74,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "characters", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-51')
+    main_pos = index.index('main.js?v=20260524-53')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-51' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-51') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-51' in sw
+        assert f'js/data/{name}.js?v=20260524-53' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-53') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-53' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_CHARACTER_ASSETS", {})' in main
@@ -137,11 +137,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-51" in sw
-    assert "icon.svg?v=20260524-51" in sw
-    assert "ogp.svg?v=20260524-51" in sw
-    assert "ogp.png?v=20260524-51" in sw
-    assert "icon-512.png?v=20260524-51" in sw
+    assert "manifest.webmanifest?v=20260524-53" in sw
+    assert "icon.svg?v=20260524-53" in sw
+    assert "ogp.svg?v=20260524-53" in sw
+    assert "ogp.png?v=20260524-53" in sw
+    assert "icon-512.png?v=20260524-53" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -185,9 +185,9 @@ def run_browser_smoke(save):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/save.js'];
+const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -207,10 +207,10 @@ const document = {
 const window = { setTimeout: () => 1, clearTimeout: () => {}, setInterval: () => 1, addEventListener: () => {}, confirm: () => true };
 const navigator = { serviceWorker: { register: () => Promise.resolve({ waiting: null, addEventListener: () => {} }), controller: null } };
 const location = { protocol: 'http:', search: input.__locationSearch || '' };
-const localStorage = { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } };
+const localStorage = { getItem: (k) => { if (input.__storageThrows) throw new Error('blocked'); return store[k] || null; }, setItem: (k, v) => { if (input.__storageThrows) throw new Error('blocked'); store[k] = v; }, removeItem: (k) => { if (input.__storageThrows) throw new Error('blocked'); delete store[k]; } };
 vm.runInNewContext(code, { window, document, localStorage, navigator, location, console, Date, Math, Number, String, Boolean, Object, Array, Promise });
 console.log(JSON.stringify({
-  save: JSON.parse(store.ai_black_startup_save_v1),
+  save: store.ai_black_startup_save_v1 ? JSON.parse(store.ai_black_startup_save_v1) : null,
   employeeHtml: elements.get('employeeList').innerHTML,
   employeePanelHtml: elements.get('employeePanel').innerHTML,
   productHtml: elements.get('productPanel').innerHTML,
@@ -315,7 +315,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.51"
+    assert output["save"]["appVersion"] == "2026.05.24.53"
 
 
 def test_security06_visible_at_company_level_5():
@@ -400,7 +400,7 @@ def test_product_pipeline_ui_and_assignment_rules_present():
     assert 'id="latestLogText"' in index
     assert 'id="productObjectiveList"' in index
     assert '専門AIを1人、創業クレジットで無料雇用できます' in index
-    assert 'AI社長は汎用' in main
+    assert '何でもできるが低速' in main
     assert 'boss: { id: "boss", label: "AI社長"' in main
     assert '{ id: "development", label: "開発", workers: ["boss", "dev01"] }' in main
     assert '{ id: "qa", label: "品質管理", workers: ["boss", "security06"] }' in main
@@ -678,7 +678,7 @@ def test_sales_target_ui_is_explicit():
     assert "対象: " in main
     assert "製品一覧" in main
     assert "製品運用 / 総MRR" in main
-    assert "の新規顧客を確率で獲得" in main
+    assert "低速で顧客獲得" in main
     assert "現在の担当" in main
     assert "担当を変更" in main
     assert "販売担当なし。既存MRRは継続します。販売担当を置くと新規顧客を獲得できます。" in main
@@ -842,15 +842,15 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.51"' in index
-    assert 'main.js?v=20260524-51' in index
-    assert 'sw.js?v=20260524-51' in main
-    assert 'const APP_VERSION = "2026.05.24.51"' in sw
+    assert 'content="2026.05.24.53"' in index
+    assert 'main.js?v=20260524-53' in index
+    assert 'sw.js?v=20260524-53' in main
+    assert 'const APP_VERSION = "2026.05.24.53"' in sw
 
 
 
 def test_subscription_product_upgrade_pipeline_present():
-    main = app_source()
+    main = app_source() + "\n" + (ROOT / "js" / "runtime" / "state.js").read_text()
 
     assert "version: 1" in main
     assert "upgradeProgress: 0" in main
@@ -910,26 +910,33 @@ def run_game_action_smoke(save, action_script):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/save.js'];
+const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
 function createElement(id) {
   const classes = new Set();
+  const elementAttributes = {};
   return {
-    id, textContent: '', innerHTML: '', hidden: false, className: '', style: {},
+    id, textContent: '', innerHTML: '', hidden: false, className: '', style: {}, inert: false,
     classList: { add: (...n) => n.forEach(x => classes.add(x)), remove: (...n) => n.forEach(x => classes.delete(x)), toggle: (n, f) => f ? classes.add(n) : classes.delete(n) },
     closest: () => createElement(id + '-closest'),
-    querySelectorAll: () => [], addEventListener: () => {},
+    querySelectorAll: () => [], addEventListener: () => {}, focus: () => {},
+    setAttribute: (name, value) => { elementAttributes[name] = String(value); },
+    removeAttribute: (name) => { delete elementAttributes[name]; },
+    getAttribute: (name) => elementAttributes[name] || null,
   };
 }
 const store = { ai_black_startup_save_v1: JSON.stringify(input) };
 const elements = new Map();
+const isolationElement = createElement('background-content');
 const document = {
   addEventListener: (event, cb) => { if (event === 'DOMContentLoaded') cb(); },
   getElementById: (id) => { if (!elements.has(id)) elements.set(id, createElement(id)); return elements.get(id); },
+  querySelectorAll: (selector) => selector.indexOf('.hero') === 0 ? [isolationElement] : [],
+  __isolationElement: isolationElement,
   createElement: (tag) => createElement(tag),
   body: { appendChild: () => {}, removeChild: () => {} },
   execCommand: () => true,
@@ -937,12 +944,12 @@ const document = {
 const window = { setTimeout: (cb) => { timeoutQueue.push(cb); return timeoutQueue.length; }, clearTimeout: () => {}, setInterval: () => 1, addEventListener: () => {}, confirm: () => true };
 const navigator = { serviceWorker: { register: () => Promise.resolve({ waiting: null, addEventListener: () => {} }), controller: null } };
 const location = { protocol: 'http:', search: input.__locationSearch || '' };
-const localStorage = { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } };
+const localStorage = { getItem: (k) => { if (input.__storageThrows) throw new Error('blocked'); return store[k] || null; }, setItem: (k, v) => { if (input.__storageThrows) throw new Error('blocked'); store[k] = v; }, removeItem: (k) => { if (input.__storageThrows) throw new Error('blocked'); delete store[k]; } };
 const sandbox = { window, document, localStorage, navigator, location, console, Date, Math, Number, String, Boolean, Object, Array, Promise };
 vm.runInNewContext(code, sandbox);
 vm.runInNewContext(action, sandbox);
 console.log(JSON.stringify({
-  save: JSON.parse(store.ai_black_startup_save_v1),
+  save: store.ai_black_startup_save_v1 ? JSON.parse(store.ai_black_startup_save_v1) : null,
   productHtml: elements.get('productPanel').innerHTML,
   primaryProductHtml: elements.get('primaryProductPanel').innerHTML,
   employeePanelHtml: elements.get('employeePanel').innerHTML,
@@ -1114,7 +1121,7 @@ def test_product_card_summary_version_and_marketing_hint_present():
 
 
 def test_marketing_task_and_product_centered_missions_present():
-    main = app_source()
+    main = app_source() + "\n" + (ROOT / "js" / "runtime" / "state.js").read_text()
 
     assert '{ id: "marketing", label: "広報", workers: ["boss", "buzz03"] }' in main
     assert "createInitialProductAssignments(task.id)" in main
@@ -2527,7 +2534,7 @@ def test_development_completion_release_structure_is_documented():
 
 
 def test_product_scoped_assignment_structure_is_documented_for_all_tasks():
-    main = app_source()
+    main = app_source() + "\n" + (ROOT / "js" / "runtime" / "state.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
     assert "function createInitialProductAssignments(taskId)" in main
@@ -2615,8 +2622,9 @@ def test_fire05_and_crisis_copy_explains_tradeoff():
     assert "炎上対応専門。炎上度を大きく下げます" in main
     assert "対応中は売上機会を少し失います" in main
     assert "炎上度DOWN / 売上機会を少し消費" in main
-    assert "AI社長: ゆっくり火消し" in main
-    assert "Fire-05: 炎上対応が速いが少し機会損失" in main
+    assert "ゆっくり火消し" in main
+    assert "炎上対応が速いが、少し機会損失" in main
+    assert "getWorkerLabel(workerId)" in main
 
 
 def test_reset_copy_is_explicit_and_subdued():
@@ -2921,7 +2929,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-51" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-53" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3207,9 +3215,10 @@ def test_debug_state_summary_uses_existing_total_helpers():
 
 def test_decision_event_runtime_has_customer_request_and_ai_runaway_paths():
     main = app_source()
+    legacy_runtime = (ROOT / "js" / "runtime" / "legacy-decisions.js").read_text()
     for event_id in ["customer_impossible_request", "ai_runaway_proposal"]:
         assert f'id: "{event_id}"' in main
-        assert f'eventId === "{event_id}"' in main
+        assert f'eventId === "{event_id}"' in legacy_runtime
 
     request = run_game_action_smoke({
         "employees": {"care04": 1},
@@ -3323,11 +3332,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.51"' in index
+    assert 'content="2026.05.24.53"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.51"' in main
-    assert 'const APP_VERSION = "2026.05.24.51"' in sw
-    assert 'sw.js?v=20260524-51' in main
+    assert 'const APP_VERSION = "2026.05.24.53"' in main
+    assert 'const APP_VERSION = "2026.05.24.53"' in sw
+    assert 'sw.js?v=20260524-53' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4の内部構成' in readme
     assert '製品別炎上' in readme
@@ -3416,9 +3425,10 @@ def test_v04_achievement_expansions_are_present_and_unlockable():
 
 def test_v04_new_decision_events_are_defined_and_effectful():
     main = app_source()
+    legacy_runtime = (ROOT / "js" / "runtime" / "legacy-decisions.js").read_text()
     for event_id in ["limited_one_shot_sale", "server_outage_response", "support_discount_offer", "security_audit_push"]:
         assert f'id: "{event_id}"' in main
-        assert f'eventId === "{event_id}"' in main
+        assert f'eventId === "{event_id}"' in legacy_runtime
 
     approved = run_game_action_smoke({
         "money": 1000,
@@ -3802,7 +3812,7 @@ const context = {
   fetch: function (request) { fetchCount += 1; return request && request.mode === 'navigate' ? Promise.reject(new Error('offline')) : Promise.resolve({ status: 200, clone() { return this; } }); },
   caches: {
     open: function () { return Promise.resolve(cacheStore); },
-    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.51']); },
+    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.53']); },
     delete: function (key) { deleted.push(key); return Promise.resolve(true); },
     match: function (request) { if (request === './index.html') indexFallbackMatched = true; return Promise.resolve(request === './index.html' ? 'cached-index' : undefined); }
   },
@@ -3821,7 +3831,7 @@ events.activate({ waitUntil: function (promise) { waits.push(promise); } });
 events.message({ data: { type: 'SKIP_WAITING' } });
 const fetchResponses = [];
 events.fetch({
-  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-51', mode: 'same-origin' },
+  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-53', mode: 'same-origin' },
   respondWith: function (promise) { fetchResponses.push(promise); }
 });
 events.fetch({
@@ -3838,8 +3848,8 @@ Promise.all(waits.concat(fetchResponses)).then(function () {
     assert data["skipped"] >= 2
     assert data["claimed"] == 1
     assert "ai-black-startup-old" in data["deleted"]
-    assert "./main.js?v=20260524-51" in data["assets"]
-    assert "./js/data/missions.js?v=20260524-51" in data["assets"]
+    assert "./main.js?v=20260524-53" in data["assets"]
+    assert "./js/data/missions.js?v=20260524-53" in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
     assert data["cachePutCount"] == 1
@@ -4086,7 +4096,7 @@ def test_global_fire_risk_chip_dependency_is_explicit():
 def test_manifest_has_stable_pwa_id_when_start_url_is_cache_busted():
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["id"] == "./"
-    assert manifest["start_url"] == "./index.html?v=20260524-51"
+    assert manifest["start_url"] == "./index.html?v=20260524-53"
 
 
 def test_product_bug_and_quality_risks_are_in_operational_risk_panel_and_recommendation():
@@ -4309,7 +4319,7 @@ console.log(JSON.stringify({
 def test_game_save_has_explicit_schema_version_after_legacy_migration():
     output = run_browser_smoke({"money": 123, "appVersion": "legacy"})
     assert output["save"]["schemaVersion"] == 3
-    assert output["save"]["appVersion"] == "2026.05.24.51"
+    assert output["save"]["appVersion"] == "2026.05.24.53"
     assert output["save"]["money"] >= 123
 
 
@@ -4318,9 +4328,9 @@ def test_save_recovery_ui_and_runtime_are_precached_before_main():
     sw = (ROOT / "sw.js").read_text()
     main = (ROOT / "main.js").read_text()
     assert 'id="restoreBackupButton"' in index
-    assert 'js/runtime/save.js?v=20260524-51' in index
-    assert index.index('js/runtime/save.js?v=20260524-51') < index.index('main.js?v=20260524-51')
-    assert './js/runtime/save.js?v=20260524-51' in sw
+    assert 'js/runtime/save.js?v=20260524-53' in index
+    assert index.index('js/runtime/save.js?v=20260524-53') < index.index('main.js?v=20260524-53')
+    assert './js/runtime/save.js?v=20260524-53' in sw
     assert 'const SAVE_SCHEMA_VERSION = 3;' in main
     assert 'readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")' in main
     assert 'function restoreBackupSave()' in main
@@ -4389,7 +4399,7 @@ def test_public_experience_http_asset_graph_check_passes():
     report = json.loads(result.stdout)
 
     assert report["status"] == "ok"
-    assert report["appVersion"] == "2026.05.24.51"
+    assert report["appVersion"] == "2026.05.24.53"
     assert report["checkedAssets"] >= 20
     assert report["serviceWorkerAssets"] >= 20
 
@@ -4405,9 +4415,9 @@ def test_strategy_synergy_relationship_and_insights_assets_are_precached():
         "js/runtime/operations.js",
         "js/render/insights.js",
     ]:
-        assert f'{asset}?v=20260524-51' in index
-        assert f'./{asset}?v=20260524-51' in sw
-        assert index.index(f'{asset}?v=20260524-51') < index.index("main.js?v=20260524-51")
+        assert f'{asset}?v=20260524-53' in index
+        assert f'./{asset}?v=20260524-53' in sw
+        assert index.index(f'{asset}?v=20260524-53') < index.index("main.js?v=20260524-53")
     assert 'readExternalData("AIBS_STRATEGIES", [])' in main
     assert 'readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")' in main
     assert 'readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")' in main
@@ -4617,8 +4627,8 @@ def test_ai_character_assets_are_release_ready_and_precached():
     index = (ROOT / "index.html").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'js/data/characters.js?v=20260524-51' in index
-    assert './js/data/characters.js?v=20260524-51' in sw
+    assert 'js/data/characters.js?v=20260524-53' in index
+    assert './js/data/characters.js?v=20260524-53' in sw
     for character_id in character_ids:
         path = ROOT / "assets" / "characters" / f"{character_id}.webp"
         data = path.read_bytes()
@@ -4626,7 +4636,7 @@ def test_ai_character_assets_are_release_ready_and_precached():
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
         assert b"ALPH" in data
         assert f'assets/characters/{character_id}.webp' in character_data
-        assert f'./assets/characters/{character_id}.webp?v=20260524-51' in sw
+        assert f'./assets/characters/{character_id}.webp?v=20260524-53' in sw
 
 
 def test_ai_character_portraits_cover_gameplay_surfaces_and_fallbacks():
@@ -4703,13 +4713,13 @@ def test_office_assets_are_optimized_transparent_precached_and_mapped():
         assert 20_000 < len(data) < 120_000
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and b"ALPH" in data
         assert f'office/characters/{character_id}.webp' in characters
-        assert f'./assets/office/characters/{character_id}.webp?v=20260524-51' in sw
+        assert f'./assets/office/characters/{character_id}.webp?v=20260524-53' in sw
     for level in range(1, 6):
         path = ROOT / "assets" / "office" / "backgrounds" / f"office-level-{level}.webp"
         data = path.read_bytes()
         assert 20_000 < len(data) < 160_000
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
-        assert f'./assets/office/backgrounds/office-level-{level}.webp?v=20260524-51' in sw
+        assert f'./assets/office/backgrounds/office-level-{level}.webp?v=20260524-53' in sw
 
 
 def test_office_runtime_uses_level_hired_cast_and_real_assignment_status():
@@ -4857,3 +4867,102 @@ def test_tutorial_replay_works_after_progress_and_auto_risk_details_can_close():
     assert result["replayStage"] == 1
     assert result["autoExpanded"] is True
     assert result["closed"] is True
+
+
+
+def test_storage_facade_keeps_game_playable_when_browser_storage_is_blocked():
+    output = run_browser_smoke({"__storageThrows": True})
+    assert output["save"] == {"__storageThrows": True}
+    assert "appVersion" not in output["save"]
+    assert "このタブを閉じるまでの一時保存" in output["saveManagerStatus"]
+    assert "まず無料雇用" in output["activityText"]
+
+    slot_output = run_game_action_smoke({"__storageThrows": True}, "window.__testApi.saveToSlot('1');")
+    assert "このタブを閉じるまでの一時保存" in slot_output["saveManagerStatus"]
+    assert "スロット1へ保存しました" in slot_output["saveManagerStatus"]
+
+
+def test_imported_free_text_collections_are_bounded_and_normalized():
+    long_text = "危" * 1200
+    output = run_game_action_smoke(
+        {
+            "logs": [
+                {"id": "<bad>", "type": "unknown", "text": long_text, "employeeId": "<script>", "createdAt": 99999999999999},
+                "not-an-object",
+            ],
+            "claimedMissions": ["unknown", "unknown"],
+            "storyEvent": {"id": "__proto__", "kicker": long_text, "title": long_text, "text": long_text, "impact": long_text, "characterId": "__proto__"},
+            "employees": {"dev01": 1, "__proto__": {"polluted": True}},
+            "decisionThreads": {
+                "__proto__": {"choice": "approve"},
+                "unknown": {"choice": "approve"},
+                "sales_contract": {"choice": "approve", "dueIn": 10, "productId": "dailyReportAi"},
+            },
+            "relationshipFlags": {"constructor": True, "x" * 500: True, "valid_flag": True},
+        },
+        "window.__testApi.saveGame();",
+    )
+    saved = output["save"]
+    imported_log = next(log for log in saved["logs"] if len(log["text"]) == 500)
+    assert imported_log["type"] == "normal"
+    assert imported_log["employeeId"] == "company"
+    assert imported_log["createdAt"] < 99999999999999
+    assert saved["claimedMissions"] == []
+    assert saved["storyEvent"]["id"] == "story"
+    assert len(saved["storyEvent"]["kicker"]) == 40
+    assert len(saved["storyEvent"]["title"]) == 160
+    assert len(saved["storyEvent"]["text"]) == 500
+    assert len(saved["storyEvent"]["impact"]) == 240
+    assert saved["storyEvent"]["characterId"] == "boss"
+    assert set(saved["employees"]) == {"dev01", "sales02", "buzz03", "care04", "fire05", "security06"}
+    assert set(saved["decisionThreads"]) == {"sales_contract"}
+    assert saved["relationshipFlags"] == {"valid_flag": True}
+
+
+def test_modal_isolates_background_and_releases_it_on_close():
+    output = run_game_action_smoke(
+        {},
+        "window.__testApi.openProductDetailModal('dailyReportAi'); const isolated=document.__isolationElement.inert && document.__isolationElement.getAttribute('aria-hidden')==='true'; window.__testApi.closeProductDetailModal(); window.__testResult={isolated,released:!document.__isolationElement.inert && document.__isolationElement.getAttribute('aria-hidden')===null};",
+    )
+    assert output["testResult"] == {"isolated": True, "released": True}
+
+
+def test_security_policy_modal_scroll_lock_and_story_office_return_contract():
+    index = (ROOT / "index.html").read_text()
+    main = app_source()
+    css = (ROOT / "style.css").read_text()
+    assert 'http-equiv="Content-Security-Policy"' in index
+    for directive in ["default-src 'self'", "script-src 'self'", "object-src 'none'", "base-uri 'self'", "worker-src 'self'"]:
+        assert directive in index
+    assert '<meta name="referrer" content="no-referrer">' in index
+    assert 'body.modal-active { overflow: hidden; overscroll-behavior: none; }' in css
+    close_start = main.index("function closeStoryModal()")
+    close_end = main.index("function addLog", close_start)
+    assert 'navigateToPage("home"' in main[close_start:close_end]
+    assert "function syncModalIsolation()" in main
+    assert 'element.inert = active' in main
+
+
+def test_main_controller_delegates_state_storage_and_legacy_decisions_to_precached_modules():
+    index = (ROOT / "index.html").read_text()
+    main = (ROOT / "main.js").read_text()
+    sw = (ROOT / "sw.js").read_text()
+    modules = {
+        "js/runtime/storage.js": "AIBS_CREATE_STORAGE_FACADE",
+        "js/runtime/state.js": "AIBS_CREATE_STATE_RUNTIME",
+        "js/runtime/legacy-decisions.js": "AIBS_CREATE_LEGACY_DECISION_RUNTIME",
+    }
+    main_position = index.index("main.js?v=20260524-53")
+    for asset, factory in modules.items():
+        source = (ROOT / asset).read_text()
+        versioned = f"{asset}?v=20260524-53"
+        assert versioned in index
+        assert index.index(versioned) < main_position
+        assert f"./{versioned}" in sw
+        assert f"window.{factory}" in source
+        assert f'readExternalFactory("{factory}")' in main
+        assert "document." not in source
+    assert len(main.splitlines()) < 4400
+    assert "function createStorageFacade" not in main
+    assert "大型導入が通りました" not in main
+    assert "LEGACY_DECISION_RUNTIME.applyApproval" in main

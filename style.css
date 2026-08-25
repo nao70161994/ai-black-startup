@@ -928,3 +928,5 @@ button, select, input { touch-action: manipulation; }
   .tutorial-progress-track > span, .office-speech { transition: none; }
   .office-worker[data-worker-state], .story-card { animation: none; }
 }
+
+body.modal-active { overflow: hidden; overscroll-behavior: none; }
