@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.56";
-  const APP_ASSET_TOKEN = "20260524-56";
+  const APP_VERSION = "2026.05.24.57";
+  const APP_ASSET_TOKEN = "20260524-57";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -235,11 +235,11 @@
   let tutorialReplayStep = 0;
   const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, companyDetailsExpanded: null, presetResult: "" };
   const APP_PAGES = {
-    home: { label: "オフィス", description: "会社の今と、次の一手を確認します", title: "オフィス | AI社長のブラック起業" },
-    products: { label: "製品", description: "開発・販売・運用を製品ごとに進めます", title: "製品 | AI社長のブラック起業" },
-    team: { label: "チーム", description: "AI社員の担当と配置を整えます", title: "チーム | AI社長のブラック起業" },
-    management: { label: "経営", description: "会社方針・実績・ミッションを確認します", title: "経営 | AI社長のブラック起業" },
-    records: { label: "記録", description: "ログ・保存・復旧・共有を管理します", title: "記録 | AI社長のブラック起業" }
+    home: { label: "中央管制室", description: "AI社員の稼働と次の経営判断をリアルタイム管制", title: "中央管制室 | AI社長のブラック起業" },
+    products: { label: "製品ラボ", description: "構想・開発・品質・販売・顧客運用を一つのラインで管理", title: "製品ラボ | AI社長のブラック起業" },
+    team: { label: "AIクルー", description: "キャラクターを選び、能力と担当を編成", title: "AIクルー | AI社長のブラック起業" },
+    management: { label: "経営会議", description: "戦略・成長・目標を比較して会社方針を決定", title: "経営会議 | AI社長のブラック起業" },
+    records: { label: "アーカイブ", description: "会社の活動履歴とセーブデータを保全", title: "アーカイブ | AI社長のブラック起業" }
   };
   const ELEMENT_PAGE_MAP = {
     homePage: "home", statusGrid: "home", activityPanel: "home", nextRecommendationPanel: "home", decisionPanel: "home", riskPanel: "home", officePanel: "home",
@@ -1403,10 +1403,13 @@
     const panel = document.getElementById("tutorialPanel");
     if (!panel) return;
     const stage = getTutorialStage();
+    const targetPage = stage === 3 ? "products" : "team";
     const shouldHide = state.tutorialDismissed || stage > 3;
-    panel.hidden = shouldHide;
-    if (shouldHide) return;
+    const contextVisible = currentAppPage === "home" || currentAppPage === targetPage;
+    panel.hidden = shouldHide || !contextVisible;
+    if (shouldHide || !contextVisible) return;
     const content = getTutorialContent(stage);
+    if (typeof panel.setAttribute === "function") panel.setAttribute("data-target-page", targetPage);
     setText("tutorialStepLabel", stage + " / 3");
     setText("tutorialTitle", content.title);
     setText("tutorialText", content.text);
@@ -2156,10 +2159,17 @@
   }
 
   function getProductPortfolioPreviewHtml() {
-    const statusIcons = { idea: "○", developing: "◐", ready: "◇", selling: "◆" };
-    return '<div class="product-portfolio-preview" aria-label="製品ラインの稼働状況">' + PRODUCTS.map(function (definition) {
+    const statusIcons = { idea: "01", developing: "02", ready: "03", selling: "LIVE" };
+    return '<div class="product-portfolio-preview" aria-label="製品ラインの稼働状況">' + PRODUCTS.map(function (definition, index) {
       const product = getProduct(definition.id);
-      return '<article class="portfolio-preview-item status-' + product.status + '"><span class="portfolio-preview-icon" aria-hidden="true">' + (statusIcons[product.status] || "○") + '</span><div><strong>' + escapeHtml(definition.name) + '</strong><small>' + escapeHtml(getProductStatusLabel(product.status)) + '</small></div></article>';
+      const progress = product.status === "idea" ? 0 : (product.status === "developing" ? clamp(product.progress, 0, 100) : 100);
+      const value = definition.type === "subscription" ? formatCurrency(getProductMrr(product, definition)) + "/月" : formatCurrency(safeNumber(product.lifetimeRevenue, 0));
+      return '<button type="button" class="portfolio-preview-item status-' + product.status + '" data-product-detail="' + definition.id + '">' +
+        '<span class="portfolio-preview-index" aria-hidden="true">0' + (index + 1) + '</span>' +
+        '<span class="portfolio-preview-icon" aria-hidden="true">' + (statusIcons[product.status] || "01") + '</span>' +
+        '<span class="portfolio-preview-copy"><strong>' + escapeHtml(definition.name) + '</strong><small>' + escapeHtml(getProductStatusLabel(product.status)) + ' · ' + escapeHtml(value) + '</small></span>' +
+        '<span class="portfolio-preview-progress" aria-hidden="true"><i style="width:' + progress + '%"></i></span>' +
+      '</button>';
     }).join("") + '</div>';
   }
 
@@ -2268,7 +2278,7 @@
     const active = isAnyModalOpen();
     if (document.body && document.body.classList) document.body.classList.toggle("modal-active", active);
     if (typeof document.querySelectorAll !== "function") return;
-    document.querySelectorAll(".hero, .tutorial-panel, .page-location, .app-page, .bottom-nav").forEach(function (element) {
+    document.querySelectorAll(".hero, .tutorial-panel, .page-location, .app-page, .bottom-nav, .command-sidebar, .skip-link").forEach(function (element) {
       element.inert = active;
       if (typeof element.setAttribute === "function" && active) element.setAttribute("aria-hidden", "true");
       else if (typeof element.removeAttribute === "function") element.removeAttribute("aria-hidden");
@@ -2464,8 +2474,8 @@
         '<span class="product-detail-item wide">売り切り収益 <strong>販売成功時に即時売上が入ります</strong></span>';
     }
     return '<span class="product-detail-heading">収益</span>' +
-      '<span class="product-detail-item">現在version <strong>v' + getProductVersion(product) + '</strong></span>' +
-      '<span class="product-detail-item">次version開発 <strong>' + escapeHtml(product.upgradeStatus === "upgrading" ? 'v' + (getProductVersion(product) + 1) + ' ' + Math.floor(product.upgradeProgress) + '%' : '待機中') + '</strong></span>' +
+      '<span class="product-detail-item">現行版 <strong>v' + getProductVersion(product) + '</strong></span>' +
+      '<span class="product-detail-item">次期版 <strong>' + escapeHtml(product.upgradeStatus === "upgrading" ? 'v' + (getProductVersion(product) + 1) + ' 開発中 ' + Math.floor(product.upgradeProgress) + '%' : '待機中') + '</strong></span>' +
       '<span class="product-detail-item">月額価格 <strong>' + formatCurrency(getCurrentMonthlyPrice(product, definition)) + '</strong></span>' +
       '<span class="product-detail-item">顧客数 <strong>' + formatCustomers(getProductCustomers(product)) + '</strong></span>' +
       '<span class="product-detail-item">MRR <strong>' + formatCurrency(getProductMrr(product, definition)) + '/月</strong></span>' +
@@ -2476,7 +2486,7 @@
       '<span class="product-detail-item">満足度 <strong>' + Math.round(product.satisfaction) + '</strong></span>' +
       '<span class="product-detail-item">サポート負荷 <strong>' + Math.round(product.supportLoad) + '</strong></span>' +
       '<span class="product-detail-item">解約リスク <strong>' + Math.round(product.churnRisk) + '</strong></span>' +
-      '<span class="product-detail-item wide">バージョンアップ効果 <strong>月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5</strong></span>';
+      '<span class="product-detail-item wide">次期版の効果 <strong>月額価格+20%、品質+8、認知+5。副作用: 製品バグ+5</strong></span>';
   }
 
   function getProductLatestStateText(product, definition) {
@@ -2868,17 +2878,20 @@
     const list = document.getElementById("employeeList");
     if (list) list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
     if (list) list.querySelectorAll("button[data-worker-assign]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-worker-assign")); }); });
+    panel.querySelectorAll("button[data-roster-worker]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-roster-worker")); }); });
+    panel.querySelectorAll("button[data-roster-hire]").forEach(function (button) { button.addEventListener("click", function () { dashboardUi.employeesExpanded = true; renderEmployees(); scrollToElement("employeeList"); }); });
     activateCharacterImageFallbacks(panel);
   }
 
   function getTeamRosterPreviewHtml() {
-    const boss = '<article class="team-roster-member hired">' + getCharacterAvatarHtml("boss", "team-roster-avatar", false) + '<span>AI社長</span><small>常駐</small></article>';
+    const boss = '<button type="button" class="team-roster-member hired featured" data-roster-worker="boss">' + getCharacterAvatarHtml("boss", "team-roster-avatar", true) + '<span class="roster-member-copy"><strong>AI社長</strong><small>COMMAND / 常駐</small></span><i aria-hidden="true">編成</i></button>';
     const members = EMPLOYEES.map(function (employee) {
       const level = state.employees[employee.id] || 0;
       const locked = !canUnlockEmployee(employee.id);
       const status = locked ? "locked" : (level > 0 ? "hired" : "available");
-      const statusLabel = locked ? "Lv" + employee.unlockLevel + "で解放" : (level > 0 ? "Lv" + level : "採用可能");
-      return '<article class="team-roster-member ' + status + '">' + getCharacterAvatarHtml(employee.id, "team-roster-avatar", false) + '<span>' + escapeHtml(employee.code) + '</span><small>' + escapeHtml(statusLabel) + '</small></article>';
+      const statusLabel = locked ? "会社Lv" + employee.unlockLevel + "で解放" : (level > 0 ? employee.role + " / Lv" + level : employee.role + " / 採用可能");
+      const actionAttribute = locked ? " disabled" : (level > 0 ? ' data-roster-worker="' + employee.id + '"' : ' data-roster-hire="' + employee.id + '"');
+      return '<button type="button" class="team-roster-member ' + status + '"' + actionAttribute + '>' + getCharacterAvatarHtml(employee.id, "team-roster-avatar", true) + '<span class="roster-member-copy"><strong>' + escapeHtml(employee.code) + '</strong><small>' + escapeHtml(statusLabel) + '</small></span><i aria-hidden="true">' + (locked ? "LOCK" : (level > 0 ? "編成" : "採用")) + '</i></button>';
     }).join("");
     return '<div class="team-roster-preview" aria-label="AI社員の在籍状況">' + boss + members + '</div>';
   }
@@ -2949,7 +2962,7 @@
     const panel = document.getElementById("logPanel");
     if (!panel) return;
     panel.innerHTML = '<div class="section-heading"><h2>業務報告ログ</h2><button type="button" id="toggleLogsButton" class="change-assignment-button">' + (dashboardUi.logsExpanded ? 'ログを閉じる' : 'ログを見る') + '</button></div>' +
-      '<div class="log-list" id="logList" aria-live="polite">' + (dashboardUi.logsExpanded ? getLogListHtml() : getLogListHtml(3)) + '</div>';
+      '<div class="log-list" id="logList" aria-live="polite">' + (dashboardUi.logsExpanded ? getLogListHtml() : getLogListHtml(5)) + '</div>';
     const toggle = document.getElementById("toggleLogsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("logsExpanded"); });
     activateCharacterImageFallbacks(panel);
@@ -4337,7 +4350,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-56").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-57").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

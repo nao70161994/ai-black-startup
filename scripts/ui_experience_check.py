@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import html
 import json
 import re
@@ -21,7 +22,7 @@ PAGES = ("home", "products", "team", "management", "records")
 
 MATURE_SAVE = {
     "schemaVersion": 3,
-    "appVersion": "2026.05.24.56",
+    "appVersion": "2026.05.24.57",
     "money": 680000,
     "totalMoney": 1200000,
     "users": 480,
@@ -37,7 +38,7 @@ MATURE_SAVE = {
         "dailyReportAi": {
             "id": "dailyReportAi", "status": "selling", "progress": 100,
             "quality": 72, "bugs": 6, "awareness": 68, "customers": 180,
-            "version": 2, "upgradeProgress": 32, "upgradeStatus": "developing",
+            "version": 2, "upgradeProgress": 32, "upgradeStatus": "upgrading",
             "satisfaction": 64, "supportLoad": 38, "churnRisk": 16,
         },
         "meetingMinutesAi": {
@@ -98,6 +99,48 @@ MATURE_SAVE = {
     ],
 }
 
+CRISIS_SAVE = copy.deepcopy(MATURE_SAVE)
+CRISIS_SAVE.update({
+    "bugs": 96,
+    "fire": 92,
+    "pendingDecisionEvent": {
+        "id": "server_outage_response",
+        "productId": "dailyReportAi",
+        "createdAt": 2000000000000,
+    },
+})
+CRISIS_SAVE["products"]["dailyReportAi"].update({
+    "quality": 24,
+    "bugs": 88,
+    "satisfaction": 19,
+    "supportLoad": 96,
+    "churnRisk": 81,
+    "productFire": 94,
+})
+
+END_SAVE = copy.deepcopy(MATURE_SAVE)
+END_SAVE.update({
+    "money": 12800000,
+    "totalMoney": 32600000,
+    "users": 5480,
+    "companyLevel": 10,
+    "employees": {
+        "dev01": 5, "sales02": 5, "buzz03": 5,
+        "care04": 5, "fire05": 5, "security06": 5,
+    },
+})
+for end_product in END_SAVE["products"].values():
+    end_product.update({"status": "selling", "progress": 200, "quality": 88, "bugs": 7, "awareness": 100})
+END_SAVE["products"]["supportReplyAi"].update({"customers": 620, "satisfaction": 86, "supportLoad": 24, "churnRisk": 6})
+END_SAVE["products"]["apologyWriterAi"].update({"unitsSold": 410, "lifetimeRevenue": 3198000})
+END_SAVE["logs"].insert(0, {
+    "id": "uiqa-end-long",
+    "type": "success",
+    "text": "全製品の終盤運用レビューを完了し、品質・販売・顧客対応の長期計画を更新しました。" * 5,
+    "employeeId": "boss",
+    "createdAt": 2000000001000,
+})
+
 PROBE_SCRIPT = r"""
 const settings = SETTINGS;
 const resultNode = document.getElementById("result");
@@ -151,6 +194,11 @@ function collect() {
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   openRequestedModal(doc);
+  if (settings.forceImageFailure) {
+    doc.querySelectorAll("img[data-office-character-image], img[data-character-image]").forEach((image, index) => {
+      image.src = "/__missing_uiqa_image_" + index + ".webp";
+    });
+  }
   window.setTimeout(() => {
     const controls = Array.from(doc.querySelectorAll("button, select, summary, a[href]"))
       .filter(node => visible(node, win));
@@ -184,7 +232,7 @@ function collect() {
         doc.dispatchEvent(new win.KeyboardEvent("keydown", {key: "Tab", bubbles: true}));
       }
       const trapWorked = Boolean(first && doc.activeElement === first);
-      const isolated = Array.from(doc.querySelectorAll(".hero, .tutorial-panel, .page-location, .app-page, .bottom-nav"))
+      const isolated = Array.from(doc.querySelectorAll(".hero, .tutorial-panel, .page-location, .app-page, .bottom-nav, .skip-link"))
         .filter(node => node.inert && node.getAttribute("aria-hidden") === "true").length;
       modalResult = {
         open: Boolean(modal),
@@ -194,8 +242,8 @@ function collect() {
         trapWorked,
         isolated,
       };
-      doc.dispatchEvent(new win.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-      modalResult.escapeClosed = !doc.querySelector('[role="dialog"]:not([hidden])');
+      if (!settings.keepModal) doc.dispatchEvent(new win.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      modalResult.escapeClosed = settings.keepModal || !doc.querySelector('[role="dialog"]:not([hidden])');
     }
 
     const result = {
@@ -224,6 +272,8 @@ function collect() {
       recommendationDistinct: !recommendation ||
         win.getComputedStyle(recommendation).backgroundImage !== win.getComputedStyle(doc.querySelector("button:not(.next-recommendation-button)")).backgroundImage,
       shareTextColor: share ? win.getComputedStyle(share).color : "",
+      imageFallbacks: doc.querySelectorAll(".image-failed").length,
+      saveNotice: (doc.getElementById("saveManagerStatus") || {}).textContent || "",
       modal: modalResult,
     };
     resultNode.textContent = "UIQA_RESULT:" + JSON.stringify(result);
@@ -266,7 +316,9 @@ class ProbeHandler(SimpleHTTPRequestHandler):
             "page": query.get("page", ["home"])[0],
             "width": int(query.get("width", ["390"])[0]),
             "modal": query.get("modal", [""])[0],
-            "save": MATURE_SAVE if scenario == "mature" else None,
+            "forceImageFailure": query.get("forceImageFailure", ["False"])[0].lower() == "true",
+            "keepModal": query.get("keepModal", ["False"])[0].lower() == "true",
+            "save": CRISIS_SAVE if scenario == "crisis" else END_SAVE if scenario == "end" else MATURE_SAVE if scenario in ("mature", "image-failed") else None,
         }
         payload = make_probe(settings)
         self.send_response(200)
@@ -295,6 +347,8 @@ def run_case(browser: str, base_url: str, case: dict[str, object]) -> dict[str, 
         "--window-size=" + str(case["width"]) + ",900",
         "--dump-dom", url,
     ]
+    if case.get("storageUnavailable"):
+        command.insert(-2, "--disable-local-storage")
     completed = subprocess.run(command, text=True, capture_output=True, timeout=25, check=True)
     match = re.search(r"UIQA_RESULT:(\{.*?\})</pre>", completed.stdout)
     if not match:
@@ -319,7 +373,7 @@ def validate(result: dict[str, object]) -> list[str]:
         failures.append(f"{label}: current navigation is {result['currentPage']}")
     if not result["pageTitle"] or not result["pageDescription"]:
         failures.append(f"{label}: page context is incomplete")
-    if result["shellPaddingBottom"] < result["navHeight"] + 8:
+    if result["width"] < 960 and result["shellPaddingBottom"] < result["navHeight"] + 8:
         failures.append(f"{label}: fixed navigation clearance is insufficient")
     if not result.get("modal") and (result["focusOutline"] or 0) < 2:
         failures.append(f"{label}: keyboard focus outline is not visible")
@@ -329,8 +383,12 @@ def validate(result: dict[str, object]) -> list[str]:
         failures.append(f"{label}: selected strategy is not clearly distinguishable")
     if not result["recommendationDistinct"]:
         failures.append(f"{label}: recommendation action lacks visual hierarchy")
-    if result["shareTextColor"] and result["shareTextColor"] != "rgb(5, 42, 25)":
+    if result["shareTextColor"] and result["shareTextColor"] not in ("rgb(5, 42, 25)", "rgb(7, 56, 41)"):
         failures.append(f"{label}: share action contrast color regressed")
+    if result["scenario"] == "image-failed" and not result["imageFallbacks"]:
+        failures.append(f"{label}: image failure fallback was not activated")
+    if result["scenario"] == "storage-unavailable" and "一時保存" not in result["saveNotice"]:
+        failures.append(f"{label}: unavailable storage state is not explained")
     modal = result.get("modal")
     if modal:
         if not modal["open"] or modal["role"] != "dialog":
@@ -339,7 +397,7 @@ def validate(result: dict[str, object]) -> list[str]:
             failures.append(f"{label}: modal target is below 44px")
         if not modal["focusInside"] or not modal["trapWorked"]:
             failures.append(f"{label}: modal focus management failed")
-        if modal["isolated"] < 4:
+        if modal["isolated"] < 5:
             failures.append(f"{label}: modal background is not isolated")
         if not modal["escapeClosed"]:
             failures.append(f"{label}: Escape did not close modal")
@@ -353,6 +411,13 @@ def build_cases() -> list[dict[str, object]]:
         cases.append({"scenario": "mature", "page": page, "width": 390})
         cases.append({"scenario": "mature", "page": page, "width": 1280})
     cases.append({"scenario": "mature", "page": "home", "width": 768})
+    for width in (320, 1280):
+        cases.append({"scenario": "crisis", "page": "home", "width": width})
+        cases.append({"scenario": "crisis", "page": "products", "width": width})
+    for page in PAGES:
+        cases.append({"scenario": "end", "page": page, "width": 390})
+    cases.append({"scenario": "image-failed", "page": "team", "width": 320, "forceImageFailure": True})
+    cases.append({"scenario": "storage-unavailable", "page": "records", "width": 320, "storageUnavailable": True})
     for width in (320, 1280):
         cases.append({"scenario": "mature", "page": "products", "width": width, "modal": "detail"})
         cases.append({"scenario": "mature", "page": "team", "width": width, "modal": "assignment"})
@@ -373,6 +438,8 @@ def main() -> int:
         parts = args.case.split(":")
         page, width, scenario = parts[:3]
         cases = [{"page": page, "width": int(width), "scenario": scenario}]
+        if scenario == "image-failed": cases[0]["forceImageFailure"] = True
+        if scenario == "storage-unavailable": cases[0]["storageUnavailable"] = True
         if len(parts) > 3: cases[0]["modal"] = parts[3]
 
     server = QuietServer(("127.0.0.1", 0), ProbeHandler)

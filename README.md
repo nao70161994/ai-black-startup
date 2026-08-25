@@ -16,7 +16,7 @@ GitHub Pagesで公開中です。
 https://nao70161994.github.io/ai-black-startup/
 ```
 
-ブラウザで遊ぶ場合は、上記URLを開くだけでプレイできます。スマホでもPCでも起動できますが、画面設計はスマホ縦画面を主対象にしています。
+ブラウザで遊ぶ場合は、上記URLを開くだけでプレイできます。スマホでは親指操作向けの固定下部ナビ、PCでは常設サイドコマンドを使う専用レイアウトへ切り替わります。
 
 スマホのホーム画面に追加する場合は、ブラウザで公開URLを開き、共有メニューまたはブラウザメニューから「ホーム画面に追加」を選択してください。追加後はPWAとして、通常のアプリに近い表示で起動できます。
 
@@ -37,7 +37,8 @@ AI社長とAI社員たちは、その仮想オフィスで24時間自律稼働�
 
 ## 現在のMVP機能
 
-- スマホ縦画面向けの明るいポップな近未来UI
+- 美少女AIが働く仮想オフィスを中心にしたダーク近未来コマンドセンターUI
+- モバイルの1画面1目的構成と、デスクトップのサイドナビ／複数カラム構成
 - 1秒ごとの放置収益更新
 - 売上、累計売上、総顧客、総MRR、バグ、炎上度、会社Lvの管理
 - AI社員6体の雇用・強化
@@ -113,6 +114,19 @@ Office: wide 16:9 Japanese mobile AI-startup game background; polished anime env
 ```
 
 背景別には、Lv1を暖色の小部屋と1デスク、Lv2を木目の小規模スタジオと3ワークステーション、Lv3を濃紺・シアンの自動化設備、Lv4を白・空色の高層クラウドフロア、Lv5を夜景・濃紺・紫・控えめな金のAIタワー司令フロアとして指定しています。Web向け変換はキャラクターが幅512px・品質82・α品質90、背景が幅1280px・品質78です。生成元PNGはアプリ外の生成保管領域に残しています。
+
+### 製品ラボ
+
+「製品」ページは汎用カード一覧ではなく、構想・開発・品質・販売・顧客運用の5ステーションを直接選べる製品ラボとして構成しています。背景 `assets/products/product-lab-stage.webp` は内蔵 `imagegen` で新規生成し、操作カードや文字を画像へ焼き込まず、HTMLの実データを重ねています。そのため進行状態、キーボード操作、読み上げ、画像失敗時の操作性を維持できます。
+
+```text
+Use case: stylized-concept
+Asset type: premium 16:9 Japanese mobile management-game environment background
+Scene: futuristic AI product laboratory / startup command room at night; five visually distinct stations for idea, development, quality, sales, and customer operations; dark navy architecture with cyan, violet, and restrained gold light; cinematic depth; uncluttered center and lower area for interactive overlays.
+Constraints: environment only; no people, robots, readable text, logos, UI cards, watermark, or baked-in controls.
+```
+
+採用版は幅1440pxのWebPへ最適化し、約114KBに抑えています。画像を読み込めない場合も、HTML側の5ステーションと操作ボタンはそのまま利用できます。
 ## v0.4.7 経営ビルドと分析
 
 - 会社方針: バランス、高速開発、品質重視、炎上商法、顧客第一から選択し、効率・副作用・社長判断の出現傾向へ反映
@@ -171,7 +185,7 @@ v0.3では、AI社長と専門AIを製品ごとのタスクへ割り振り、製
 
 AI社員カードもv0.3向けに、売上や顧客の直接増減ではなく「得意タスク」「現在担当中の製品」「Lvアップで伸びる担当効果」を中心に表示します。Dev-01は開発、Sales-02は販売、Buzz-03は広報、Care-04はサポート、Security-06は品質管理、Fire-05は炎上対応タスクの役割として確認できます。社員カードの「仕事を割り振る」からも、そのAIに任せられるタスクと対象製品を選べます。
 
-現在のUIは単一ダッシュボードではなく、固定下部ナビで5ページに分けています。「オフィス」は会社状態・次のおすすめ・社長判断・リスク、「製品」は会社拡張・主力製品・製品一覧・製品目標、「チーム」は担当・配置プリセット・AI社員、「経営」は会社方針・推移・実績・ミッション、「記録」はログ・保存管理・共有・復旧を担当します。URLは `#home`、`#products`、`#team`、`#management`、`#records` と同期するため、再読込とブラウザの戻る操作でも現在ページを維持します。未判断、製品リスク、未受取報酬はナビの件数バッジでも確認できます。
+現在のUIは単一ダッシュボードではなく、目的と空間表現が異なる5ページに分けています。「中央管制室」はAI社員が働くオフィスと会社HUD、「製品ラボ」は5工程の製品ライン、「AIクルー」は大きなキャラクターから始める編成、「経営会議」は方針比較・推移・実績・ミッション、「アーカイブ」は時系列ログ・保存・共有・復旧を担当します。960px以上では常設サイドコマンド、959px以下では固定下部ナビを使います。URLは `#home`、`#products`、`#team`、`#management`、`#records` と同期するため、再読込とブラウザの戻る操作でも現在ページを維持します。未判断、製品リスク、未受取報酬はナビの件数バッジでも確認できます。
 
 社長判断イベントでは、AI社員からの提案に対して承認/却下を選びます。小さな売上機会、広報、品質改善、顧客対応、炎上対応、価格調整などの判断が発生し、選択に応じて認知度、満足度、製品バグ、全社炎上、製品炎上、即時売上、現在月額価格などが変化します。実績/称号は報酬なしの長期目標として追加され、初顧客、総MRR、売り切り販売、v2到達、社長判断、製品炎上、Fire-05/Care-04の初出動などの節目を記録します。
 
@@ -228,7 +242,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-56
+http://localhost:8000/?v=20260524-57
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -301,18 +315,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.56` です。
+現在のアプリバージョンは `2026.05.24.57` です。
 
-`manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーは明るい水色系です。
+`manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーと起動背景はコマンドセンターに合わせた濃紺です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-56">
-<script src="js/data/products.js?v=20260524-56"></script>
-<script src="js/data/achievements.js?v=20260524-56"></script>
-<script src="js/data/missions.js?v=20260524-56"></script>
-<script src="main.js?v=20260524-56"></script>
+<link rel="stylesheet" href="style.css?v=20260524-57">
+<script src="js/data/products.js?v=20260524-57"></script>
+<script src="js/data/achievements.js?v=20260524-57"></script>
+<script src="js/data/missions.js?v=20260524-57"></script>
+<script src="main.js?v=20260524-57"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -320,18 +334,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.56
+ai-black-startup-2026.05.24.57
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-56` を付けて開く
+- URLに `?v=20260524-57` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-56` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-57` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -352,7 +366,7 @@ pytest -q
 
 `public_experience_check.py` は一時的なローカルHTTPサーバーを起動し、HTMLから参照されるCSS/JS/manifest/icon、manifestのstart URL、Service Workerの全APP_SHELL資産を取得します。app versionとcache bustingの一致、全scriptのオフラインキャッシュ収録も検査します。
 
-`ui_experience_check.py` は実Chromiumで、初回・中盤状態の全5ページを320 / 390 / 768 / 1280pxで検査します。横はみ出し、44px操作領域、アクセシブルネーム、重複ID、固定ナビ余白、現在地、選択状態の視覚差に加え、製品詳細・担当変更モーダルのフォーカストラップ、Escape、背景隔離も確認します。
+`ui_experience_check.py` は実Chromiumで、初回・中盤・終盤の全5ページに加え、危機、高密度ログ、画像失敗、端末保存不能を320 / 390 / 768 / 1280pxで検査します。横はみ出し、44px操作領域、アクセシブルネーム、重複ID、固定ナビ余白、現在地、選択状態の視覚差に加え、製品詳細・担当変更モーダルのフォーカストラップ、Escape、背景隔離も確認します。
 
 `pytest` では保存schema移行・バックアップ・破損復旧、製品バグ統合、担当不変条件、製品パイプライン、社長判断、ミッション、実績、デバッグ導線、tick、共有処理、Service Worker runtimeを回帰確認します。
 
