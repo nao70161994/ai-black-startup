@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.55";
-  const APP_ASSET_TOKEN = "20260524-55";
+  const APP_VERSION = "2026.05.24.56";
+  const APP_ASSET_TOKEN = "20260524-56";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -1154,6 +1154,7 @@
     }
     setText("currentPageTitle", APP_PAGES[nextPage].label);
     setText("currentPageDescription", APP_PAGES[nextPage].description);
+    if (document.body && typeof document.body.setAttribute === "function") document.body.setAttribute("data-page", nextPage);
     document.title = APP_PAGES[nextPage].title;
     renderOnboarding();
     return nextPage;
@@ -2141,8 +2142,8 @@
   function renderProductPanel() {
     const panel = document.getElementById("productPanel");
     if (!panel) return;
-    const body = dashboardUi.productsExpanded ? '<div class="portfolio-products">' + PRODUCTS.map(function (definition) { return getProductCardHtml(definition); }).join('') + '</div>' : '';
-    panel.innerHTML = '<div class="section-heading"><h2>製品ポートフォリオ</h2><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (dashboardUi.productsExpanded ? '製品一覧を閉じる' : '製品一覧を開く') + '</button></div>' +
+    const body = dashboardUi.productsExpanded ? '<div class="portfolio-products">' + PRODUCTS.map(function (definition) { return getProductCardHtml(definition); }).join('') + '</div>' : getProductPortfolioPreviewHtml();
+    panel.innerHTML = '<div class="section-heading"><div><span class="section-kicker">PRODUCT LINE</span><h2>製品ポートフォリオ</h2></div><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (dashboardUi.productsExpanded ? '製品一覧を閉じる' : '製品一覧を開く') + '</button></div>' +
       '<p class="dashboard-summary">' + PRODUCTS.length + '製品運用 / 総MRR ' + formatCurrency(getTotalProductMrr()) + '/月 / 売り切り累計 ' + formatCurrency(getTotalOneShotRevenue()) + '</p>' + body;
     const toggle = document.getElementById("toggleProductsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("productsExpanded"); });
@@ -2152,6 +2153,14 @@
     panel.querySelectorAll("button[data-product-menu]").forEach(function (button) {
       button.addEventListener("click", function () { openProductActionMenu(button.getAttribute("data-product-menu")); });
     });
+  }
+
+  function getProductPortfolioPreviewHtml() {
+    const statusIcons = { idea: "○", developing: "◐", ready: "◇", selling: "◆" };
+    return '<div class="product-portfolio-preview" aria-label="製品ラインの稼働状況">' + PRODUCTS.map(function (definition) {
+      const product = getProduct(definition.id);
+      return '<article class="portfolio-preview-item status-' + product.status + '"><span class="portfolio-preview-icon" aria-hidden="true">' + (statusIcons[product.status] || "○") + '</span><div><strong>' + escapeHtml(definition.name) + '</strong><small>' + escapeHtml(getProductStatusLabel(product.status)) + '</small></div></article>';
+    }).join("") + '</div>';
   }
 
   function getProductCardHtml(definition) {
@@ -2849,7 +2858,9 @@
   function renderEmployees() {
     const panel = document.getElementById("employeePanel");
     if (!panel) return;
-    panel.innerHTML = '<div class="section-heading"><h2>AI社員</h2><button type="button" id="toggleEmployeesButton" class="change-assignment-button">' + (dashboardUi.employeesExpanded ? '社員を閉じる' : '社員を見る') + '</button></div>' +
+    const roster = dashboardUi.employeesExpanded ? "" : getTeamRosterPreviewHtml();
+    panel.innerHTML = '<div class="section-heading"><div><span class="section-kicker">AI CREW</span><h2>AI社員</h2></div><button type="button" id="toggleEmployeesButton" class="change-assignment-button">' + (dashboardUi.employeesExpanded ? '社員を閉じる' : '社員を見る') + '</button></div>' +
+      roster +
       '<p class="dashboard-summary">雇用済み: ' + escapeHtml(getHiredEmployeeSummary()) + '</p>' +
       '<div class="employee-list" id="employeeList">' + (dashboardUi.employeesExpanded ? getEmployeeCardsHtml() : '') + '</div>';
     const toggle = document.getElementById("toggleEmployeesButton");
@@ -2857,7 +2868,19 @@
     const list = document.getElementById("employeeList");
     if (list) list.querySelectorAll("button[data-employee-id]").forEach(function (button) { button.addEventListener("click", function () { hireOrUpgradeEmployee(button.getAttribute("data-employee-id")); }); });
     if (list) list.querySelectorAll("button[data-worker-assign]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-worker-assign")); }); });
-    if (list) activateCharacterImageFallbacks(list);
+    activateCharacterImageFallbacks(panel);
+  }
+
+  function getTeamRosterPreviewHtml() {
+    const boss = '<article class="team-roster-member hired">' + getCharacterAvatarHtml("boss", "team-roster-avatar", false) + '<span>AI社長</span><small>常駐</small></article>';
+    const members = EMPLOYEES.map(function (employee) {
+      const level = state.employees[employee.id] || 0;
+      const locked = !canUnlockEmployee(employee.id);
+      const status = locked ? "locked" : (level > 0 ? "hired" : "available");
+      const statusLabel = locked ? "Lv" + employee.unlockLevel + "で解放" : (level > 0 ? "Lv" + level : "採用可能");
+      return '<article class="team-roster-member ' + status + '">' + getCharacterAvatarHtml(employee.id, "team-roster-avatar", false) + '<span>' + escapeHtml(employee.code) + '</span><small>' + escapeHtml(statusLabel) + '</small></article>';
+    }).join("");
+    return '<div class="team-roster-preview" aria-label="AI社員の在籍状況">' + boss + members + '</div>';
   }
 
   function getEmployeeCardsHtml() {
@@ -2926,14 +2949,14 @@
     const panel = document.getElementById("logPanel");
     if (!panel) return;
     panel.innerHTML = '<div class="section-heading"><h2>業務報告ログ</h2><button type="button" id="toggleLogsButton" class="change-assignment-button">' + (dashboardUi.logsExpanded ? 'ログを閉じる' : 'ログを見る') + '</button></div>' +
-      '<div class="log-list" id="logList" aria-live="polite">' + (dashboardUi.logsExpanded ? getLogListHtml() : '') + '</div>';
+      '<div class="log-list" id="logList" aria-live="polite">' + (dashboardUi.logsExpanded ? getLogListHtml() : getLogListHtml(3)) + '</div>';
     const toggle = document.getElementById("toggleLogsButton");
     if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("logsExpanded"); });
     activateCharacterImageFallbacks(panel);
   }
 
-  function getLogListHtml() {
-    return state.logs.slice(1).map(function (log, index) {
+  function getLogListHtml(limit) {
+    return state.logs.slice(1, limit ? limit + 1 : undefined).map(function (log, index) {
       const type = LOG_LABELS[log.type] ? log.type : "normal";
       const ageClass = index >= 5 ? ' old-log' : '';
       return '<article class="log-item log-' + type + ageClass + (log.boot ? ' boot-log' : '') + '">' + getCharacterAvatarHtml(log.employeeId, "log-character-avatar", false) + '<div class="log-content"><div class="log-head"><span class="log-type">' + LOG_LABELS[type] + '</span><span class="log-time">' + formatTime(log.createdAt) + '</span></div><p>' + escapeHtml(log.text) + '</p></div></article>';
@@ -4314,7 +4337,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-55").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-56").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

@@ -21,7 +21,7 @@ PAGES = ("home", "products", "team", "management", "records")
 
 MATURE_SAVE = {
     "schemaVersion": 3,
-    "appVersion": "2026.05.24.55",
+    "appVersion": "2026.05.24.56",
     "money": 680000,
     "totalMoney": 1200000,
     "users": 480,
@@ -166,7 +166,7 @@ function collect() {
     const share = doc.querySelector("button.share");
     const selectedStrategy = doc.querySelector(".strategy-option.selected");
     const unselectedStrategy = doc.querySelector(".strategy-option:not(.selected)");
-    const focusTarget = controls.find(node => !node.disabled);
+    const focusTarget = controls.find(node => !node.disabled && (!settings.modal || node.closest("[role=\"dialog\"]")));
     if (focusTarget) focusTarget.focus();
     const focusStyle = focusTarget ? win.getComputedStyle(focusTarget) : null;
 
@@ -321,7 +321,7 @@ def validate(result: dict[str, object]) -> list[str]:
         failures.append(f"{label}: page context is incomplete")
     if result["shellPaddingBottom"] < result["navHeight"] + 8:
         failures.append(f"{label}: fixed navigation clearance is insufficient")
-    if result["focusOutline"] < 2:
+    if not result.get("modal") and (result["focusOutline"] or 0) < 2:
         failures.append(f"{label}: keyboard focus outline is not visible")
     if result["width"] >= 1200 and result["shellWidth"] < 1000:
         failures.append(f"{label}: desktop shell remains too narrow")
@@ -370,8 +370,10 @@ def main() -> int:
     browser = find_browser()
     cases = build_cases()
     if args.case:
-        page, width, scenario = args.case.split(":")
+        parts = args.case.split(":")
+        page, width, scenario = parts[:3]
         cases = [{"page": page, "width": int(width), "scenario": scenario}]
+        if len(parts) > 3: cases[0]["modal"] = parts[3]
 
     server = QuietServer(("127.0.0.1", 0), ProbeHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
