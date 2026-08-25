@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.50";
-  const APP_ASSET_TOKEN = "20260524-50";
+  const APP_VERSION = "2026.05.24.51";
+  const APP_ASSET_TOKEN = "20260524-51";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
   const BALANCE = window.AIBS_BALANCE || {};
@@ -186,7 +186,9 @@
   let productDetailProductId = PRODUCTS[0].id;
   let productActionMenuOpen = false;
   let productActionMenuProductId = PRODUCTS[0].id;
-  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, presetResult: "" };
+  let storyModalOpen = false;
+  let tutorialReplayStep = 0;
+  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, companyDetailsExpanded: null, presetResult: "" };
   const APP_PAGES = {
     home: { label: "オフィス", title: "オフィス | AI社長のブラック起業" },
     products: { label: "製品", title: "製品 | AI社長のブラック起業" },
@@ -254,6 +256,10 @@
       productFlags: createInitialProductFlags(),
       logs: [],
       onboardingDismissed: false,
+      tutorialDismissed: false,
+      tutorialCompleted: false,
+      storyEvent: null,
+      seenStoryEvents: {},
       firstHireHelpShown: false,
       firstFastTickDone: false,
       claimedMissions: [],
@@ -392,6 +398,11 @@
     saveGame();
   }
 
+  function normalizeStoryEvent(event) {
+    if (!event || typeof event !== "object" || !event.title || !event.text) return null;
+    return { id: String(event.id || "story"), kicker: String(event.kicker || "COMPANY NEWS"), title: String(event.title), text: String(event.text), impact: String(event.impact || ""), characterId: String(event.characterId || "boss") };
+  }
+
   function normalizeState(saved) {
     saved = saved && typeof saved === "object" ? saved : {};
     const base = createInitialState();
@@ -409,6 +420,10 @@
       productFlags: normalizeProductFlags(saved.productFlags),
       logs: Array.isArray(saved.logs) ? saved.logs.slice(0, MAX_LOGS) : base.logs,
       onboardingDismissed: Boolean(saved.onboardingDismissed),
+      tutorialDismissed: Boolean(saved.tutorialDismissed),
+      tutorialCompleted: Boolean(saved.tutorialCompleted),
+      storyEvent: normalizeStoryEvent(saved.storyEvent),
+      seenStoryEvents: normalizeBooleanMap(saved.seenStoryEvents),
       firstHireHelpShown: Boolean(saved.firstHireHelpShown),
       firstFastTickDone: Boolean(saved.firstFastTickDone),
       claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [],
@@ -1249,7 +1264,56 @@
     return list[Math.floor(Math.random() * list.length)];
   }
 
+  function classifyStoryEvent(type, text, employeeId) {
+    const value = String(text || "");
+    let kind = "";
+    let title = "";
+    let impact = "";
+    if (/会社Lvが/.test(value)) { const levelMatch = value.match(/会社Lvが(\d+)/); kind = levelMatch ? "level-" + levelMatch[1] : "level"; title = "オフィスが成長しました"; impact = "新しい設備と可能性が解放されました"; }
+    else if (/完成しました|アップデートされました/.test(value)) { kind = "release-" + employeeId + "-" + (value.indexOf("アップデート") >= 0 ? "upgrade" : "first"); title = "製品をリリースしました"; impact = "次は販売担当を設定して市場へ届けましょう"; }
+    else if (/初めての顧客|初めて売れました/.test(value)) { kind = "first-revenue-" + employeeId; title = "初売上を達成しました！"; impact = "小さな会社に、最初の市場評価が届きました"; }
+    else if (/大型契約|大口|100社|100本/.test(value)) { kind = "major-deal-" + employeeId + "-" + value.slice(0, 12); title = "会社史に残る成果です"; impact = "チームの働きが大きな結果につながりました"; }
+    else if ((type === "fire" || type === "bug") && /100|事故|急上昇/.test(value)) { kind = "crisis-" + employeeId + "-" + value.slice(0, 10); title = "緊急対応が必要です"; impact = "おすすめアクションから最優先の対策を選べます"; }
+    if (!kind || state.seenStoryEvents[kind]) return null;
+    return { id: kind, kicker: type === "fire" || type === "bug" ? "URGENT REPORT" : "COMPANY NEWS", title: title, text: value, impact: impact, characterId: CHARACTER_ASSETS[employeeId] ? employeeId : "boss" };
+  }
+
+  function queueStoryFromLog(type, text, employeeId) {
+    const event = classifyStoryEvent(type, text, employeeId);
+    if (!event) return;
+    state.seenStoryEvents[event.id] = true;
+    state.storyEvent = event;
+  }
+
+  function renderStoryModal() {
+    const modal = document.getElementById("storyModal");
+    const event = normalizeStoryEvent(state.storyEvent);
+    if (!modal) return;
+    const wasOpen = storyModalOpen;
+    storyModalOpen = Boolean(event);
+    modal.hidden = !event;
+    if (!event) return;
+    if (!wasOpen) window.setTimeout(function () { const close = document.getElementById("storyClose"); if (close && typeof close.focus === "function") close.focus(); }, 0);
+    setText("storyKicker", event.kicker);
+    setText("storyTitle", event.title);
+    setText("storyText", event.text);
+    setText("storyImpact", event.impact);
+    const character = document.getElementById("storyCharacter");
+    if (character) { character.innerHTML = getCharacterAvatarHtml(event.characterId, "story-avatar", false); activateCharacterImageFallbacks(character); }
+  }
+
+  function closeStoryModal() {
+    state.storyEvent = null;
+    storyModalOpen = false;
+    const modal = document.getElementById("storyModal");
+    if (modal) modal.hidden = true;
+    saveGame();
+    const homeLink = typeof document.querySelector === "function" ? document.querySelector('[data-page-link="home"]') : null;
+    if (homeLink && typeof homeLink.focus === "function") homeLink.focus();
+  }
+
   function addLog(type, text, employeeId) {
+    queueStoryFromLog(type, text, employeeId || "company");
     state.logs.unshift(createLog(type, text, employeeId || "company"));
     state.logs = state.logs.slice(0, MAX_LOGS);
   }
@@ -1367,7 +1431,6 @@
     renderStrategyPanel();
     renderInsightsPanel();
     renderSaveManagerPanel();
-    renderOnboarding();
     renderRiskPanel();
     renderNextRecommendationPanel();
     renderDecisionPanel();
@@ -1382,6 +1445,9 @@
     renderAchievements();
     renderMissions();
     renderOffice();
+    renderCompanyDetails();
+    renderOnboarding();
+    renderStoryModal();
     renderEmployees();
     renderDebugPanel();
     renderLatestLog();
@@ -1506,13 +1572,95 @@
     element.textContent = parts.join(" / ") || "AI社員は静かに待機中です。";
   }
 
-  function renderOnboarding() {
-    const panel = document.getElementById("onboardingPanel");
-    if (!panel) return;
-    const shouldHide = currentAppPage !== "home" || state.onboardingDismissed || hasAnyEmployee() || hasActiveAssignment();
-    panel.hidden = shouldHide;
-    panel.classList.toggle("hidden", shouldHide);
+  function getTutorialStage() {
+    if (tutorialReplayStep >= 1 && tutorialReplayStep <= 3) return tutorialReplayStep;
+    if (state.tutorialCompleted) return 4;
+    const hired = EMPLOYEES.some(function (employee) { return (state.employees[employee.id] || 0) > 0; });
+    if (!hired) return 1;
+    const hasFirstRevenue = state.totalMoney > 0 || hasRevenueProduct() || PRODUCTS.some(function (definition) { return getProductUnitsSold(getProduct(definition.id)) > 0; });
+    if (hasFirstRevenue) return 4;
+    const hiredWorkerAssigned = EMPLOYEES.some(function (employee) { return (state.employees[employee.id] || 0) > 0 && Boolean(getOfficeWorkerAssignment(employee.id)); });
+    if (!hiredWorkerAssigned) return 2;
+    return 3;
   }
+
+  function getTutorialContent(stage) {
+    if (stage === 1) return { title: "最初の仲間を迎えよう", text: "Dev-01かSales-02を創業クレジットで無料雇用します。社員カードから実際に選んでください。", label: "AI社員を選ぶ", characterId: "boss" };
+    if (stage === 2) return { title: "仕事をひとつ任せよう", text: "雇ったAIをAI日報メーカーの開発へ割り振ります。担当変更画面で内容を確認して決定してください。", label: "担当を決める", characterId: getFirstHiredWorkerId() };
+    return { title: "最初の売上をつくろう", text: "製品完成後に販売担当を設定すると売上判定が始まります。いま必要な操作を製品画面で確認しましょう。", label: "製品を確認する", characterId: getFirstHiredWorkerId() };
+  }
+
+  function getFirstHiredWorkerId() {
+    const employee = EMPLOYEES.find(function (item) { return (state.employees[item.id] || 0) > 0; });
+    return employee ? employee.id : "boss";
+  }
+
+  function renderOnboarding() {
+    const panel = document.getElementById("tutorialPanel");
+    if (!panel) return;
+    const stage = getTutorialStage();
+    const shouldHide = state.tutorialDismissed || stage > 3;
+    panel.hidden = shouldHide;
+    if (shouldHide) return;
+    const content = getTutorialContent(stage);
+    setText("tutorialStepLabel", stage + " / 3");
+    setText("tutorialTitle", content.title);
+    setText("tutorialText", content.text);
+    setText("tutorialAction", content.label);
+    const progress = document.getElementById("tutorialProgressBar");
+    if (progress && progress.style) progress.style.width = Math.round(stage / 3 * 100) + "%";
+    const character = document.getElementById("tutorialCharacter");
+    if (character) { character.innerHTML = getCharacterAvatarHtml(content.characterId, "tutorial-avatar", false); activateCharacterImageFallbacks(character); }
+    if (typeof panel.setAttribute === "function") panel.setAttribute("data-tutorial-stage", String(stage));
+  }
+
+  function handleTutorialAction() {
+    const stage = getTutorialStage();
+    const replaying = tutorialReplayStep > 0;
+    if (stage === 1) {
+      if (replaying) tutorialReplayStep = 2;
+      navigateToPage("team", { updateHistory: true, scrollTop: true });
+      focusMainContent();
+      dashboardUi.employeesExpanded = true;
+      renderEmployees();
+      scrollToElement("employeePanel");
+      return;
+    }
+    if (stage === 2) {
+      if (replaying) tutorialReplayStep = 3;
+      navigateToPage("team", { updateHistory: true, scrollTop: true });
+      focusMainContent();
+      openWorkerAssignmentModal(getFirstHiredWorkerId());
+      renderOnboarding();
+      return;
+    }
+    if (replaying) { tutorialReplayStep = 0; state.tutorialDismissed = true; }
+    navigateToPage("products", { updateHistory: true, scrollTop: true });
+    focusMainContent();
+    scrollToElement("primaryProductPanel");
+  }
+
+  function skipTutorial() { tutorialReplayStep = 0; state.tutorialDismissed = true; saveGame(); renderOnboarding(); }
+  function replayTutorial() { tutorialReplayStep = 1; state.tutorialDismissed = false; navigateToPage("home", { updateHistory: true, scrollTop: true }); focusMainContent(); renderOnboarding(); }
+
+  function renderCompanyDetails() {
+    const details = document.getElementById("companyDetailMetrics");
+    const toggle = document.getElementById("toggleCompanyDetails");
+    if (!details || !toggle) return;
+    const highRisk = getDashboardBugLevel() >= 50 || state.fire >= 50 || getHighestOperationalRisk().score >= 50;
+    const expanded = dashboardUi.companyDetailsExpanded === null ? highRisk : dashboardUi.companyDetailsExpanded;
+    details.hidden = !expanded;
+    if (typeof toggle.setAttribute === "function") toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded ? "詳細を閉じる" : "リスクなどの詳細を見る";
+    toggle.classList.toggle("risk-attention", highRisk);
+  }
+
+  function toggleCompanyDetails() {
+    const details = document.getElementById("companyDetailMetrics");
+    dashboardUi.companyDetailsExpanded = details ? details.hidden : dashboardUi.companyDetailsExpanded !== true;
+    renderCompanyDetails();
+  }
+
 
   function renderNextRecommendationPanel() {
     const panel = document.getElementById("nextRecommendationPanel");
@@ -3134,13 +3282,38 @@
     return { development: "{ }", qa: "✓", sales: "↗", marketing: "✦", support: "♡", crisis: "!" }[taskId] || "…";
   }
 
+  function getOfficeWorkerState(workerId, assignment) {
+    const latest = state.logs.find(function (log) { return log.employeeId === workerId || (workerId === "boss" && log.employeeId === "company"); });
+    if (latest && Date.now() - latest.createdAt < 9000 && latest.type === "success") return "success";
+    if (assignment && assignment.task.id === "crisis") return "crisis";
+    if ((state.fire >= 70 && workerId === "fire05") || (getDashboardBugLevel() >= 70 && workerId === "security06")) return "alert";
+    return assignment ? "working" : "resting";
+  }
+
+  function getOfficeWorkerDialogue(workerId, assignment) {
+    const character = CHARACTER_ASSETS[workerId] || {};
+    if (state.fire >= 70 && (workerId === "boss" || workerId === "fire05")) return "炎上 " + Math.round(state.fire) + "。いま火消しを！";
+    if (getDashboardBugLevel() >= 70 && (workerId === "boss" || workerId === "security06")) return "バグ " + Math.round(getDashboardBugLevel()) + "。品質確認します";
+    const latest = state.logs.find(function (log) { return log.employeeId === workerId && Date.now() - log.createdAt < 16000; });
+    if (latest) return latest.text.length > 34 ? latest.text.slice(0, 33) + "…" : latest.text;
+    if (assignment) {
+      if (assignment.task.id === "sales") return "MRR " + formatCurrency(getTotalProductMrr()) + "。商談中です";
+      if (assignment.task.id === "development") return assignment.definition.name + "を開発中です";
+      return assignment.task.label + "を進めています";
+    }
+    const dialogue = Array.isArray(character.dialogue) ? character.dialogue : [];
+    return dialogue.length ? dialogue[(state.playSeconds + workerId.length) % dialogue.length] : "次の仕事を待っています";
+  }
+
   function getOfficeWorkerHtml(workerId, index) {
     const character = CHARACTER_ASSETS[workerId] || {};
     const assignment = getOfficeWorkerAssignment(workerId);
     const label = character.label || getWorkerLabel(workerId);
     const detail = assignment ? assignment.definition.name + "の" + assignment.task.label + "を担当中" : "待機中。タップして仕事を割り振る";
     const src = character.officeSrc || character.src || "";
-    return '<button type="button" class="office-worker" data-office-worker="' + escapeHtml(workerId) + '" data-task="' + escapeHtml(assignment ? assignment.task.id : "idle") + '" style="--worker-index:' + index + '" aria-label="' + escapeHtml(label + "、" + detail) + '"><span class="office-worker-fallback" aria-hidden="true">' + escapeHtml(character.shortLabel || "AI") + '</span>' + (src ? '<img data-office-character-image src="' + escapeHtml(src + "?v=" + APP_ASSET_TOKEN) + '" alt="" width="512" height="768" decoding="async">' : '') + '<span class="office-worker-status"><span aria-hidden="true">' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "…") + '</span> ' + escapeHtml(assignment ? assignment.task.label : "待機中") + '</span></button>';
+    const workerState = getOfficeWorkerState(workerId, assignment);
+    const dialogue = getOfficeWorkerDialogue(workerId, assignment);
+    return '<button type="button" class="office-worker" data-office-worker="' + escapeHtml(workerId) + '" data-task="' + escapeHtml(assignment ? assignment.task.id : "idle") + '" data-worker-state="' + escapeHtml(workerState) + '" style="--worker-index:' + index + '" aria-label="' + escapeHtml(label + "、" + detail + "。" + dialogue) + '"><span class="office-speech" aria-hidden="true">' + escapeHtml(dialogue) + '</span><span class="office-worker-fallback" aria-hidden="true">' + escapeHtml(character.shortLabel || "AI") + '</span>' + (src ? '<img data-office-character-image src="' + escapeHtml(src + "?v=" + APP_ASSET_TOKEN) + '" alt="" width="512" height="768" decoding="async">' : '') + '<span class="office-worker-status"><span aria-hidden="true">' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "☕") + '</span> ' + escapeHtml(assignment ? assignment.task.label : "休憩中") + '</span></button>';
   }
 
   function activateOfficeImageFallbacks(root) {
@@ -3171,12 +3344,25 @@
       background.onerror = function () { background.hidden = true; officePanel.classList.add("office-background-failed"); };
       background.onload = function () { background.hidden = false; officePanel.classList.remove("office-background-failed"); };
     }
+    const decor = document.getElementById("officeDecor");
+    if (decor) {
+      const decorItems = [
+        { level: 1, icon: "▤", label: "開発デスク" },
+        { level: 2, icon: "♨", label: "コーヒーマシン" },
+        { level: 3, icon: "▥", label: "自動化サーバー" },
+        { level: 4, icon: "☎", label: "危機管理ルーム" },
+        { level: 5, icon: "✦", label: "展望ラウンジ" }
+      ].filter(function (item) { return item.level <= officeLevel; });
+      decor.innerHTML = decorItems.map(function (item) { return '<span class="office-decor-item decor-level-' + item.level + '" title="Lv' + item.level + 'で解放: ' + escapeHtml(item.label) + '"><b>' + item.icon + '</b><small>' + escapeHtml(item.label) + '</small></span>'; }).join("");
+      if (typeof decor.setAttribute === "function") decor.setAttribute("data-office-level", String(officeLevel));
+    }
     const hiredWorkerIds = ["boss"].concat(EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; }));
     const workers = document.getElementById("officeWorkers");
     if (workers) {
       const workerSignature = hiredWorkerIds.map(function (workerId) {
         const assignment = getOfficeWorkerAssignment(workerId);
-        return workerId + ":" + (assignment ? assignment.task.id + ":" + assignment.definition.id + ":" + assignment.mode : "idle");
+        const latest = state.logs.find(function (log) { return log.employeeId === workerId || (workerId === "boss" && log.employeeId === "company"); });
+        return workerId + ":" + (assignment ? assignment.task.id + ":" + assignment.definition.id + ":" + assignment.mode : "idle") + ":" + getOfficeWorkerState(workerId, assignment) + ":" + (latest ? latest.id : "");
       }).join("|");
       const canTrackSignature = typeof workers.getAttribute === "function" && typeof workers.setAttribute === "function";
       if (!canTrackSignature || workers.getAttribute("data-office-signature") !== workerSignature) {
@@ -3234,9 +3420,16 @@
     return '<article class="employee-card hired boss-worker-card"><div class="employee-top">' + getCharacterAvatarHtml("boss", "employee-character-avatar", true) + '<div class="employee-name"><strong>AI社長</strong><span>初期担当AI</span></div><div class="level-badge">常駐</div></div>' + getEmployeePipelineProfileHtml("boss") + '<div class="employee-action"><button type="button" class="worker-assign-button" data-worker-assign="boss">仕事を割り振る</button></div></article>';
   }
 
+  function getWorkerRelationshipSummary(workerId) {
+    const relationships = AI_RELATIONSHIPS.filter(function (relationship) { return relationship.workers.indexOf(workerId) >= 0; });
+    return relationships.length ? relationships.map(function (relationship) { return relationship.label + "（" + relationship.workers.filter(function (id) { return id !== workerId; }).map(getWorkerLabel).join("・") + "）"; }).join(" / ") : "全員の仕事を補助";
+  }
+
   function getEmployeePipelineProfileHtml(workerId) {
     const profile = WORKER_TASK_PROFILES[workerId] || { specialty: "補助", description: "製品タスクを補助します。", levelHint: "Lvアップで担当効果UP" };
-    return '<div class="employee-task-profile"><span class="employee-specialty">得意タスク: ' + escapeHtml(profile.specialty) + '</span><p class="employee-desc">' + escapeHtml(profile.description) + '</p><span class="employee-level-hint">' + escapeHtml(profile.levelHint) + '</span><span class="employee-current-task">現在担当: ' + escapeHtml(getWorkerAssignmentSummary(workerId)) + '</span></div>';
+    const employee = getEmployee(workerId);
+    const personality = employee ? employee.personality : "会社全体を見ながら、空いている仕事を静かに引き受ける。";
+    return '<details class="employee-task-profile"><summary><span class="employee-specialty">得意: ' + escapeHtml(profile.specialty) + '</span><span>プロフィールを見る</span></summary><p class="employee-desc">' + escapeHtml(profile.description) + '</p><p class="employee-personality"><strong>性格</strong> ' + escapeHtml(personality) + '</p><p class="employee-affinity"><strong>相性</strong> ' + escapeHtml(getWorkerRelationshipSummary(workerId)) + '</p><span class="employee-level-hint">' + escapeHtml(profile.levelHint) + '</span><span class="employee-current-task">現在担当: ' + escapeHtml(getWorkerAssignmentSummary(workerId)) + '</span></details>';
   }
 
   function getWorkerAssignmentSummary(workerId) {
@@ -4612,7 +4805,7 @@
 
   function trapModalFocus(event) {
     if (!event || event.key !== "Tab") return false;
-    const panelId = productActionMenuOpen ? "productActionMenuModal" : (productDetailModalOpen ? "productDetailModal" : (assignmentModalOpen ? "assignmentModal" : ""));
+    const panelId = storyModalOpen ? "storyModal" : (productActionMenuOpen ? "productActionMenuModal" : (productDetailModalOpen ? "productDetailModal" : (assignmentModalOpen ? "assignmentModal" : "")));
     const panel = panelId ? document.getElementById(panelId) : null;
     if (!panel || typeof panel.querySelectorAll !== "function") return false;
     const focusable = Array.prototype.slice.call(panel.querySelectorAll('button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
@@ -4637,7 +4830,8 @@
   function handleGlobalKeydown(event) {
     if (event && event.key === "Tab") { trapModalFocus(event); return; }
     if (!event || event.key !== "Escape") return;
-    if (productActionMenuOpen) closeProductActionMenu();
+    if (storyModalOpen) closeStoryModal();
+    else if (productActionMenuOpen) closeProductActionMenu();
     else if (productDetailModalOpen) closeProductDetailModal();
     else if (assignmentModalOpen) closeAssignmentModal();
   }
@@ -4668,8 +4862,16 @@
     const playtestButton = document.getElementById("copyPlaytestButton");
     if (playtestButton) playtestButton.addEventListener("click", copyPlaytestReport);
     document.addEventListener("keydown", handleGlobalKeydown);
-    const onboardingClose = document.getElementById("onboardingClose");
-    if (onboardingClose) onboardingClose.addEventListener("click", dismissOnboarding);
+    const tutorialAction = document.getElementById("tutorialAction");
+    if (tutorialAction) tutorialAction.addEventListener("click", handleTutorialAction);
+    const tutorialSkip = document.getElementById("tutorialSkip");
+    if (tutorialSkip) tutorialSkip.addEventListener("click", skipTutorial);
+    const replayTutorialButton = document.getElementById("replayTutorialButton");
+    if (replayTutorialButton) replayTutorialButton.addEventListener("click", replayTutorial);
+    const detailsToggle = document.getElementById("toggleCompanyDetails");
+    if (detailsToggle) detailsToggle.addEventListener("click", toggleCompanyDetails);
+    const storyClose = document.getElementById("storyClose");
+    if (storyClose) storyClose.addEventListener("click", closeStoryModal);
     window.addEventListener("beforeunload", saveGame);
     registerServiceWorker();
   }
@@ -4684,7 +4886,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-50").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-51").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
