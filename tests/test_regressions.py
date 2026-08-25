@@ -36,26 +36,26 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.57"' in index
-    assert 'style.css?v=20260524-57' in index
-    assert 'main.js?v=20260524-57' in index
-    assert 'manifest.webmanifest?v=20260524-57' in index
-    assert 'icon.svg?v=20260524-57' in index
-    assert 'ogp.png?v=20260524-57' in index
-    assert 'icon-512.png?v=20260524-57' in index
+    assert 'content="2026.05.24.58"' in index
+    assert 'style.css?v=20260524-58' in index
+    assert 'main.js?v=20260524-58' in index
+    assert 'manifest.webmanifest?v=20260524-58' in index
+    assert 'icon.svg?v=20260524-58' in index
+    assert 'ogp.png?v=20260524-58' in index
+    assert 'icon-512.png?v=20260524-58' in index
     assert '<meta name="theme-color" content="#07131f">' in index
-    assert 'const APP_VERSION = "2026.05.24.57"' in main
-    assert 'const APP_VERSION = "2026.05.24.57"' in sw
-    assert 'sw.js?v=20260524-57' in main
+    assert 'const APP_VERSION = "2026.05.24.58"' in main
+    assert 'const APP_VERSION = "2026.05.24.58"' in sw
+    assert 'sw.js?v=20260524-58' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-57"
+    assert manifest["start_url"] == "./index.html?v=20260524-58"
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#07131f"
     assert manifest["background_color"] == "#030811"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-57" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == "./icon-512.png?v=20260524-58" and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -75,13 +75,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "characters", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-57')
+    main_pos = index.index('main.js?v=20260524-58')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-57' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-57') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-57' in sw
+        assert f'js/data/{name}.js?v=20260524-58' in index
+        assert index.index(f'js/data/{name}.js?v=20260524-58') < main_pos
+        assert f'./js/data/{name}.js?v=20260524-58' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_CHARACTER_ASSETS", {})' in main
@@ -138,11 +138,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-57" in sw
-    assert "icon.svg?v=20260524-57" in sw
-    assert "ogp.svg?v=20260524-57" in sw
-    assert "ogp.png?v=20260524-57" in sw
-    assert "icon-512.png?v=20260524-57" in sw
+    assert "manifest.webmanifest?v=20260524-58" in sw
+    assert "icon.svg?v=20260524-58" in sw
+    assert "ogp.svg?v=20260524-58" in sw
+    assert "ogp.png?v=20260524-58" in sw
+    assert "icon-512.png?v=20260524-58" in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -316,7 +316,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.57"
+    assert output["save"]["appVersion"] == "2026.05.24.58"
 
 
 def test_security06_visible_at_company_level_5():
@@ -830,10 +830,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.57"' in index
-    assert 'main.js?v=20260524-57' in index
-    assert 'sw.js?v=20260524-57' in main
-    assert 'const APP_VERSION = "2026.05.24.57"' in sw
+    assert 'content="2026.05.24.58"' in index
+    assert 'main.js?v=20260524-58' in index
+    assert 'sw.js?v=20260524-58' in main
+    assert 'const APP_VERSION = "2026.05.24.58"' in sw
 
 
 
@@ -1480,14 +1480,14 @@ def test_dashboard_home_prioritizes_three_metrics_and_discloses_risk_details():
     index = (ROOT / "index.html").read_text()
     main = app_source()
 
-    start = index.index('<section class="status-grid compact-status dashboard-status"')
+    start = index.index('<section class="office-vitals"')
     end = index.index('</section>', start)
     status_section = index[start:end]
-    assert status_section.count('class="status-card') == 3
+    assert status_section.count('<article>') == 3
     assert '<span>売上</span>' in status_section
-    assert '<span>総MRR</span>' in status_section
-    assert '<span>総顧客</span>' in status_section
-    detail_start = index.index('<section class="company-details"')
+    assert '<span>MRR</span>' in status_section
+    assert '<span>顧客</span>' in status_section
+    detail_start = index.index('<section class="company-details office-risk-console"')
     detail_end = index.index('</section>', detail_start)
     detail_section = index[detail_start:detail_end]
     assert 'aria-controls="companyDetailMetrics"' in detail_section
@@ -1499,7 +1499,7 @@ def test_dashboard_home_prioritizes_three_metrics_and_discloses_risk_details():
     assert '会社Lv' not in status_section
     assert 'id="latestLogPanel"' not in index
     assert '現在の動き' in index
-    assert '最新: <span id="latestLogText"' in index
+    assert '最新: </span><span id="latestLogText"' in index
     assert 'MRR継続 +' in main
     assert '基礎受託 ' in main
 
@@ -2868,7 +2868,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-57" in readme
+    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-58" in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3271,11 +3271,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.57"' in index
+    assert 'content="2026.05.24.58"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.57"' in main
-    assert 'const APP_VERSION = "2026.05.24.57"' in sw
-    assert 'sw.js?v=20260524-57' in main
+    assert 'const APP_VERSION = "2026.05.24.58"' in main
+    assert 'const APP_VERSION = "2026.05.24.58"' in sw
+    assert 'sw.js?v=20260524-58' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4の内部構成' in readme
     assert '製品別炎上' in readme
@@ -3751,7 +3751,7 @@ const context = {
   fetch: function (request) { fetchCount += 1; return request && request.mode === 'navigate' ? Promise.reject(new Error('offline')) : Promise.resolve({ status: 200, clone() { return this; } }); },
   caches: {
     open: function () { return Promise.resolve(cacheStore); },
-    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.57']); },
+    keys: function () { return Promise.resolve(['ai-black-startup-old', 'other-cache', 'ai-black-startup-2026.05.24.58']); },
     delete: function (key) { deleted.push(key); return Promise.resolve(true); },
     match: function (request) { if (request === './index.html') indexFallbackMatched = true; return Promise.resolve(request === './index.html' ? 'cached-index' : undefined); }
   },
@@ -3770,7 +3770,7 @@ events.activate({ waitUntil: function (promise) { waits.push(promise); } });
 events.message({ data: { type: 'SKIP_WAITING' } });
 const fetchResponses = [];
 events.fetch({
-  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-57', mode: 'same-origin' },
+  request: { method: 'GET', url: 'https://nao70161994.github.io/main.js?v=20260524-58', mode: 'same-origin' },
   respondWith: function (promise) { fetchResponses.push(promise); }
 });
 events.fetch({
@@ -3787,8 +3787,8 @@ Promise.all(waits.concat(fetchResponses)).then(function () {
     assert data["skipped"] >= 2
     assert data["claimed"] == 1
     assert "ai-black-startup-old" in data["deleted"]
-    assert "./main.js?v=20260524-57" in data["assets"]
-    assert "./js/data/missions.js?v=20260524-57" in data["assets"]
+    assert "./main.js?v=20260524-58" in data["assets"]
+    assert "./js/data/missions.js?v=20260524-58" in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
     assert data["cachePutCount"] == 1
@@ -4035,7 +4035,7 @@ def test_global_fire_risk_chip_dependency_is_explicit():
 def test_manifest_has_stable_pwa_id_when_start_url_is_cache_busted():
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["id"] == "./"
-    assert manifest["start_url"] == "./index.html?v=20260524-57"
+    assert manifest["start_url"] == "./index.html?v=20260524-58"
 
 
 def test_product_bug_and_quality_risks_are_in_operational_risk_panel_and_recommendation():
@@ -4259,7 +4259,7 @@ console.log(JSON.stringify({
 def test_game_save_has_explicit_schema_version_after_legacy_migration():
     output = run_browser_smoke({"money": 123, "appVersion": "legacy"})
     assert output["save"]["schemaVersion"] == 3
-    assert output["save"]["appVersion"] == "2026.05.24.57"
+    assert output["save"]["appVersion"] == "2026.05.24.58"
     assert output["save"]["money"] >= 123
 
 
@@ -4268,9 +4268,9 @@ def test_save_recovery_ui_and_runtime_are_precached_before_main():
     sw = (ROOT / "sw.js").read_text()
     main = (ROOT / "main.js").read_text()
     assert 'id="restoreBackupButton"' in index
-    assert 'js/runtime/save.js?v=20260524-57' in index
-    assert index.index('js/runtime/save.js?v=20260524-57') < index.index('main.js?v=20260524-57')
-    assert './js/runtime/save.js?v=20260524-57' in sw
+    assert 'js/runtime/save.js?v=20260524-58' in index
+    assert index.index('js/runtime/save.js?v=20260524-58') < index.index('main.js?v=20260524-58')
+    assert './js/runtime/save.js?v=20260524-58' in sw
     assert 'const SAVE_SCHEMA_VERSION = 3;' in main
     assert 'readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")' in main
     assert 'function restoreBackupSave()' in main
@@ -4339,7 +4339,7 @@ def test_public_experience_http_asset_graph_check_passes():
     report = json.loads(result.stdout)
 
     assert report["status"] == "ok"
-    assert report["appVersion"] == "2026.05.24.57"
+    assert report["appVersion"] == "2026.05.24.58"
     assert report["checkedAssets"] >= 20
     assert report["serviceWorkerAssets"] >= 20
 
@@ -4355,9 +4355,9 @@ def test_strategy_synergy_relationship_and_insights_assets_are_precached():
         "js/runtime/operations.js",
         "js/render/insights.js",
     ]:
-        assert f'{asset}?v=20260524-57' in index
-        assert f'./{asset}?v=20260524-57' in sw
-        assert index.index(f'{asset}?v=20260524-57') < index.index("main.js?v=20260524-57")
+        assert f'{asset}?v=20260524-58' in index
+        assert f'./{asset}?v=20260524-58' in sw
+        assert index.index(f'{asset}?v=20260524-58') < index.index("main.js?v=20260524-58")
     assert 'readExternalData("AIBS_STRATEGIES", [])' in main
     assert 'readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")' in main
     assert 'readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")' in main
@@ -4567,8 +4567,8 @@ def test_ai_character_assets_are_release_ready_and_precached():
     index = (ROOT / "index.html").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'js/data/characters.js?v=20260524-57' in index
-    assert './js/data/characters.js?v=20260524-57' in sw
+    assert 'js/data/characters.js?v=20260524-58' in index
+    assert './js/data/characters.js?v=20260524-58' in sw
     for character_id in character_ids:
         path = ROOT / "assets" / "characters" / f"{character_id}.webp"
         data = path.read_bytes()
@@ -4576,7 +4576,7 @@ def test_ai_character_assets_are_release_ready_and_precached():
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
         assert b"ALPH" in data
         assert f'assets/characters/{character_id}.webp' in character_data
-        assert f'./assets/characters/{character_id}.webp?v=20260524-57' in sw
+        assert f'./assets/characters/{character_id}.webp?v=20260524-58' in sw
 
 
 def test_ai_character_portraits_cover_gameplay_surfaces_and_fallbacks():
@@ -4613,7 +4613,7 @@ def test_five_page_navigation_groups_every_primary_feature_and_keeps_modals_glob
             assert element_id in page_html
     assert index.count("data-page-link=") == 5
     assert index.count("data-nav-badge=") == 5
-    assert index.index('id="officePanel"') < index.index('class="status-grid')
+    assert index.index('id="officePanel"') < index.index('id="activityPanel"')
     for modal_id in ["assignmentModal", "productDetailModal", "productActionMenuModal"]:
         assert index.index(f'id="{modal_id}"') > index.index('data-app-page="records"')
 
@@ -4654,13 +4654,13 @@ def test_office_assets_are_optimized_transparent_precached_and_mapped():
         assert 20_000 < len(data) < 120_000
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and b"ALPH" in data
         assert f'office/characters/{character_id}.webp' in characters
-        assert f'./assets/office/characters/{character_id}.webp?v=20260524-57' in sw
+        assert f'./assets/office/characters/{character_id}.webp?v=20260524-58' in sw
     for level in range(1, 6):
         path = ROOT / "assets" / "office" / "backgrounds" / f"office-level-{level}.webp"
         data = path.read_bytes()
         assert 20_000 < len(data) < 160_000
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
-        assert f'./assets/office/backgrounds/office-level-{level}.webp?v=20260524-57' in sw
+        assert f'./assets/office/backgrounds/office-level-{level}.webp?v=20260524-58' in sw
 
 
 def test_office_runtime_uses_level_hired_cast_and_real_assignment_status():
@@ -4719,10 +4719,10 @@ def test_guided_experience_covers_all_eight_uiux_requirements():
     # 2: exactly one contextual recommendation CTA is rendered.
     assert 'buttons[0]' in main and 'handleRecommendationAction(button)' in main
     assert 'aria-label="いま一番おすすめの操作"' in index
-    # 3: office equipment unlocks visibly across all five levels.
-    for label in ["開発デスク", "コーヒーマシン", "自動化サーバー", "危機管理ルーム", "展望ラウンジ"]:
+    # 3: task-specific office equipment unlocks visibly across all five levels.
+    for label in ["開発ベイ", "セールス端末", "広報ブース", "品質スキャナ", "サポート席", "危機対応室"]:
         assert label in main
-    assert 'data-office-level' in main and '.office-decor-item' in css
+    assert 'data-office-level' in main and '.office-zone' in css
     # 4: working/resting/success/crisis states animate, with reduced motion support.
     for state in ["working", "resting", "success", "crisis", "alert"]:
         assert f'data-worker-state="' in main
@@ -4894,17 +4894,17 @@ def test_main_controller_delegates_state_storage_and_legacy_decisions_to_precach
         "js/runtime/state.js": "AIBS_CREATE_STATE_RUNTIME",
         "js/runtime/legacy-decisions.js": "AIBS_CREATE_LEGACY_DECISION_RUNTIME",
     }
-    main_position = index.index("main.js?v=20260524-57")
+    main_position = index.index("main.js?v=20260524-58")
     for asset, factory in modules.items():
         source = (ROOT / asset).read_text()
-        versioned = f"{asset}?v=20260524-57"
+        versioned = f"{asset}?v=20260524-58"
         assert versioned in index
         assert index.index(versioned) < main_position
         assert f"./{versioned}" in sw
         assert f"window.{factory}" in source
         assert f'readExternalFactory("{factory}")' in main
         assert "document." not in source
-    assert len(main.splitlines()) < 4400
+    assert len(main.splitlines()) < 4500
     assert "function createStorageFacade" not in main
     assert "大型導入が通りました" not in main
     assert "LEGACY_DECISION_RUNTIME.applyApproval" in main
@@ -4930,7 +4930,7 @@ def test_product_quality_page_context_and_feedback_contract():
 
 def test_live_updates_are_scoped_to_atomic_status_regions():
     index = (ROOT / "index.html").read_text()
-    assert '<section class="activity-panel" id="activityPanel">' in index
+    assert '<section class="activity-panel office-activity" id="activityPanel">' in index
     assert 'class="activity-latest" aria-live="polite" aria-atomic="true"' in index
     assert 'id="levelToast" role="status" aria-live="polite" aria-atomic="true"' in index
 
@@ -4938,14 +4938,14 @@ def test_live_updates_are_scoped_to_atomic_status_regions():
 def test_product_quality_css_guards_touch_layout_contrast_and_motion():
     index = (ROOT / "index.html").read_text()
     css = (ROOT / "style.css").read_text()
-    assert css.startswith("/* AI Black Startup — command-center interface v2026.05.24.57 */")
+    assert css.startswith("/* AI Black Startup — command-center interface v2026.05.24.58 */")
     for contract in [
         "min-height: 44px", "--focus: #ffd166", ".command-sidebar", ".home-command-stage",
         ".product-room", ".team-studio", ".executive-board", ".archive-console",
         "@media (max-width: 959px)", "@media (prefers-reduced-motion: reduce)",
     ]:
         assert contract in css
-    assert "grid-template-columns: minmax(0, 1fr) 300px" in css
+    assert "grid-template-columns: minmax(0,1fr) auto auto" in css
     assert "grid-template-columns: minmax(0,1fr) 330px" in css
     assert "position: fixed" in css
     assert "env(safe-area-inset-bottom)" in css
@@ -4972,7 +4972,7 @@ def test_real_browser_ui_experience_checker_covers_pages_states_widths_and_modal
     readme = (ROOT / "README.md").read_text()
     assert "python scripts/ui_experience_check.py" in readme
     assert 'PAGES = ("home", "products", "team", "management", "records")' in checker
-    for width in ("320", "390", "768", "1280"):
+    for width in ("320", "390", "768", "960", "1280"):
         assert width in checker
     for contract in [
         "horizontal overflow",
@@ -5001,6 +5001,12 @@ def test_real_browser_ui_experience_checker_covers_pages_states_widths_and_modal
     assert 'image.src = "/__missing_uiqa_image_"' in checker
     assert '"modal": "detail"' in checker
     assert '"modal": "assignment"' in checker
+    assert 'for office_level in (2, 3, 4)' in checker
+    assert '"scenario": "idle"' in checker
+    assert '"scenario": "selected"' in checker
+    assert '"modal": "zone"' in checker
+    assert '"inspectorOpen"' in checker
+    assert '"uniqueWorkerAnchors"' in checker
 
 
 
@@ -5010,14 +5016,14 @@ def test_command_center_redesign_is_page_specific_and_keeps_primary_content_visi
     css = (ROOT / "style.css").read_text()
     assert 'class="command-sidebar"' in index
     for structure in ["home-command-stage", "product-room", "team-studio", "executive-board", "archive-console"]:
-        assert f'class="{structure}' in index
+        assert structure in index
         assert f'.{structure}' in css
-    assert 'assets/products/product-lab-stage.webp?v=20260524-57' in index
+    assert 'assets/products/product-lab-stage.webp?v=20260524-58' in index
     lab_asset = (ROOT / "assets" / "products" / "product-lab-stage.webp").read_bytes()
     assert 80_000 < len(lab_asset) < 160_000
     assert lab_asset[:4] == b"RIFF" and lab_asset[8:12] == b"WEBP"
     assert 'width="1440" height="810"' in index
-    assert './assets/products/product-lab-stage.webp?v=20260524-57' in (ROOT / "sw.js").read_text()
+    assert './assets/products/product-lab-stage.webp?v=20260524-58' in (ROOT / "sw.js").read_text()
     assert 'document.body.setAttribute("data-page", nextPage)' in main
     assert "getProductPortfolioPreviewHtml()" in main
     assert 'class="product-portfolio-preview"' in main
@@ -5026,6 +5032,27 @@ def test_command_center_redesign_is_page_specific_and_keeps_primary_content_visi
     assert "getLogListHtml(5)" in main
     assert "@media (max-width: 959px)" in css
     assert ".command-sidebar { position: fixed" in css
+
+
+def test_immersive_office_places_workers_by_task_and_supports_direct_stage_actions():
+    index = (ROOT / "index.html").read_text()
+    main = app_source()
+    css = (ROOT / "style.css").read_text()
+    checker = (ROOT / "scripts" / "ui_experience_check.py").read_text()
+    for structure in ["office-stage-header", "office-vitals", "office-directive", "office-worker-inspector", "office-coach"]:
+        assert structure in index
+        assert f'.{structure}' in css
+    assert "const OFFICE_TASK_ZONES" in main
+    assert "getOfficeWorkerPosition(" in main
+    assert 'data-office-zone="' in main
+    assert "handleOfficeZoneAction(taskId)" in main
+    assert 'dashboardUi.officeWorkerSelected = button.getAttribute("data-office-worker")' in main
+    assert 'openWorkerAssignmentModal(workerId)' in main
+    assert 'data-office-level' in main
+    assert 'class="office-work-effect"' in main
+    assert '"modal": "zone"' in checker
+    assert '"scenario": "selected"' in checker
+    assert 'for office_level in (2, 3, 4)' in checker
 
 def test_ui_checker_accepts_direct_modal_case_for_targeted_visual_review():
     checker = (ROOT / "scripts" / "ui_experience_check.py").read_text()

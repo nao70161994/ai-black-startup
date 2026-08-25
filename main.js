@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.57";
-  const APP_ASSET_TOKEN = "20260524-57";
+  const APP_VERSION = "2026.05.24.58";
+  const APP_ASSET_TOKEN = "20260524-58";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -233,7 +233,7 @@
   let productActionMenuProductId = PRODUCTS[0].id;
   let storyModalOpen = false;
   let tutorialReplayStep = 0;
-  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, companyDetailsExpanded: null, presetResult: "" };
+  const dashboardUi = { productsExpanded: false, logsExpanded: false, employeesExpanded: false, objectivesExpanded: false, missionsExpanded: false, achievementsExpanded: false, presetsExpanded: false, companyDetailsExpanded: null, officeWorkerSelected: "", presetResult: "" };
   const APP_PAGES = {
     home: { label: "中央管制室", description: "AI社員の稼働と次の経営判断をリアルタイム管制", title: "中央管制室 | AI社長のブラック起業" },
     products: { label: "製品ラボ", description: "構想・開発・品質・販売・顧客運用を一つのラインで管理", title: "製品ラボ | AI社長のブラック起業" },
@@ -1405,8 +1405,11 @@
     const stage = getTutorialStage();
     const targetPage = stage === 3 ? "products" : "team";
     const shouldHide = state.tutorialDismissed || stage > 3;
-    const contextVisible = currentAppPage === "home" || currentAppPage === targetPage;
+    const contextVisible = currentAppPage === "home";
+    const officeStage = document.getElementById("officeStage");
     panel.hidden = shouldHide || !contextVisible;
+    if (officeStage && typeof officeStage.setAttribute === "function") officeStage.setAttribute("data-tutorial-stage", shouldHide || !contextVisible ? "0" : String(stage));
+    if (typeof document.querySelectorAll === "function") document.querySelectorAll(".tutorial-target").forEach(function (element) { element.classList.remove("tutorial-target"); });
     if (shouldHide || !contextVisible) return;
     const content = getTutorialContent(stage);
     if (typeof panel.setAttribute === "function") panel.setAttribute("data-target-page", targetPage);
@@ -1419,6 +1422,17 @@
     const character = document.getElementById("tutorialCharacter");
     if (character) { character.innerHTML = getCharacterAvatarHtml(content.characterId, "tutorial-avatar", false); activateCharacterImageFallbacks(character); }
     if (typeof panel.setAttribute === "function") panel.setAttribute("data-tutorial-stage", String(stage));
+    let tutorialTarget = null;
+    if (typeof document.querySelector === "function") {
+      if (stage === 1) tutorialTarget = document.querySelector('[data-office-worker="boss"]');
+      else if (stage === 2) tutorialTarget = document.querySelector('[data-office-worker="' + getFirstHiredWorkerId() + '"]');
+      else tutorialTarget = document.getElementById("officeProductHotspot");
+    }
+    if (tutorialTarget && tutorialTarget.classList) {
+      tutorialTarget.classList.add("tutorial-target");
+      const targetX = tutorialTarget.style && tutorialTarget.style.getPropertyValue ? tutorialTarget.style.getPropertyValue("--worker-x") : "";
+      if (panel.style && panel.style.setProperty) panel.style.setProperty("--coach-arrow-x", targetX || (stage === 3 ? "88%" : "50%"));
+    }
   }
 
   function handleTutorialAction() {
@@ -1458,7 +1472,7 @@
     const expanded = dashboardUi.companyDetailsExpanded === null ? highRisk : dashboardUi.companyDetailsExpanded;
     details.hidden = !expanded;
     if (typeof toggle.setAttribute === "function") toggle.setAttribute("aria-expanded", String(expanded));
-    toggle.textContent = expanded ? "詳細を閉じる" : "リスクなどの詳細を見る";
+    toggle.textContent = expanded ? "スキャンを閉じる" : "リスクスキャン";
     toggle.classList.toggle("risk-attention", highRisk);
   }
 
@@ -2786,7 +2800,26 @@
     return dialogue.length ? dialogue[(state.playSeconds + workerId.length) % dialogue.length] : "次の仕事を待っています";
   }
 
-  function getOfficeWorkerHtml(workerId, index) {
+  const OFFICE_TASK_ZONES = {
+    development: { x: 28, y: 77, label: "開発ベイ", icon: "{ }", unlock: 1 },
+    sales: { x: 76, y: 78, label: "セールス端末", icon: "↗", unlock: 2 },
+    marketing: { x: 17, y: 57, label: "広報ブース", icon: "✦", unlock: 3 },
+    qa: { x: 68, y: 55, label: "品質スキャナ", icon: "✓", unlock: 3 },
+    support: { x: 51, y: 53, label: "サポート席", icon: "♡", unlock: 4 },
+    crisis: { x: 86, y: 53, label: "危機対応室", icon: "!", unlock: 4 }
+  };
+
+  function getOfficeWorkerPosition(workerId, assignment, slotIndex, idleIndex) {
+    if (assignment && OFFICE_TASK_ZONES[assignment.task.id]) {
+      const zone = OFFICE_TASK_ZONES[assignment.task.id];
+      return { x: zone.x + (slotIndex ? 7 : -2), y: zone.y + (slotIndex ? 1 : 0) };
+    }
+    if (workerId === "boss") return { x: 50, y: 76 };
+    const idlePositions = [{ x: 40, y: 82 }, { x: 57, y: 82 }, { x: 34, y: 62 }, { x: 62, y: 65 }, { x: 76, y: 64 }, { x: 23, y: 68 }];
+    return idlePositions[idleIndex % idlePositions.length];
+  }
+
+  function getOfficeWorkerHtml(workerId, index, position, zoneSlot) {
     const character = CHARACTER_ASSETS[workerId] || {};
     const assignment = getOfficeWorkerAssignment(workerId);
     const label = character.label || getWorkerLabel(workerId);
@@ -2794,7 +2827,50 @@
     const src = character.officeSrc || character.src || "";
     const workerState = getOfficeWorkerState(workerId, assignment);
     const dialogue = getOfficeWorkerDialogue(workerId, assignment);
-    return '<button type="button" class="office-worker" data-office-worker="' + escapeHtml(workerId) + '" data-task="' + escapeHtml(assignment ? assignment.task.id : "idle") + '" data-worker-state="' + escapeHtml(workerState) + '" style="--worker-index:' + index + '" aria-label="' + escapeHtml(label + "、" + detail + "。" + dialogue) + '"><span class="office-speech" aria-hidden="true">' + escapeHtml(dialogue) + '</span><span class="office-worker-fallback" aria-hidden="true">' + escapeHtml(character.shortLabel || "AI") + '</span>' + (src ? '<img data-office-character-image src="' + escapeHtml(src + "?v=" + APP_ASSET_TOKEN) + '" alt="" width="512" height="768" decoding="async">' : '') + '<span class="office-worker-status"><span aria-hidden="true">' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "☕") + '</span> ' + escapeHtml(assignment ? assignment.task.label : "休憩中") + '</span></button>';
+    const selected = dashboardUi.officeWorkerSelected === workerId;
+    return '<button type="button" class="office-worker' + (selected ? ' selected' : '') + '" data-office-worker="' + escapeHtml(workerId) + '" data-task="' + escapeHtml(assignment ? assignment.task.id : "idle") + '" data-worker-state="' + escapeHtml(workerState) + '" data-zone-slot="' + zoneSlot + '" style="--worker-index:' + index + ';--worker-x:' + position.x + '%;--worker-y:' + position.y + '%" aria-pressed="' + String(selected) + '" aria-label="' + escapeHtml(label + "、" + detail + "。" + dialogue) + '"><span class="office-speech" aria-hidden="true">' + escapeHtml(dialogue) + '</span><span class="office-work-effect" aria-hidden="true"><i></i><b>' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "☕") + '</b></span><span class="office-worker-fallback" aria-hidden="true">' + escapeHtml(character.shortLabel || "AI") + '</span>' + (src ? '<img data-office-character-image src="' + escapeHtml(src + "?v=" + APP_ASSET_TOKEN) + '" alt="" width="512" height="768" decoding="async">' : '') + '<span class="office-worker-status"><span aria-hidden="true">' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "☕") + '</span> ' + escapeHtml(assignment ? assignment.task.label : "待機") + '</span></button>';
+  }
+
+  function getOfficeEquipmentHtml(officeLevel) {
+    return Object.keys(OFFICE_TASK_ZONES).map(function (taskId) {
+      const zone = OFFICE_TASK_ZONES[taskId];
+      const locked = officeLevel < zone.unlock;
+      return '<button type="button" class="office-zone zone-' + taskId + (locked ? ' locked' : '') + '" data-office-zone="' + taskId + '" style="--zone-x:' + zone.x + '%;--zone-y:' + zone.y + '%"' + (locked ? ' disabled' : '') + ' aria-label="' + escapeHtml(zone.label + (locked ? '、会社Lv' + zone.unlock + 'で解放' : 'を操作')) + '"><b aria-hidden="true">' + zone.icon + '</b><span>' + escapeHtml(zone.label) + '</span>' + (locked ? '<small>Lv' + zone.unlock + '</small>' : '') + '</button>';
+    }).join("");
+  }
+
+  function handleOfficeZoneAction(taskId) {
+    const task = TASKS.find(function (item) { return item.id === taskId; });
+    if (!task) return;
+    const assignedDefinition = PRODUCTS.find(function (definition) { return getProductAssignment(taskId, definition.id).aiIds.length > 0; });
+    const target = assignedDefinition || PRODUCTS.find(function (definition) { return canAssignTaskToProduct(taskId, definition.id); }) || getPrimaryProductDefinition();
+    if (!target || !canAssignTaskToProduct(taskId, target.id)) {
+      navigateToPage("products", { updateHistory: true, scrollTop: true });
+      focusMainContent();
+      return;
+    }
+    const product = getProduct(target.id);
+    const mode = taskId === "development" && product.upgradeStatus === "upgrading" ? "upgrade" : "normal";
+    openProductAssignmentModal(taskId, target.id, mode);
+  }
+
+  function renderOfficeWorkerInspector() {
+    const panel = document.getElementById("officeWorkerInspector");
+    if (!panel) return;
+    const workerId = dashboardUi.officeWorkerSelected;
+    const hired = workerId === "boss" || EMPLOYEES.some(function (employee) { return employee.id === workerId && (state.employees[employee.id] || 0) > 0; });
+    if (!workerId || !hired) { panel.hidden = true; panel.innerHTML = ""; return; }
+    const character = CHARACTER_ASSETS[workerId] || {};
+    const assignment = getOfficeWorkerAssignment(workerId);
+    const label = character.label || getWorkerLabel(workerId);
+    const taskLine = assignment ? assignment.definition.name + " / " + assignment.task.label : "待機中 / 新しい指令を待っています";
+    panel.hidden = false;
+    panel.innerHTML = '<button type="button" class="office-inspector-close" data-office-inspector-close aria-label="社員詳細を閉じる">×</button>' + getCharacterAvatarHtml(workerId, "office-inspector-avatar", false) + '<div class="office-inspector-copy"><span>SELECTED AI</span><strong>' + escapeHtml(label) + '</strong><p>' + escapeHtml(taskLine) + '</p><small>' + escapeHtml(getOfficeWorkerDialogue(workerId, assignment)) + '</small></div><button type="button" class="office-inspector-assign" data-office-inspector-assign="' + escapeHtml(workerId) + '">担当を変更</button>';
+    activateCharacterImageFallbacks(panel);
+    const closeButton = panel.querySelector("[data-office-inspector-close]");
+    if (closeButton) closeButton.addEventListener("click", function () { dashboardUi.officeWorkerSelected = ""; renderOffice(); });
+    const assignButton = panel.querySelector("[data-office-inspector-assign]");
+    if (assignButton) assignButton.addEventListener("click", function () { openWorkerAssignmentModal(workerId); });
   }
 
   function activateOfficeImageFallbacks(root) {
@@ -2815,6 +2891,9 @@
     const officeNames = ["仮想ワンルーム", "ミニスタートアップ空間", "自動化オフィス", "クラウド企業フロア", "AI企業タワー"];
     const level = state.companyLevel;
     officeName.textContent = officeNames[officeLevel - 1];
+    setText("officeCompanyLevel", officeLevel);
+    const officeStage = document.getElementById("officeStage");
+    if (officeStage && typeof officeStage.setAttribute === "function") officeStage.setAttribute("data-office-level", String(officeLevel));
     const bugLevel = getDashboardBugLevel();
     officeMood.textContent = bugLevel >= 70 && state.fire >= 70 ? "警告灯が会議室より多く点灯しています。" : state.fire >= 60 ? "広報チャンネルが高温話題化しています。" : bugLevel >= 60 ? "未分類機能が廊下を歩いています。" : level >= 5 ? "全フロアが自律稼働中。停止ボタンは申請制です。" : level >= 3 ? "自動化が進み、誰が何を自動化したか不明です。" : level >= 2 ? "人員は少ないですが、全員が24時間います。" : "起業直後。まだクラウド代の方が重いです。";
     officePanel.classList.toggle("alert", bugLevel >= 65 || state.fire >= 65);
@@ -2827,15 +2906,9 @@
     }
     const decor = document.getElementById("officeDecor");
     if (decor) {
-      const decorItems = [
-        { level: 1, icon: "▤", label: "開発デスク" },
-        { level: 2, icon: "♨", label: "コーヒーマシン" },
-        { level: 3, icon: "▥", label: "自動化サーバー" },
-        { level: 4, icon: "☎", label: "危機管理ルーム" },
-        { level: 5, icon: "✦", label: "展望ラウンジ" }
-      ].filter(function (item) { return item.level <= officeLevel; });
-      decor.innerHTML = decorItems.map(function (item) { return '<span class="office-decor-item decor-level-' + item.level + '" title="Lv' + item.level + 'で解放: ' + escapeHtml(item.label) + '"><b>' + item.icon + '</b><small>' + escapeHtml(item.label) + '</small></span>'; }).join("");
+      decor.innerHTML = getOfficeEquipmentHtml(officeLevel);
       if (typeof decor.setAttribute === "function") decor.setAttribute("data-office-level", String(officeLevel));
+      decor.querySelectorAll("button[data-office-zone]").forEach(function (button) { button.addEventListener("click", function () { handleOfficeZoneAction(button.getAttribute("data-office-zone")); }); });
     }
     const hiredWorkerIds = ["boss"].concat(EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; }));
     const workers = document.getElementById("officeWorkers");
@@ -2843,19 +2916,30 @@
       const workerSignature = hiredWorkerIds.map(function (workerId) {
         const assignment = getOfficeWorkerAssignment(workerId);
         const latest = state.logs.find(function (log) { return log.employeeId === workerId || (workerId === "boss" && log.employeeId === "company"); });
-        return workerId + ":" + (assignment ? assignment.task.id + ":" + assignment.definition.id + ":" + assignment.mode : "idle") + ":" + getOfficeWorkerState(workerId, assignment) + ":" + (latest ? latest.id : "");
-      }).join("|");
+        return workerId + ":" + (assignment ? assignment.task.id + ":" + assignment.definition.id + ":" + assignment.mode : "idle") + ":" + getOfficeWorkerState(workerId, assignment) + ":" + (latest ? String(latest.id || latest.createdAt || "") + ":" + latest.text : "");
+      }).join("|") + "|selected:" + dashboardUi.officeWorkerSelected;
       const canTrackSignature = typeof workers.getAttribute === "function" && typeof workers.setAttribute === "function";
       if (!canTrackSignature || workers.getAttribute("data-office-signature") !== workerSignature) {
         if (canTrackSignature) {
           workers.setAttribute("data-worker-count", String(hiredWorkerIds.length));
           workers.setAttribute("data-office-signature", workerSignature);
         }
-        workers.innerHTML = hiredWorkerIds.map(getOfficeWorkerHtml).join("");
-        workers.querySelectorAll("button[data-office-worker]").forEach(function (button) { button.addEventListener("click", function () { openWorkerAssignmentModal(button.getAttribute("data-office-worker")); }); });
+        const taskSlots = {};
+        let idleIndex = 0;
+        workers.innerHTML = hiredWorkerIds.map(function (workerId, index) {
+          const assignment = getOfficeWorkerAssignment(workerId);
+          const taskId = assignment ? assignment.task.id : "idle";
+          const slot = taskSlots[taskId] || 0;
+          taskSlots[taskId] = slot + 1;
+          const position = getOfficeWorkerPosition(workerId, assignment, slot, idleIndex);
+          if (!assignment && workerId !== "boss") idleIndex += 1;
+          return getOfficeWorkerHtml(workerId, index, position, slot);
+        }).join("");
+        workers.querySelectorAll("button[data-office-worker]").forEach(function (button) { button.addEventListener("click", function () { dashboardUi.officeWorkerSelected = button.getAttribute("data-office-worker"); renderOffice(); }); });
         activateOfficeImageFallbacks(workers);
       }
     }
+    renderOfficeWorkerInspector();
     const workingCount = hiredWorkerIds.filter(function (workerId) { return Boolean(getOfficeWorkerAssignment(workerId)); }).length;
     const summary = document.getElementById("officeSummary");
     const summaryText = "稼働中 " + workingCount + "体 / 待機中 " + (hiredWorkerIds.length - workingCount) + "体。キャラクターをタップすると担当を変更できます。";
@@ -4298,6 +4382,7 @@
     else if (productActionMenuOpen) closeProductActionMenu();
     else if (productDetailModalOpen) closeProductDetailModal();
     else if (assignmentModalOpen) closeAssignmentModal();
+    else if (dashboardUi.officeWorkerSelected) { dashboardUi.officeWorkerSelected = ""; renderOffice(); }
   }
 
   function boot() {
@@ -4350,7 +4435,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-57").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-58").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

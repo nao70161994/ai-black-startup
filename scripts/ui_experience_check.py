@@ -22,7 +22,7 @@ PAGES = ("home", "products", "team", "management", "records")
 
 MATURE_SAVE = {
     "schemaVersion": 3,
-    "appVersion": "2026.05.24.57",
+    "appVersion": "2026.05.24.58",
     "money": 680000,
     "totalMoney": 1200000,
     "users": 480,
@@ -141,6 +141,18 @@ END_SAVE["logs"].insert(0, {
     "createdAt": 2000000001000,
 })
 
+OFFICE_LEVEL_SAVES = {}
+for office_level in (2, 3, 4):
+    office_save = copy.deepcopy(MATURE_SAVE)
+    office_save["companyLevel"] = office_level
+    unlocked_count = min(6, office_level + 1)
+    employee_ids = ("dev01", "sales02", "buzz03", "care04", "fire05", "security06")
+    office_save["employees"] = {employee_id: 1 for employee_id in employee_ids[:unlocked_count]}
+    OFFICE_LEVEL_SAVES[f"level-{office_level}"] = office_save
+
+IDLE_SAVE = copy.deepcopy(MATURE_SAVE)
+IDLE_SAVE["assignments"] = {}
+
 PROBE_SCRIPT = r"""
 const settings = SETTINGS;
 const resultNode = document.getElementById("result");
@@ -187,6 +199,9 @@ function openRequestedModal(doc) {
   } else if (settings.modal === "assignment") {
     const button = doc.getElementById("openAssignmentModal");
     if (button) button.click();
+  } else if (settings.modal === "zone") {
+    const button = doc.querySelector('[data-office-zone="development"]');
+    if (button) button.click();
   }
 }
 
@@ -194,6 +209,10 @@ function collect() {
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   openRequestedModal(doc);
+  if (settings.selectWorker) {
+    const worker = doc.querySelector('[data-office-worker="' + settings.selectWorker + '"]') || doc.querySelector("[data-office-worker]");
+    if (worker) worker.click();
+  }
   if (settings.forceImageFailure) {
     doc.querySelectorAll("img[data-office-character-image], img[data-character-image]").forEach((image, index) => {
       image.src = "/__missing_uiqa_image_" + index + ".webp";
@@ -246,6 +265,30 @@ function collect() {
       modalResult.escapeClosed = settings.keepModal || !doc.querySelector('[role="dialog"]:not([hidden])');
     }
 
+    const officeStage = doc.getElementById("officeStage");
+    const officeWorkers = Array.from(doc.querySelectorAll(".office-worker")).filter(node => visible(node, win));
+    const equipmentZones = Array.from(doc.querySelectorAll(".office-zone")).filter(node => visible(node, win));
+    function overlapArea(first, second) {
+      if (!first || !second || !visible(first, win) || !visible(second, win)) return 0;
+      const a = first.getBoundingClientRect();
+      const b = second.getBoundingClientRect();
+      return Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    }
+    const officeResult = officeStage ? {
+      height: Math.round(officeStage.getBoundingClientRect().height),
+      top: Math.round(officeStage.getBoundingClientRect().top),
+      workers: officeWorkers.length,
+      uniqueWorkerAnchors: new Set(officeWorkers.map(node => {
+        const rect = node.getBoundingClientRect();
+        return Math.round(rect.left / 8) + ":" + Math.round(rect.top / 8);
+      })).size,
+      equipmentZones: equipmentZones.length,
+      inspectorOpen: Boolean(doc.querySelector(".office-worker-inspector:not([hidden])")),
+      tutorialWorkerOverlap: overlapArea(doc.querySelector(".office-coach:not([hidden])"), doc.querySelector(".office-worker")),
+      directiveVitalsOverlap: overlapArea(doc.querySelector(".office-directive"), doc.querySelector(".office-vitals")),
+      directiveRiskOverlap: overlapArea(doc.querySelector(".office-directive"), doc.querySelector(".office-risk-console")),
+    } : null;
+
     const result = {
       scenario: settings.scenario,
       page: settings.page,
@@ -274,6 +317,7 @@ function collect() {
       shareTextColor: share ? win.getComputedStyle(share).color : "",
       imageFallbacks: doc.querySelectorAll(".image-failed").length,
       saveNotice: (doc.getElementById("saveManagerStatus") || {}).textContent || "",
+      office: officeResult,
       modal: modalResult,
     };
     resultNode.textContent = "UIQA_RESULT:" + JSON.stringify(result);
@@ -311,14 +355,16 @@ class ProbeHandler(SimpleHTTPRequestHandler):
             return
         query = urllib.parse.parse_qs(parsed.query)
         scenario = query.get("scenario", ["fresh"])[0]
+        save = CRISIS_SAVE if scenario == "crisis" else END_SAVE if scenario == "end" else OFFICE_LEVEL_SAVES.get(scenario) if scenario.startswith("level-") else IDLE_SAVE if scenario == "idle" else MATURE_SAVE if scenario in ("mature", "image-failed", "selected") else None
         settings = {
             "scenario": scenario,
             "page": query.get("page", ["home"])[0],
             "width": int(query.get("width", ["390"])[0]),
             "modal": query.get("modal", [""])[0],
             "forceImageFailure": query.get("forceImageFailure", ["False"])[0].lower() == "true",
+            "selectWorker": query.get("selectWorker", [""])[0],
             "keepModal": query.get("keepModal", ["False"])[0].lower() == "true",
-            "save": CRISIS_SAVE if scenario == "crisis" else END_SAVE if scenario == "end" else MATURE_SAVE if scenario in ("mature", "image-failed") else None,
+            "save": save,
         }
         payload = make_probe(settings)
         self.send_response(200)
@@ -389,6 +435,19 @@ def validate(result: dict[str, object]) -> list[str]:
         failures.append(f"{label}: image failure fallback was not activated")
     if result["scenario"] == "storage-unavailable" and "一時保存" not in result["saveNotice"]:
         failures.append(f"{label}: unavailable storage state is not explained")
+    office = result.get("office")
+    if result["page"] == "home":
+        required_height = 620 if result["width"] < 960 else 580
+        if not office or office["height"] < required_height or office["top"] > 24:
+            failures.append(f"{label}: office is not the first-view primary stage: {office}")
+        if office and office["workers"] != office["uniqueWorkerAnchors"]:
+            failures.append(f"{label}: workers share the same spatial anchor")
+        if office and (office["tutorialWorkerOverlap"] > 100 or office["directiveVitalsOverlap"] > 100 or office["directiveRiskOverlap"] > 100):
+            failures.append(f"{label}: office HUD overlaps primary content: {office}")
+        if result["scenario"] in ("mature", "end", "crisis") and office and office["equipmentZones"] < 6:
+            failures.append(f"{label}: mature office does not expose all work zones")
+        if result["scenario"] == "selected" and (not office or not office["inspectorOpen"]):
+            failures.append(f"{label}: worker selection did not open the in-stage inspector")
     modal = result.get("modal")
     if modal:
         if not modal["open"] or modal["role"] != "dialog":
@@ -411,11 +470,19 @@ def build_cases() -> list[dict[str, object]]:
         cases.append({"scenario": "mature", "page": page, "width": 390})
         cases.append({"scenario": "mature", "page": page, "width": 1280})
     cases.append({"scenario": "mature", "page": "home", "width": 768})
+    cases.append({"scenario": "mature", "page": "home", "width": 960})
     for width in (320, 1280):
         cases.append({"scenario": "crisis", "page": "home", "width": width})
         cases.append({"scenario": "crisis", "page": "products", "width": width})
     for page in PAGES:
         cases.append({"scenario": "end", "page": page, "width": 390})
+    for office_level in (2, 3, 4):
+        cases.append({"scenario": f"level-{office_level}", "page": "home", "width": 390})
+    cases.append({"scenario": "idle", "page": "home", "width": 390})
+    for width in (390, 1280):
+        cases.append({"scenario": "selected", "page": "home", "width": width, "selectWorker": "boss"})
+    for width in (320, 1280):
+        cases.append({"scenario": "mature", "page": "home", "width": width, "modal": "zone"})
     cases.append({"scenario": "image-failed", "page": "team", "width": 320, "forceImageFailure": True})
     cases.append({"scenario": "storage-unavailable", "page": "records", "width": 320, "storageUnavailable": True})
     for width in (320, 1280):
@@ -438,6 +505,7 @@ def main() -> int:
         parts = args.case.split(":")
         page, width, scenario = parts[:3]
         cases = [{"page": page, "width": int(width), "scenario": scenario}]
+        if scenario == "selected": cases[0]["selectWorker"] = "boss"
         if scenario == "image-failed": cases[0]["forceImageFailure"] = True
         if scenario == "storage-unavailable": cases[0]["storageUnavailable"] = True
         if len(parts) > 3: cases[0]["modal"] = parts[3]
