@@ -22,7 +22,7 @@ PAGES = ("home", "products", "team", "management", "records")
 
 MATURE_SAVE = {
     "schemaVersion": 3,
-    "appVersion": "2026.05.24.58",
+    "appVersion": "2026.05.24.59",
     "money": 680000,
     "totalMoney": 1200000,
     "users": 480,
@@ -274,6 +274,28 @@ function collect() {
       const b = second.getBoundingClientRect();
       return Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
     }
+    const officeCoach = doc.querySelector(".office-coach:not([hidden])");
+    const coachTitle = officeCoach && officeCoach.querySelector(".tutorial-copy strong");
+    const coachBody = officeCoach && officeCoach.querySelector(".tutorial-copy p");
+    function renderedLines(node) {
+      if (!node || !visible(node, win)) return 0;
+      const lineHeight = parseFloat(win.getComputedStyle(node).lineHeight) || parseFloat(win.getComputedStyle(node).fontSize);
+      return Math.max(1, Math.round(node.getBoundingClientRect().height / lineHeight));
+    }
+    function containedBy(parent, children) {
+      if (!parent || !visible(parent, win)) return true;
+      const outer = parent.getBoundingClientRect();
+      return children.every(node => {
+        const rect = node.getBoundingClientRect();
+        return rect.left >= outer.left - 1 && rect.right <= outer.right + 1 && rect.top >= outer.top - 1 && rect.bottom <= outer.bottom + 1;
+      });
+    }
+    const activityPanel = doc.getElementById("activityPanel");
+    const activityText = doc.getElementById("activityText");
+    const zoneLabelsVisible = equipmentZones.every(node => {
+      const content = win.getComputedStyle(node, "::after").content;
+      return settings.width >= 960 || (content !== "none" && content.length > 2);
+    });
     const officeResult = officeStage ? {
       height: Math.round(officeStage.getBoundingClientRect().height),
       top: Math.round(officeStage.getBoundingClientRect().top),
@@ -284,6 +306,14 @@ function collect() {
       })).size,
       equipmentZones: equipmentZones.length,
       inspectorOpen: Boolean(doc.querySelector(".office-worker-inspector:not([hidden])")),
+      minWorkerWidth: officeWorkers.length ? Math.round(Math.min(...officeWorkers.map(node => node.getBoundingClientRect().width))) : 0,
+      tutorialVisible: Boolean(officeCoach),
+      tutorialHeadingLines: renderedLines(coachTitle),
+      tutorialBodyLines: renderedLines(coachBody),
+      tutorialActionsContained: containedBy(officeCoach, officeCoach ? Array.from(officeCoach.querySelectorAll(".tutorial-actions button")) : []),
+      tutorialContained: containedBy(officeStage, officeCoach ? [officeCoach] : []),
+      activityTextContained: containedBy(activityPanel, activityText ? [activityText] : []),
+      zonesLabeled: zoneLabelsVisible,
       tutorialWorkerOverlap: overlapArea(doc.querySelector(".office-coach:not([hidden])"), doc.querySelector(".office-worker")),
       directiveVitalsOverlap: overlapArea(doc.querySelector(".office-directive"), doc.querySelector(".office-vitals")),
       directiveRiskOverlap: overlapArea(doc.querySelector(".office-directive"), doc.querySelector(".office-risk-console")),
@@ -440,6 +470,14 @@ def validate(result: dict[str, object]) -> list[str]:
         required_height = 620 if result["width"] < 960 else 580
         if not office or office["height"] < required_height or office["top"] > 24:
             failures.append(f"{label}: office is not the first-view primary stage: {office}")
+        if office and office["minWorkerWidth"] < (90 if result["width"] < 960 else 105):
+            failures.append(f"{label}: office workers are too small to read: {office}")
+        if office and office["tutorialVisible"] and (office["tutorialHeadingLines"] > 2 or office["tutorialBodyLines"] > 4 or not office["tutorialActionsContained"] or not office["tutorialContained"]):
+            failures.append(f"{label}: tutorial copy or actions collapse outside the coach: {office}")
+        if office and not office["activityTextContained"]:
+            failures.append(f"{label}: live activity text escapes its panel")
+        if office and not office["zonesLabeled"]:
+            failures.append(f"{label}: mobile work zones lack a visible meaning label")
         if office and office["workers"] != office["uniqueWorkerAnchors"]:
             failures.append(f"{label}: workers share the same spatial anchor")
         if office and (office["tutorialWorkerOverlap"] > 100 or office["directiveVitalsOverlap"] > 100 or office["directiveRiskOverlap"] > 100):
@@ -471,6 +509,8 @@ def build_cases() -> list[dict[str, object]]:
         cases.append({"scenario": "mature", "page": page, "width": 1280})
     cases.append({"scenario": "mature", "page": "home", "width": 768})
     cases.append({"scenario": "mature", "page": "home", "width": 960})
+    cases.append({"scenario": "fresh", "page": "home", "width": 960})
+    cases.append({"scenario": "fresh", "page": "home", "width": 1280})
     for width in (320, 1280):
         cases.append({"scenario": "crisis", "page": "home", "width": width})
         cases.append({"scenario": "crisis", "page": "products", "width": width})

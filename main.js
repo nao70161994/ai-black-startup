@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.58";
-  const APP_ASSET_TOKEN = "20260524-58";
+  const APP_VERSION = "2026.05.24.59";
+  const APP_ASSET_TOKEN = "20260524-59";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -2801,12 +2801,12 @@
   }
 
   const OFFICE_TASK_ZONES = {
-    development: { x: 28, y: 77, label: "開発ベイ", icon: "{ }", unlock: 1 },
-    sales: { x: 76, y: 78, label: "セールス端末", icon: "↗", unlock: 2 },
-    marketing: { x: 17, y: 57, label: "広報ブース", icon: "✦", unlock: 3 },
-    qa: { x: 68, y: 55, label: "品質スキャナ", icon: "✓", unlock: 3 },
-    support: { x: 51, y: 53, label: "サポート席", icon: "♡", unlock: 4 },
-    crisis: { x: 86, y: 53, label: "危機対応室", icon: "!", unlock: 4 }
+    development: { x: 28, y: 77, label: "開発ベイ", shortLabel: "開発", icon: "{ }", unlock: 1 },
+    sales: { x: 76, y: 78, label: "セールス端末", shortLabel: "販売", icon: "↗", unlock: 2 },
+    marketing: { x: 17, y: 57, label: "広報ブース", shortLabel: "広報", icon: "✦", unlock: 3 },
+    qa: { x: 68, y: 55, label: "品質スキャナ", shortLabel: "品質", icon: "✓", unlock: 3 },
+    support: { x: 51, y: 53, label: "サポート席", shortLabel: "支援", icon: "♡", unlock: 4 },
+    crisis: { x: 86, y: 53, label: "危機対応室", shortLabel: "危機", icon: "!", unlock: 4 }
   };
 
   function getOfficeWorkerPosition(workerId, assignment, slotIndex, idleIndex) {
@@ -2835,7 +2835,7 @@
     return Object.keys(OFFICE_TASK_ZONES).map(function (taskId) {
       const zone = OFFICE_TASK_ZONES[taskId];
       const locked = officeLevel < zone.unlock;
-      return '<button type="button" class="office-zone zone-' + taskId + (locked ? ' locked' : '') + '" data-office-zone="' + taskId + '" style="--zone-x:' + zone.x + '%;--zone-y:' + zone.y + '%"' + (locked ? ' disabled' : '') + ' aria-label="' + escapeHtml(zone.label + (locked ? '、会社Lv' + zone.unlock + 'で解放' : 'を操作')) + '"><b aria-hidden="true">' + zone.icon + '</b><span>' + escapeHtml(zone.label) + '</span>' + (locked ? '<small>Lv' + zone.unlock + '</small>' : '') + '</button>';
+      return '<button type="button" class="office-zone zone-' + taskId + (locked ? ' locked' : '') + '" data-office-zone="' + taskId + '" data-zone-label="' + escapeHtml(zone.shortLabel) + '" style="--zone-x:' + zone.x + '%;--zone-y:' + zone.y + '%"' + (locked ? ' disabled' : '') + ' aria-label="' + escapeHtml(zone.label + (locked ? '、会社Lv' + zone.unlock + 'で解放' : 'を操作')) + '"><b aria-hidden="true">' + zone.icon + '</b><span>' + escapeHtml(zone.label) + '</span>' + (locked ? '<small>Lv' + zone.unlock + '</small>' : '') + '</button>';
     }).join("");
   }
 
@@ -4435,7 +4435,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-58").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20260524-59").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

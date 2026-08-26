@@ -242,7 +242,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-58
+http://localhost:8000/?v=20260524-59
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -315,18 +315,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.58` です。
+現在のアプリバージョンは `2026.05.24.59` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーと起動背景はコマンドセンターに合わせた濃紺です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-58">
-<script src="js/data/products.js?v=20260524-58"></script>
-<script src="js/data/achievements.js?v=20260524-58"></script>
-<script src="js/data/missions.js?v=20260524-58"></script>
-<script src="main.js?v=20260524-58"></script>
+<link rel="stylesheet" href="style.css?v=20260524-59">
+<script src="js/data/products.js?v=20260524-59"></script>
+<script src="js/data/achievements.js?v=20260524-59"></script>
+<script src="js/data/missions.js?v=20260524-59"></script>
+<script src="main.js?v=20260524-59"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -334,18 +334,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.58
+ai-black-startup-2026.05.24.59
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-58` を付けて開く
+- URLに `?v=20260524-59` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-58` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-59` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法

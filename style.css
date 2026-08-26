@@ -1,4 +1,4 @@
-/* AI Black Startup — command-center interface v2026.05.24.58 */
+/* AI Black Startup — command-center interface v2026.05.24.59 */
 :root {
   color-scheme: dark;
   --bg-0: #030811;
@@ -158,7 +158,7 @@ body[data-page="home"] main { padding-top: 0; }
 .office-zone small { color: #738f9f; font-size: 7px; }
 .office-zone.locked { display: none; }
 .office-workers { position: absolute; z-index: 7; inset: 0; pointer-events: none; }
-.office-worker { position: absolute; left: var(--worker-x); top: var(--worker-y); display: grid; align-content: end; justify-items: center; width: clamp(94px, 13.5%, 158px); height: clamp(150px, 29%, 238px); min-width: 0; min-height: 44px; padding: 0; border: 0; color: #fff; background: transparent; box-shadow: none; filter: drop-shadow(0 10px 8px rgba(0,5,12,.62)); transform: translate(-50%,-100%); transform-origin: 50% 100%; pointer-events: auto; transition: left .45s ease, top .45s ease, filter .2s ease, scale .2s ease; animation: office-idle 3.2s ease-in-out infinite; animation-delay: calc(var(--worker-index, 0) * -.38s); }
+.office-worker { position: absolute; left: var(--worker-x); top: var(--worker-y); display: grid; align-content: end; justify-items: center; width: clamp(110px, 15.5%, 184px); height: clamp(166px, 34%, 270px); min-width: 0; min-height: 44px; padding: 0; border: 0; color: #fff; background: transparent; box-shadow: none; filter: drop-shadow(0 10px 8px rgba(0,5,12,.62)); transform: translate(-50%,-100%); transform-origin: 50% 100%; pointer-events: auto; transition: left .45s ease, top .45s ease, filter .2s ease, scale .2s ease; animation: office-idle 3.2s ease-in-out infinite; animation-delay: calc(var(--worker-index, 0) * -.38s); }
 .office-worker:hover, .office-worker:focus-visible, .office-worker.selected { z-index: 11; filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), .85)); scale: 1.08; }
 .office-worker.selected::after { content: "SELECTED"; position: absolute; bottom: -17px; color: var(--accent); font-size: 7px; font-weight: 950; letter-spacing: .15em; }
 .office-worker img { position: relative; z-index: 2; display: block; width: 100%; height: calc(100% - 24px); object-fit: contain; object-position: center bottom; }
@@ -208,12 +208,14 @@ body[data-page="home"] main { padding-top: 0; }
 .office-inspector-copy p, .office-inspector-copy small { overflow: hidden; color: #a4bac5; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .office-inspector-assign { grid-column: 2; min-height: 44px; }
 .office-inspector-close { position: absolute; top: 7px; right: 7px; width: 44px; min-width: 44px; padding: 0; color: #a9c0cb; background: transparent; box-shadow: none; }
-.office-coach { position: absolute; z-index: 19; left: 16px; top: 172px; width: min(330px,35%); margin: 0; border-color: rgba(var(--accent-rgb),.62); background: rgba(6,23,35,.96); box-shadow: 0 20px 55px rgba(0,4,10,.55), 0 0 0 9999px rgba(0,5,10,.12); backdrop-filter: blur(16px); }
+.office-coach { position: absolute; z-index: 19; left: 16px; top: 172px; grid-template-columns: 72px 76px minmax(0,1fr); gap: 10px 14px; width: min(560px,55%); margin: 0; border-color: rgba(var(--accent-rgb),.62); background: rgba(6,23,35,.96); box-shadow: 0 20px 55px rgba(0,4,10,.55), 0 0 0 9999px rgba(0,5,10,.12); backdrop-filter: blur(16px); }
+.office-coach .tutorial-actions { grid-column: 2 / -1; justify-content: flex-end; }
+.office-coach .tutorial-actions button { min-width: 132px; }
 .office-coach::after { content: ""; position: absolute; left: clamp(20px, var(--coach-arrow-x, 50%), calc(100% - 34px)); bottom: -13px; width: 24px; height: 24px; border-right: 1px solid rgba(var(--accent-rgb),.62); border-bottom: 1px solid rgba(var(--accent-rgb),.62); background: #081d2a; transform: translateX(-50%) rotate(45deg); }
 .tutorial-target { z-index: 21 !important; filter: drop-shadow(0 0 24px var(--focus)) !important; }
 .office-hotspot.tutorial-target { box-shadow: 0 0 0 4px rgba(255,209,102,.24), 0 0 28px var(--focus); }
 .office-activity { position: absolute; z-index: 12; bottom: 14px; left: 14px; width: min(42%,440px); min-height: 62px; padding: 9px 12px; border: 1px solid rgba(151,194,218,.18); border-radius: 13px; background: rgba(3,15,24,.82); backdrop-filter: blur(12px); }
-.office-activity #activityText { margin-top: 4px; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.office-activity #activityText { display: block; margin-top: 4px; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .office-activity .activity-latest { margin-top: 3px; }
 .office-activity .latest-log-avatar { display: none; }
 .office-activity .activity-latest > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -502,7 +504,8 @@ button.danger, .actions button.danger { color: #ffc5cd; border-color: rgba(255,1
   .office-vitals strong { font-size: 12px; }
   .office-zone { grid-template-columns: 30px; min-width: 44px; padding: 6px; }
   .office-zone span, .office-zone small { display: none; }
-  .office-worker { width: clamp(76px,24%,108px); height: clamp(132px,25%,186px); }
+  .office-zone::after { content: attr(data-zone-label); display: block; color: #d9f5ff; font-size: 7px; font-weight: 900; line-height: 1; white-space: nowrap; }
+  .office-worker { width: clamp(92px,28%,124px); height: clamp(150px,30%,210px); }
   .office-worker-status { max-width: 90px; padding-inline: 5px; font-size: 7px; }
   .office-speech { max-width: 104px; font-size: 7px; }
   .office-worker:not(.selected):not([data-worker-state="alert"]):not([data-worker-state="crisis"]):not(:focus-visible) .office-speech { opacity: 0; }
@@ -520,6 +523,8 @@ button.danger, .actions button.danger { color: #ffc5cd; border-color: rgba(255,1
   .office-inspector-assign { grid-column: 3; grid-row: 1; align-self: end; }
   .office-stage:has(.office-worker-inspector:not([hidden])) .office-directive { visibility: hidden; }
   .office-coach { top: 136px; right: 7px; bottom: auto; left: 7px; width: auto; min-height: 164px; }
+  .office-coach .tutorial-actions { grid-column: 1 / -1; }
+  .office-coach .tutorial-actions button { min-width: 0; }
   .office-coach::after { left: 48%; }
   .office-stage:is([data-tutorial-stage="1"],[data-tutorial-stage="2"],[data-tutorial-stage="3"]) .office-directive { visibility: hidden; }
   .office-stage:is([data-tutorial-stage="1"],[data-tutorial-stage="2"],[data-tutorial-stage="3"]) .office-risk-console { visibility: hidden; }
