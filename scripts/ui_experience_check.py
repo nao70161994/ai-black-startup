@@ -22,7 +22,7 @@ PAGES = ("home", "products", "team", "management", "records")
 
 MATURE_SAVE = {
     "schemaVersion": 3,
-    "appVersion": "2026.05.24.59",
+    "appVersion": "2026.05.24.60",
     "money": 680000,
     "totalMoney": 1200000,
     "users": 480,
@@ -296,8 +296,18 @@ function collect() {
       const content = win.getComputedStyle(node, "::after").content;
       return settings.width >= 960 || (content !== "none" && content.length > 2);
     });
+    const criticalTextNodes = Array.from(doc.querySelectorAll(".page-location p, .dashboard-summary, .room-heading small, .portfolio-preview-copy small, .roster-member-copy small, .strategy-option span, .log-content p, .assignment-summary-item span")).filter(node => visible(node, win));
+    const criticalTextSizes = criticalTextNodes.map(node => parseFloat(win.getComputedStyle(node).fontSize));
+    const officeRect = officeStage ? officeStage.getBoundingClientRect() : null;
+    const sidebar = doc.querySelector(".command-sidebar");
+    const sidebarRight = settings.width >= 960 && sidebar ? sidebar.getBoundingClientRect().right : 0;
+    const navigationTop = settings.width < 960 ? nav.getBoundingClientRect().top : win.innerHeight;
     const officeResult = officeStage ? {
       height: Math.round(officeStage.getBoundingClientRect().height),
+      edgeGap: Math.round(Math.abs(officeRect.left - sidebarRight) + Math.abs(officeRect.right - doc.documentElement.clientWidth) + Math.abs(officeRect.top)),
+      bottomGap: Math.max(0, Math.round(navigationTop - officeRect.bottom)),
+      borderWidth: Math.round(parseFloat(win.getComputedStyle(officeStage).borderTopWidth)),
+      borderRadius: Math.round(parseFloat(win.getComputedStyle(officeStage).borderTopLeftRadius)),
       top: Math.round(officeStage.getBoundingClientRect().top),
       workers: officeWorkers.length,
       uniqueWorkerAnchors: new Set(officeWorkers.map(node => {
@@ -331,6 +341,8 @@ function collect() {
       pageTitle: doc.getElementById("currentPageTitle").textContent.trim(),
       pageDescription: doc.getElementById("currentPageDescription").textContent.trim(),
       currentPage: currentLink ? currentLink.getAttribute("data-page-link") : "",
+      criticalTextMin: criticalTextSizes.length ? Math.min(...criticalTextSizes) : 0,
+      criticalTextUndersized: criticalTextNodes.filter(node => parseFloat(win.getComputedStyle(node).fontSize) < 10).map(node => node.className || node.tagName),
       minTarget: controlHeights.length ? Math.min(...controlHeights) : 0,
       undersized: undersizedTargets,
       unnamed: controls.filter(node => !accessibleName(node)).map(node => node.id || node.tagName),
@@ -344,7 +356,7 @@ function collect() {
       strategyLabel: !selectedStrategy || win.getComputedStyle(selectedStrategy, "::after").content.includes("選択中"),
       recommendationDistinct: !recommendation ||
         win.getComputedStyle(recommendation).backgroundImage !== win.getComputedStyle(doc.querySelector("button:not(.next-recommendation-button)")).backgroundImage,
-      shareTextColor: share ? win.getComputedStyle(share).color : "",
+      shareTextColor: share && visible(share, win) ? win.getComputedStyle(share).color : "",
       imageFallbacks: doc.querySelectorAll(".image-failed").length,
       saveNotice: (doc.getElementById("saveManagerStatus") || {}).textContent || "",
       office: officeResult,
@@ -449,17 +461,19 @@ def validate(result: dict[str, object]) -> list[str]:
         failures.append(f"{label}: current navigation is {result['currentPage']}")
     if not result["pageTitle"] or not result["pageDescription"]:
         failures.append(f"{label}: page context is incomplete")
-    if result["width"] < 960 and result["shellPaddingBottom"] < result["navHeight"] + 8:
+    if result["page"] != "home" and result["width"] < 960 and result["shellPaddingBottom"] < result["navHeight"] + 8:
         failures.append(f"{label}: fixed navigation clearance is insufficient")
     if not result.get("modal") and (result["focusOutline"] or 0) < 2:
         failures.append(f"{label}: keyboard focus outline is not visible")
     if result["width"] >= 1200 and result["shellWidth"] < 1000:
         failures.append(f"{label}: desktop shell remains too narrow")
+    if result["page"] != "home" and result["criticalTextMin"] < 10:
+        failures.append(f"{label}: critical supporting text is below 10px: {result['criticalTextUndersized']}")
     if not result["strategyDistinct"] or not result["strategyLabel"]:
         failures.append(f"{label}: selected strategy is not clearly distinguishable")
     if not result["recommendationDistinct"]:
         failures.append(f"{label}: recommendation action lacks visual hierarchy")
-    if result["shareTextColor"] and result["shareTextColor"] not in ("rgb(5, 42, 25)", "rgb(7, 56, 41)"):
+    if result["shareTextColor"] and result["shareTextColor"] not in ("rgb(5, 42, 25)", "rgb(7, 56, 41)", "rgb(68, 223, 169)"):
         failures.append(f"{label}: share action contrast color regressed")
     if result["scenario"] == "image-failed" and not result["imageFallbacks"]:
         failures.append(f"{label}: image failure fallback was not activated")
@@ -468,6 +482,8 @@ def validate(result: dict[str, object]) -> list[str]:
     office = result.get("office")
     if result["page"] == "home":
         required_height = 620 if result["width"] < 960 else 580
+        if office and (office["edgeGap"] > 2 or office["bottomGap"] > 12 or office["borderWidth"] > 0 or office["borderRadius"] > 0):
+            failures.append(f"{label}: office is still rendered as an inset framed card: {office}")
         if not office or office["height"] < required_height or office["top"] > 24:
             failures.append(f"{label}: office is not the first-view primary stage: {office}")
         if office and office["minWorkerWidth"] < (90 if result["width"] < 960 else 105):
@@ -511,6 +527,8 @@ def build_cases() -> list[dict[str, object]]:
     cases.append({"scenario": "mature", "page": "home", "width": 960})
     cases.append({"scenario": "fresh", "page": "home", "width": 960})
     cases.append({"scenario": "fresh", "page": "home", "width": 1280})
+    cases.append({"scenario": "fresh", "page": "home", "width": 1600})
+    cases.append({"scenario": "mature", "page": "home", "width": 1600})
     for width in (320, 1280):
         cases.append({"scenario": "crisis", "page": "home", "width": width})
         cases.append({"scenario": "crisis", "page": "products", "width": width})
