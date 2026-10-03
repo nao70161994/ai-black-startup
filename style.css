@@ -1,4 +1,4 @@
-/* AI Black Startup — command-center interface v2026.10.03.1 */
+/* AI Black Startup — command-center interface v2026.10.03.2 */
 :root {
   color-scheme: dark;
   --bg-0: #030811;
@@ -360,7 +360,7 @@ body[data-page="home"] main { padding-top: 0; }
 .metric-chart div { display: flex; justify-content: space-between; gap: 8px; font-size: 9px; }
 .metric-chart div span { color: var(--accent); }
 .metric-chart svg { display: block; width: 100%; height: 60px; margin-top: 5px; }
-.metric-chart polyline { stroke: var(--accent); stroke-width: 2.5; }
+.metric-chart polyline { stroke-width: 2.5; }
 .chart-baseline { stroke: rgba(255,255,255,.12); stroke-width: 1; }
 .achievement-list { display: grid; gap: 7px; margin-top: 11px; }
 .achievement-category-group { display: grid; gap: 7px; }
@@ -534,8 +534,8 @@ button.danger, .actions button.danger { color: #ffc5cd; border-color: rgba(255,1
   .office-hotspot-product { right: 7px; bottom: 7px; width: 118px; }
   .office-hotspot-decision { right: 130px; bottom: 7px; }
   .office-decision-drawer { inset: auto 7px 70px; width: auto; max-height: 72%; }
-  .product-lab-shell { order: 1; }
-  .product-focus-rail { order: 2; }
+  .product-lab-shell { }
+  .product-focus-rail { }
   .product-lab-visual { min-height: 285px; }
   .product-lab-visual img { min-height: 285px; }
   .room-heading { top: 12px; left: 13px; }
@@ -543,8 +543,8 @@ button.danger, .actions button.danger { color: #ffc5cd; border-color: rgba(255,1
   .product-portfolio-preview { width: max-content; grid-template-columns: repeat(5,126px); }
   .portfolio-preview-item { min-height: 100px; scroll-snap-align: start; }
   .product-objective-panel { margin-top: 10px; }
-  .team-operations { order: 2; }
-  .employee-panel { order: 1; padding: 13px; }
+  .team-operations { }
+  .employee-panel { padding: 13px; }
   .team-roster-preview { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
   .team-roster-member, .team-roster-member.featured { grid-column: span 1; grid-template-rows: 145px auto; min-height: 204px; }
   .team-roster-avatar { height: 145px; }
@@ -552,11 +552,11 @@ button.danger, .actions button.danger { color: #ffc5cd; border-color: rgba(255,1
   .strategy-panel { grid-column: auto; }
   .strategy-grid { grid-template-columns: 1fr 1fr; }
   .strategy-option { min-height: 105px; }
-  .insights-panel { order: 2; }
-  #missionPanel { order: 1; }
-  .achievement-panel { order: 3; }
-  .log-section { order: 1; }
-  .archive-tools { order: 2; }
+  .insights-panel { }
+  #missionPanel { }
+  .achievement-panel { }
+  .log-section { }
+  .archive-tools { }
 }
 @media (max-width: 480px) {
   .command-workspace { padding-inline: 7px; }
@@ -675,3 +675,72 @@ body:not([data-page="home"]) .page-location { min-height: 82px; padding-top: 16p
   .strategy-grid { gap: 9px; }
   .strategy-option { min-height: 118px; }
 }
+
+/* Readable operational UI: primary actions precede decorative galleries. */
+.save-protection { position: relative; z-index: 100; margin: 12px; padding: 18px; border: 1px solid #ffca55; border-radius: 14px; color: #fff1cd; background: #302612; }
+.save-protection p { margin: 8px 0 12px; font-size: 14px; line-height: 1.6; }
+.product-room { grid-template-columns: minmax(290px,.8fr) minmax(0,1.2fr); align-items: start; }
+.product-lab-visual, .product-lab-visual img { min-height: 0; height: 180px; }
+.room-heading { top: 14px; left: 16px; }
+.room-heading small { font-size: 12px; }
+.product-panel { margin: 0 12px 12px; background: #0c1529; backdrop-filter: none; }
+.product-panel .section-heading { display: flex; }
+.product-panel > .dashboard-summary { display: block; font-size: 12px; }
+.product-portfolio-preview { grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible; margin-top: 12px; }
+.portfolio-preview-item { min-height: 100px; }
+.portfolio-preview-copy strong { font-size: 13px; white-space: normal; }
+.portfolio-preview-copy small { font-size: 12px; white-space: normal; line-height: 1.5; }
+.team-studio { grid-template-columns: minmax(300px,.8fr) minmax(0,1.2fr); }
+.team-roster-preview { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.team-roster-member { grid-template-rows: 120px auto; min-height: 200px; box-shadow: none; }
+.team-roster-member.featured { grid-column: auto; }
+.team-roster-avatar { height: 120px; }
+.roster-member-copy small, .roster-task { font-size: 12px; line-height: 1.5; color: #b8c6d0; white-space: normal; }
+.roster-task { display: block; }
+.archive-console { grid-template-columns: minmax(320px,.85fr) minmax(0,1.15fr); }
+.archive-secondary, .reset-settings { padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.archive-secondary summary, .reset-settings summary { min-height: 44px; cursor: pointer; font-size: 14px; }
+.archive-secondary .actions { margin-top: 10px; }
+.reset-settings { margin-top: 12px; }
+.save-manager-actions #saveButton { color: var(--accent-ink); background: var(--accent); }
+.metric-chart-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.metric-chart .chart-caption { display: block; margin-top: 6px; color: #b4c5cf; font-size: 12px; line-height: 1.5; }
+.strategy-option span, .operations-bonuses ul, .dashboard-summary,
+.employee-desc, .employee-level-hint, .employee-personality, .employee-current-task,
+.employee-specialty, .employee-affinity, .cost-line, .startup-note, .lock-note,
+.preset-card span, .preset-card small, .preset-result, .modal-current, .modal-warning,
+.product-action-hint, .primary-product-card span, .primary-metric span, .product-detail-item span,
+.assignment-summary-item span, .risk-panel p, .risk-panel strong { font-size: 12px; line-height: 1.55; }
+.office-vitals span, .office-worker-status, .office-speech { font-size: 12px; }
+.office-vitals span { color: #b6c7d1; }
+.office-worker-status { min-height: 27px; overflow: visible; max-width: 170px; white-space: normal; line-height: 1.35; }
+.office-zone span { font-size: 12px; }
+.office-zone small { font-size: 10px; color: #b6c7d1; }
+.office-directive .next-recommendation-text { font-size: 13px; white-space: normal; line-height: 1.45; }
+.office-directive .next-recommendation-button { font-size: 12px; }
+.office-inspector-copy p, .office-inspector-copy small { font-size: 12px; line-height: 1.4; }
+.section-block { box-shadow: none; }
+@media (max-width: 959px) {
+  .product-room, .team-studio, .archive-console { grid-template-columns: minmax(0,1fr); }
+  .product-lab-visual, .product-lab-visual img { height: 120px; }
+  .room-heading small { max-width: 250px; }
+  .product-portfolio-preview { grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible; }
+  .team-roster-preview { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .team-roster-member { grid-template-rows: 110px auto; }
+  .team-roster-avatar { height: 110px; }
+  .office-directive { min-height: 72px; }
+  .office-directive .next-recommendation-text { padding-right: 122px; }
+  .office-risk-console .details-toggle { font-size: 12px; }
+}
+@media (max-width: 359px) {
+  .metric-chart-grid { grid-template-columns: minmax(0,1fr); }
+  .office-worker-status { font-size: 11px; }
+}
+
+.save-protection button { color: #fff1cd; background: #493917; box-shadow: none; }
+.office-stage[data-starting="true"] .office-worker { width: clamp(150px,20%,220px); height: clamp(190px,36%,280px); }
+
+@media (max-width: 959px) { .office-stage[data-starting="true"] .office-worker { height: 220px; } .office-zone::after { font-size: 10px; } }
+
+.portfolio-preview-item.is-primary { border-color: #c7b5ff; background: linear-gradient(155deg, rgba(169,140,255,.3), #121e35); }
+.portfolio-preview-item.is-primary .portfolio-preview-index { color: #e0d7ff; font-size: 11px; }

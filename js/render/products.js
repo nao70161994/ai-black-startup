@@ -34,13 +34,14 @@
   }
 
   function getProductPortfolioPreviewHtml() {
+    const primaryId = context.getPrimaryProductDefinition().id;
     const statusIcons = { idea: "01", developing: "02", ready: "03", selling: "LIVE" };
     return '<div class="product-portfolio-preview" aria-label="製品ラインの稼働状況">' + context.PRODUCTS.map(function (definition, index) {
       const product = context.getProduct(definition.id);
       const progress = product.status === "idea" ? 0 : (product.status === "developing" ? context.clamp(product.progress, 0, 100) : 100);
       const value = definition.type === "subscription" ? context.formatCurrency(context.getProductMrr(product, definition)) + "/月" : context.formatCurrency(context.safeNumber(product.lifetimeRevenue, 0));
-      return '<button type="button" class="portfolio-preview-item status-' + product.status + '" data-product-detail="' + definition.id + '">' +
-        '<span class="portfolio-preview-index" aria-hidden="true">0' + (index + 1) + '</span>' +
+      return '<button type="button" class="portfolio-preview-item status-' + product.status + (definition.id === primaryId ? ' is-primary' : '') + '" data-product-detail="' + definition.id + '">' +
+        '<span class="portfolio-preview-index" aria-hidden="true">0' + (index + 1) + (definition.id === primaryId ? ' · 主力' : '') + '</span>' +
         '<span class="portfolio-preview-icon" aria-hidden="true">' + (statusIcons[product.status] || "01") + '</span>' +
         '<span class="portfolio-preview-copy"><strong>' + context.escapeHtml(definition.name) + '</strong><small>' + context.escapeHtml(context.getProductStatusLabel(product.status)) + ' · ' + context.escapeHtml(value) + '</small></span>' +
         '<span class="portfolio-preview-progress" aria-hidden="true"><i style="width:' + progress + '%"></i></span>' +

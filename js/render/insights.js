@@ -6,7 +6,7 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
   const formatNumber = settings.formatNumber;
   const getCharacterAvatarHtml = typeof settings.getCharacterAvatarHtml === "function" ? settings.getCharacterAvatarHtml : function () { return ""; };
 
-  function sparkline(history, key, label, color, fixedMax) {
+  function sparkline(history, key, label, color, fixedMax, unit) {
     const values = history.map(function (point) { return Math.max(0, Number(point[key]) || 0); });
     const max = Math.max(Number(fixedMax) || 0, 1, values.reduce(function (best, value) { return Math.max(best, value); }, 0));
     const points = values.map(function (value, index) {
@@ -15,22 +15,28 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
       return x.toFixed(1) + "," + y.toFixed(1);
     }).join(" ");
     const latest = values.length ? values[values.length - 1] : 0;
-    return '<article class="metric-chart"><div><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(formatNumber(latest)) + '</span></div>' +
+    const delta = latest - (values[0] || 0);
+    const suffix = unit || "";
+    const change = (delta > 0 ? "+" : "") + formatNumber(delta) + suffix;
+    const firstTime = history.length ? Number(history[0].t) : 0;
+    const lastTime = history.length ? Number(history[history.length - 1].t) : 0;
+    const range = Number.isFinite(firstTime) && Number.isFinite(lastTime) && (history.length <= 1 || lastTime > firstTime) ? "直近" + Math.max(0, lastTime - firstTime) + "秒" : history.length + "サンプル";
+    return '<article class="metric-chart"><div><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(formatNumber(latest) + suffix) + '</span></div>' +
       '<svg viewBox="0 0 100 40" preserveAspectRatio="none" role="img" aria-label="' + escapeHtml(label + "の直近推移。現在" + formatNumber(latest)) + '">' +
       '<line x1="0" y1="38" x2="100" y2="38" class="chart-baseline"></line>' +
       (points ? '<polyline points="' + points + '" fill="none" stroke="' + color + '" vector-effect="non-scaling-stroke"></polyline>' : '') +
-      '</svg></article>';
+      '</svg><span class="chart-caption">' + escapeHtml(range + ' / 変化 ' + change + ' / 縦軸 0〜' + formatNumber(max) + suffix) + '</span></article>';
   }
 
   function getHistoryHtml(history) {
     const source = Array.isArray(history) ? history : [];
-    return '<div class="section-heading"><h2>経営推移</h2><span>10秒ごと・直近20分</span></div>' +
+    return '<div class="section-heading"><h2>経営推移</h2><span>10秒ごと・最大20分</span></div>' +
       '<div class="metric-chart-grid">' +
-      sparkline(source, "mrr", "総MRR", "#006f8b") +
-      sparkline(source, "customers", "総顧客", "#247a3c") +
-      sparkline(source, "bugs", "最大製品バグ", "#9b4d00", 100) +
-      sparkline(source, "fire", "全社炎上", "#b3261e", 100) +
-      sparkline(source, "productFire", "最大製品炎上", "#7d2a8a", 100) +
+      sparkline(source, "mrr", "総MRR", "#65d8ff", 0, "円/月") +
+      sparkline(source, "customers", "総顧客", "#70eebd", 0, "社") +
+      sparkline(source, "bugs", "最大製品バグ", "#ffca55", 100, "/100") +
+      sparkline(source, "fire", "全社炎上", "#ff8897", 100, "/100") +
+      sparkline(source, "productFire", "最大製品炎上", "#c6a8ff", 100, "/100") +
       '</div><p class="dashboard-summary">グラフは端末内の保存データだけで生成され、外部送信されません。</p>';
   }
 

@@ -156,6 +156,7 @@
       decor.querySelectorAll("button[data-office-zone]").forEach(function (button) { button.addEventListener("click", function () { handleOfficeZoneAction(button.getAttribute("data-office-zone")); }); });
     }
     const hiredWorkerIds = ["boss"].concat(context.EMPLOYEES.filter(function (employee) { return (context.state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; }));
+    if (officeStage && typeof officeStage.setAttribute === "function") officeStage.setAttribute("data-starting", String(hiredWorkerIds.length === 1));
     const workers = document.getElementById("officeWorkers");
     if (workers) {
       const workerSignature = hiredWorkerIds.map(function (workerId) {

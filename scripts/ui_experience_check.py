@@ -210,6 +210,7 @@ function collect() {
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   openRequestedModal(doc);
+  const modalFocusedNode = settings.modal ? doc.activeElement : null;
   if (settings.selectWorker) {
     const worker = doc.querySelector('[data-office-worker="' + settings.selectWorker + '"]') || doc.querySelector("[data-office-worker]");
     if (worker) worker.click();
@@ -251,6 +252,7 @@ function collect() {
         .filter(node => visible(node, win)) : [];
       const first = modalControls[0] || null;
       const last = modalControls[modalControls.length - 1] || null;
+      const tickFocusPreserved = doc.activeElement === modalFocusedNode && Boolean(modalFocusedNode && modalFocusedNode.isConnected);
       const focusInside = Boolean(modal && modal.contains(doc.activeElement));
       if (last) {
         last.focus();
@@ -263,6 +265,7 @@ function collect() {
         open: Boolean(modal),
         role: modal ? modal.getAttribute("role") : "",
         minTarget: modalControls.length ? Math.min(...modalControls.map(node => Math.round(node.getBoundingClientRect().height))) : 0,
+        tickFocusPreserved,
         focusInside,
         trapWorked,
         isolated,
@@ -370,7 +373,7 @@ function collect() {
     };
     resultNode.textContent = "UIQA_RESULT:" + JSON.stringify(result);
     document.body.dataset.done = "true";
-  }, 180);
+  }, settings.modal ? 1400 : 180);
 }
 frame.addEventListener("load", () => window.setTimeout(collect, 1250));
 """
@@ -516,6 +519,8 @@ def validate(result: dict[str, object]) -> list[str]:
             failures.append(f"{label}: requested modal did not open as a dialog")
         if modal["minTarget"] < 44:
             failures.append(f"{label}: modal target is below 44px")
+        if not modal["tickFocusPreserved"]:
+            failures.append(f"{label}: modal focus or control DOM changed across game ticks")
         if not modal["focusInside"] or not modal["trapWorked"]:
             failures.append(f"{label}: modal focus management failed")
         if modal["isolated"] < 5:

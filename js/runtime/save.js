@@ -45,7 +45,11 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
     if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("Save root must be an object.");
     let data = cloneData(source);
     const originalVersion = Math.max(0, Math.floor(Number(data.schemaVersion) || 0));
-    if (originalVersion > schemaVersion) throw new Error("Save schema is newer than this app.");
+    if (originalVersion > schemaVersion) {
+      const error = new Error("Save schema is newer than this app.");
+      error.code = "UNSUPPORTED_SCHEMA";
+      throw error;
+    }
     let currentVersion = originalVersion;
     while (currentVersion < schemaVersion) {
       const migrate = migrations[currentVersion];
@@ -75,6 +79,7 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
       const parsed = parse(raw);
       return { data: parsed.data, source: "primary", migratedFrom: parsed.migratedFrom, error: null };
     } catch (primaryError) {
+      if (primaryError.code === "UNSUPPORTED_SCHEMA") return { data: null, source: "unsupported", readOnly: true, error: primaryError };
       preserveCorrupt(storage, raw);
       const backupRaw = storage.getItem(backupKey);
       if (backupRaw) {
@@ -82,6 +87,7 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
           const backup = parse(backupRaw);
           return { data: backup.data, source: "backup", migratedFrom: backup.migratedFrom, error: primaryError };
         } catch (backupError) {
+          if (backupError.code === "UNSUPPORTED_SCHEMA") return { data: null, source: "unsupported", readOnly: true, error: backupError };
           return { data: null, source: "new", migratedFrom: schemaVersion, error: backupError };
         }
       }
@@ -99,6 +105,12 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
   }
 
   function save(storage, source) {
+    // A downgraded app must never replace a newer save, including callers outside boot.
+    const existing = storage.getItem(saveKey);
+    if (existing) {
+      try { parse(existing); }
+      catch (error) { if (error.code === "UNSUPPORTED_SCHEMA") throw error; }
+    }
     backupCurrent(storage);
     const data = cloneData(source && typeof source === "object" ? source : {});
     data.schemaVersion = schemaVersion;
@@ -107,19 +119,40 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
     return raw;
   }
 
+  const checkpointKey = saveKey + "_checkpoint";
+  function checkpointCurrent(storage) {
+    const raw = storage.getItem(saveKey);
+    if (!raw) return false;
+    parse(raw);
+    storage.setItem(checkpointKey, raw);
+    return true;
+  }
+
+  function getRestorableBackup(storage) {
+    for (const key of [checkpointKey, backupKey]) {
+      const raw = storage.getItem(key);
+      if (!raw) continue;
+      try { return parse(raw); }
+      catch (error) { /* Retain invalid data and try the other recovery source. */ }
+    }
+    return null;
+  }
+
   function restoreBackup(storage) {
-    const raw = storage.getItem(backupKey);
-    if (!raw) throw new Error("Backup save does not exist.");
-    const restored = parse(raw);
+    const restored = getRestorableBackup(storage);
+    if (!restored) throw new Error("Backup save does not exist.");
+    const primary = storage.getItem(saveKey);
+    if (primary) {
+      try { parse(primary); }
+      catch (error) { if (error.code === "UNSUPPORTED_SCHEMA") throw error; }
+    }
     storage.setItem(saveKey, JSON.stringify(restored.data));
     return restored;
   }
 
   function hasBackup(storage) {
-    try { return Boolean(storage.getItem(backupKey) && parse(storage.getItem(backupKey))); }
-    catch (error) { return false; }
+    return Boolean(getRestorableBackup(storage));
   }
-
 
   function getSlotKey(slotId) {
     const id = String(slotId || "");
@@ -168,6 +201,8 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
     schemaVersion: schemaVersion,
     saveKey: saveKey,
     backupKey: backupKey,
+    checkpointKey: checkpointKey,
+    checkpointCurrent: checkpointCurrent,
     corruptKey: corruptKey,
     load: load,
     save: save,
