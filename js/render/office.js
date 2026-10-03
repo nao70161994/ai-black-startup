@@ -57,7 +57,7 @@
   function getOfficeWorkerPosition(workerId, assignment, slotIndex, idleIndex) {
     if (assignment && OFFICE_TASK_ZONES[assignment.task.id]) {
       const zone = OFFICE_TASK_ZONES[assignment.task.id];
-      return { x: zone.x + (slotIndex ? 7 : -2), y: zone.y + (slotIndex ? 1 : 0) };
+      return { x: zone.x + (slotIndex ? 5 : -5), y: zone.y - 5 + (slotIndex ? 1 : 0) };
     }
     if (workerId === "boss") return { x: 50, y: 76 };
     const idlePositions = [{ x: 40, y: 82 }, { x: 57, y: 82 }, { x: 34, y: 62 }, { x: 62, y: 65 }, { x: 76, y: 64 }, { x: 23, y: 68 }];
@@ -136,7 +136,7 @@
     const officeNames = ["仮想ワンルーム", "ミニスタートアップ空間", "自動化オフィス", "クラウド企業フロア", "AI企業タワー"];
     const level = context.state.companyLevel;
     officeName.textContent = officeNames[officeLevel - 1];
-    context.setText("officeCompanyLevel", officeLevel);
+    context.setText("officeCompanyLevel", context.state.companyLevel);
     const officeStage = document.getElementById("officeStage");
     if (officeStage && typeof officeStage.setAttribute === "function") officeStage.setAttribute("data-office-level", String(officeLevel));
     const bugLevel = context.getDashboardBugLevel();
@@ -156,6 +156,7 @@
       decor.querySelectorAll("button[data-office-zone]").forEach(function (button) { button.addEventListener("click", function () { handleOfficeZoneAction(button.getAttribute("data-office-zone")); }); });
     }
     const hiredWorkerIds = ["boss"].concat(context.EMPLOYEES.filter(function (employee) { return (context.state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; }));
+    if (officeStage && typeof officeStage.setAttribute === "function") officeStage.setAttribute("data-starting", String(hiredWorkerIds.length === 1));
     const workers = document.getElementById("officeWorkers");
     if (workers) {
       const workerSignature = hiredWorkerIds.map(function (workerId) {

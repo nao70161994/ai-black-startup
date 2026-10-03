@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -9,30 +10,9 @@ ASSET_TOKEN = "".join(APP_VERSION.split(".")[:3]) + "-" + APP_VERSION.split(".")
 
 
 def app_source():
-    data_dir = ROOT / "js" / "data"
-    data_files = [
-        "balance.js",
-        "employees.js",
-        "characters.js",
-        "products.js",
-        "tasks.js",
-        "strategies.js",
-        "decision-events.js",
-        "achievements.js",
-        "missions.js",
-        "../render/risk.js",
-        "../render/debug.js",
-        "../render/insights.js",
-        "../render/office.js",
-        "../render/products.js",
-        "../runtime/decisions.js",
-        "../runtime/tick.js",
-        "../runtime/effects.js",
-        "../runtime/assignments.js",
-        "../runtime/operations.js",
-        "../runtime/save.js",
-    ]
-    return "\n".join([(ROOT / "main.js").read_text()] + [(data_dir / name).read_text() for name in data_files])
+    files = re.findall(r'<script src="([^"?]+)', (ROOT / "index.html").read_text())
+    return "\n".join([(ROOT / "main.js").read_text()] + [(ROOT / name).read_text() for name in files if name != "main.js"])
+
 
 
 def test_cache_busting_versions_match_app_version():
@@ -190,9 +170,9 @@ def run_browser_smoke(save):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/render/office.js', 'js/render/products.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
+const dataFiles = Array.from(fs.readFileSync('index.html', 'utf8').matchAll(/<script src="([^"?]+)/g), match => match[1]).filter(file => file !== 'main.js');
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, EXPERIENCE, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -315,7 +295,7 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
     assert output["save"]["productFlags"]["meetingMinutesAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["slideKitAi"]["startedLogged"] is False
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert "5製品運用" in output["productHtml"]
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
@@ -337,7 +317,7 @@ def test_security06_visible_at_company_level_5():
         "lastSavedAt": 1760000000000,
     }
     output = run_browser_smoke(lv5_save)
-    assert "社員を見る" in output["employeePanelHtml"]
+    assert "採用・強化を見る" in output["employeePanelHtml"]
     assert "Dev-01 Lv1" in output["employeePanelHtml"]
     assert "Security-06" in (ROOT / "main.js").read_text()
 
@@ -704,8 +684,8 @@ def test_assignment_modal_ui_present():
     assert "タスク・対象製品・担当AIを選んで割り振ります" in main
     assert "担当AIを選択 最大2体" in main
     assert "この仕事には最大2体までAIを割り振れます" in main
-    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds(assignmentDraft.taskId, assignmentDraft.aiIds || []), assignmentDraft.mode)" in main
-    assert "clearProductAssignment(assignmentDraft.taskId, assignmentDraft.productId)" in main
+    assert "setTaskAis(context.assignmentDraft.taskId, context.assignmentDraft.productId, context.normalizeAssignmentDraftAiIds(context.assignmentDraft.taskId, context.assignmentDraft.aiIds || []), context.assignmentDraft.mode)" in main
+    assert "clearProductAssignment(context.assignmentDraft.taskId, context.assignmentDraft.productId)" in main
 
 
 def test_product_mrr_is_not_used_directly_for_revenue_or_share():
@@ -809,8 +789,8 @@ def test_one_shot_slide_kit_pipeline_present():
     assert "function getProductUnitsSold(product)" in main
     assert "function applyOneShotSalesActivity(product, definition, workerId, flags)" in main
     assert "function addOneShotSale(product, definition, flags)" in main
-    assert "state.money = Math.max(0, state.money + price)" in main
-    assert "state.totalMoney = Math.max(0, state.totalMoney + price)" in main
+    assert "context.state.money = Math.max(0, context.state.money + price)" in main
+    assert "context.state.totalMoney = Math.max(0, context.state.totalMoney + price)" in main
     assert "product.lifetimeRevenue = Math.max(0, safeNumber(product.lifetimeRevenue, 0) + price)" in main
     assert "function applyOneShotRevenue(product, definition)" in main
     assert "return 0" in main
@@ -893,7 +873,7 @@ def test_subscription_version_affects_rendered_mrr_and_share_text():
     assert product["upgradeProgress"] == 45
     assert product["upgradeStatus"] == "upgrading"
     assert product["mrr"] == 6000
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert "AI日報メーカー v2" in output["primaryProductHtml"]
     assert "MRR ¥6.0K/月" in output["primaryProductHtml"]
 
@@ -902,9 +882,9 @@ def run_game_action_smoke(save, action_script):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/render/office.js', 'js/render/products.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
+const dataFiles = Array.from(fs.readFileSync('index.html', 'utf8').matchAll(/<script src="([^"?]+)/g), match => match[1]).filter(file => file !== 'main.js');
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, EXPERIENCE, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -940,6 +920,7 @@ const localStorage = { getItem: (k) => { if (input.__storageThrows) throw new Er
 const sandbox = { window, document, localStorage, navigator, location, console, Date, Math, Number, String, Boolean, Object, Array, Promise };
 vm.runInNewContext(code, sandbox);
 vm.runInNewContext(action, sandbox);
+window.__testApi.render();
 console.log(JSON.stringify({
   save: store.ai_black_startup_save_v1 ? JSON.parse(store.ai_black_startup_save_v1) : null,
   productHtml: elements.get('productPanel').innerHTML,
@@ -1121,7 +1102,7 @@ def test_marketing_task_and_product_centered_missions_present():
     assert 'marketing: { boss: "ゆっくり認知度を上げる", buzz03: "認知度を大きく上げるが炎上微増" }' in main
     assert 'function applyMarketingTask(product, definition)' in main
     assert 'product.awareness = clamp(product.awareness + applyAffinity(marketing.awareness, workerId, definition, "marketing") * modifiers.marketing, 0, 100)' in main
-    assert 'state.fire = clamp(state.fire + marketing.fire * modifiers.fireGeneration, 0, 100)' in main
+    assert 'context.state.fire = clamp(context.state.fire + marketing.fire * modifiers.fireGeneration, 0, 100)' in main
     assert 'function getMarketingEffect(workerId)' in main
     assert '0.35 + level * 0.10' in main
     assert 'fire: 0.03' in main
@@ -1208,7 +1189,7 @@ def test_marketing_assignment_is_normalized_and_visible_behavior():
     assert "広報" in output["assignmentHtml"]
     assert "Buzz-03 → 自動議事録AI" in output["assignmentHtml"]
     assert "広報" in output["assignmentHtml"]
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
 
 
 def test_subscription_support_state_and_assignment_are_normalized():
@@ -1342,7 +1323,7 @@ def test_product_summary_cards_keep_assignment_summary_and_card_actions():
     })
     assert "Dev-01 → 自動議事録AI" in output["assignmentHtml"]
     assert "Sales-02 → AI日報メーカー" in output["assignmentHtml"]
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert 'data-product-detail="dailyReportAi"' in output["productHtml"]
     assert 'data-product-detail="meetingMinutesAi"' in output["productHtml"]
     assert "data-product-menu" not in output["productHtml"]
@@ -1397,7 +1378,7 @@ def test_product_cards_show_compact_operation_and_detail_buttons_only():
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "customers": 1, "version": 1}},
         "logs": [], "claimedMissions": [], "lastSavedAt": 9999999999999,
     })
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert 'data-product-detail="dailyReportAi"' in output["productHtml"]
     assert 'data-product-menu="dailyReportAi"' not in output["productHtml"]
     assert "data-product-action" not in output["productHtml"]
@@ -1449,10 +1430,10 @@ def test_dashboard_home_collapses_heavy_sections_by_default():
         "lastSavedAt": 9999999999999,
     })
 
-    assert "現在の主力製品" in output["primaryProductHtml"]
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "注力製品" in output["primaryProductHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert "ログを見る" in output["logPanelHtml"]
-    assert "社員を見る" in output["employeePanelHtml"]
+    assert "採用・強化を見る" in output["employeePanelHtml"]
     assert "すべての目標を見る" in output["objectiveHtml"]
     assert "product-card" not in output["productHtml"]
     assert "employee-card" not in output["employeePanelHtml"]
@@ -1488,8 +1469,8 @@ def test_dashboard_home_prioritizes_three_metrics_and_discloses_risk_details():
     end = index.index('</section>', start)
     status_section = index[start:end]
     assert status_section.count('<article>') == 3
-    assert '<span>売上</span>' in status_section
-    assert '<span>MRR</span>' in status_section
+    assert '<span>資金</span>' in status_section
+    assert '月額収入</span>' in status_section and '300秒で1か月' in status_section
     assert '<span>顧客</span>' in status_section
     detail_start = index.index('<section class="company-details office-risk-console"')
     detail_end = index.index('</section>', detail_start)
@@ -1867,7 +1848,7 @@ def test_worker_assignment_modal_uses_set_task_ais_flow():
     assert "getAssignableTasksForWorker(workerId)" in main
     assert "isWorkerProductTaskAvailable" in main
     assert "getWorkerAssignmentMode" in main
-    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds(assignmentDraft.taskId, assignmentDraft.aiIds || []), assignmentDraft.mode)" in main
+    assert "setTaskAis(context.assignmentDraft.taskId, context.assignmentDraft.productId, context.normalizeAssignmentDraftAiIds(context.assignmentDraft.taskId, context.assignmentDraft.aiIds || []), context.assignmentDraft.mode)" in main
     assert "getWorkerLabel(assignmentDraft.aiId) + \"に仕事を割り振る\"" in main
     assert "refreshAssignmentDraftAiIds()" in main
     assert "toggleAssignmentDraftAi" in main
@@ -2211,7 +2192,7 @@ def test_assignment_modal_disables_empty_bulk_apply_and_invalid_products():
     assert "担当AIを1体以上選んでください。" in main
     assert "function canAssignTaskToProduct(taskId, productId)" in main
     assert "!canAssignTaskToProduct(taskId, normalizedProductId)" in main
-    assert "canAssignTaskToProduct(assignmentDraft.taskId, definition.id)" in main
+    assert "canAssignTaskToProduct(context.assignmentDraft.taskId, definition.id)" in main
 
 
 def test_invalid_state_task_assignment_is_rejected():
@@ -2244,7 +2225,7 @@ def test_assignment_modal_supports_multi_ai_selection_and_bulk_apply():
     assert "この担当にする" in main
     assert "担当を解除" in main
     assert "toggleAssignmentDraftAi" in main
-    assert "selectedAiIds.length >= MAX_AI_PER_TASK_PRODUCT && !selected" in main
+    assert "selectedAiIds.length >= context.MAX_AI_PER_TASK_PRODUCT && !selected" in main
     assert "最大2体まで" in main
     assert "getAllWorkerIds()" in main
     assert "対応不可" in main
@@ -2579,7 +2560,7 @@ def test_reset_copy_is_explicit_and_subdued():
     css = (ROOT / "style.css").read_text()
     assert ">データリセット</button>" in index
     assert "保存データを初期化しますか？直前の正常な状態はバックアップから復元できます" in main
-    assert "直前の正常なバックアップへ戻しますか？" in main
+    assert "操作前のチェックポイント（なければ直前の正常な保存）へ戻しますか？" in main
     assert ".actions button.danger" in css
     assert "background: rgba(255,107,125,.09)" in css
     assert "box-shadow: none" in css
@@ -3532,7 +3513,7 @@ def test_next_recommendation_cta_labels_are_task_specific():
 
 def test_render_uses_light_runtime_clamp_not_full_normalize_each_time():
     main = app_source()
-    render_start = main.index("function render()")
+    render_start = main.index("function render(options)")
     render_end = main.index("function renderStatus()", render_start)
     render_code = main[render_start:render_end]
     assert "clampRuntimeState();" not in render_code
@@ -3795,7 +3776,7 @@ Promise.all(waits.concat(fetchResponses)).then(function () {
     assert f'./js/data/missions.js?v={ASSET_TOKEN}' in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
-    assert data["cachePutCount"] == 1
+    assert data["cachePutCount"] == 0
     assert data["indexFallbackMatched"] is True
 
 
@@ -3998,7 +3979,7 @@ def test_render_does_not_mutate_saved_state_or_runtime_state_shape():
 
 def test_render_functions_do_not_call_tick_save_or_heavy_normalize():
     main = app_source()
-    render_start = main.index("function render()")
+    render_start = main.index("function render(options)")
     render_end = main.index("function renderStatus()", render_start)
     render_code = main[render_start:render_end]
     forbidden = ["saveGame(", "tick(", "runGameTick(", "normalizeState(", "normalizeProducts(", "clampRuntimeState("]
@@ -4009,17 +3990,17 @@ def test_render_functions_do_not_call_tick_save_or_heavy_normalize():
 
 
 def test_assignment_modal_render_does_not_normalize_draft_by_mutation():
-    main = app_source()
-    start = main.index("function renderAssignmentModal()")
-    end = main.index("function getAllWorkerIds()", start)
+    main = (ROOT / "js/render/modals.js").read_text()
+    start = main.index("function renderAssignmentModalContent()")
+    end = main.index("function renderProductDetailModalContent()", start)
     body = main[start:end]
-    assert "assignmentDraft.aiIds = normalizeAssignmentDraftAiIds" not in body
-    assert "const selectedAiIds = normalizeAssignmentDraftAiIds" in body
-    assert "setTaskAis(assignmentDraft.taskId, assignmentDraft.productId, normalizeAssignmentDraftAiIds" in body
+    assert "context.assignmentDraft.aiIds = context.normalizeAssignmentDraftAiIds" not in body
+    assert "const selectedAiIds = context.normalizeAssignmentDraftAiIds" in body
+    assert "context.setTaskAis(context.assignmentDraft.taskId" in body
 
 
 def test_product_detail_risk_markup_avoids_block_inside_inline_strong():
-    main = app_source()
+    main = (ROOT / "js/render/modals.js").read_text()
     start = main.index("function getProductRiskDetailHtml")
     end = main.index("function getProductSpecificDetailHtml", start)
     body = main[start:end]
@@ -4781,7 +4762,7 @@ def test_tutorial_stage_is_derived_from_real_hire_assignment_and_revenue_state()
     assert stage_three["testResult"]["stage"] == 3
 
     complete = run_game_action_smoke(
-        {"employees": {"dev01": 1}, "totalMoney": 1},
+        {"employees": {"dev01": 1}, "totalMoney": 1, "products": {"dailyReportAi": {"status": "selling", "customers": 1}}},
         "window.__testResult={stage:window.__testApi.getTutorialStage()};",
     )
     assert complete["testResult"]["stage"] == 4

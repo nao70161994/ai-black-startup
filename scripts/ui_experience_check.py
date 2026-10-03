@@ -210,6 +210,7 @@ function collect() {
   const doc = frame.contentDocument;
   const win = frame.contentWindow;
   openRequestedModal(doc);
+  const modalFocusedNode = settings.modal ? doc.activeElement : null;
   if (settings.selectWorker) {
     const worker = doc.querySelector('[data-office-worker="' + settings.selectWorker + '"]') || doc.querySelector("[data-office-worker]");
     if (worker) worker.click();
@@ -251,6 +252,7 @@ function collect() {
         .filter(node => visible(node, win)) : [];
       const first = modalControls[0] || null;
       const last = modalControls[modalControls.length - 1] || null;
+      const tickFocusPreserved = doc.activeElement === modalFocusedNode && Boolean(modalFocusedNode && modalFocusedNode.isConnected);
       const focusInside = Boolean(modal && modal.contains(doc.activeElement));
       if (last) {
         last.focus();
@@ -261,8 +263,11 @@ function collect() {
         .filter(node => node.inert && node.getAttribute("aria-hidden") === "true").length;
       modalResult = {
         open: Boolean(modal),
+        assignment: modal && modal.id === "assignmentModal",
+        impact: Boolean(modal && modal.querySelector(".assignment-impact")),
         role: modal ? modal.getAttribute("role") : "",
         minTarget: modalControls.length ? Math.min(...modalControls.map(node => Math.round(node.getBoundingClientRect().height))) : 0,
+        tickFocusPreserved,
         focusInside,
         trapWorked,
         isolated,
@@ -336,6 +341,15 @@ function collect() {
     } : null;
 
     const result = {
+      premium: {
+        navIcons: doc.querySelectorAll('.nav-icon svg').length,
+        focusPicker: Boolean(doc.getElementById('focusProductSelect')),
+        businessSummary: Boolean(doc.querySelector('#businessSummary .business-kpis')),
+        saveSlots: doc.querySelectorAll('[data-save-slot]').length,
+        assignmentImpact: Boolean(doc.querySelector('#assignmentModal .assignment-impact')),
+        recruitFirst: doc.querySelector('.team-studio')?.classList.contains('recruit-first'),
+        returnSummaryHidden: doc.getElementById('returnSummary').hidden,
+      },
       scenario: settings.scenario,
       page: settings.page,
       width: settings.width,
@@ -370,7 +384,7 @@ function collect() {
     };
     resultNode.textContent = "UIQA_RESULT:" + JSON.stringify(result);
     document.body.dataset.done = "true";
-  }, 180);
+  }, settings.modal ? 1400 : 180);
 }
 frame.addEventListener("load", () => window.setTimeout(collect, 1250));
 """
@@ -457,6 +471,19 @@ def run_case(browser: str, base_url: str, case: dict[str, object]) -> dict[str, 
 def validate(result: dict[str, object]) -> list[str]:
     label = f"{result['scenario']}/{result['page']}/{result['width']}"
     failures: list[str] = []
+    premium = result["premium"]
+    if premium["navIcons"] != 5:
+        failures.append(f"{label}: inconsistent navigation icons")
+    if result["page"] == "products" and not premium["focusPicker"]:
+        failures.append(f"{label}: focus-product picker missing")
+    if result["page"] == "management" and not premium["businessSummary"]:
+        failures.append(f"{label}: company summary missing")
+    if result["page"] == "records" and premium["saveSlots"] != 3:
+        failures.append(f"{label}: save slot cards missing")
+    if result["page"] == "team" and result["scenario"] == "fresh" and not premium["recruitFirst"]:
+        failures.append(f"{label}: first hire is not prioritized")
+    if result.get("modal") and result["modal"]["assignment"] and not result["modal"]["impact"]:
+        failures.append(f"{label}: assignment impact missing")
     if result["scrollWidth"] != result["clientWidth"]:
         failures.append(f"{label}: horizontal overflow {result['scrollWidth']}>{result['clientWidth']}")
     if result["minTarget"] < 44:
@@ -516,6 +543,8 @@ def validate(result: dict[str, object]) -> list[str]:
             failures.append(f"{label}: requested modal did not open as a dialog")
         if modal["minTarget"] < 44:
             failures.append(f"{label}: modal target is below 44px")
+        if not modal["tickFocusPreserved"]:
+            failures.append(f"{label}: modal focus or control DOM changed across game ticks")
         if not modal["focusInside"] or not modal["trapWorked"]:
             failures.append(f"{label}: modal focus management failed")
         if modal["isolated"] < 5:

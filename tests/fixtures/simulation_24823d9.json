@@ -1,0 +1,3056 @@
+{
+  "mature": {
+    "money": 1156658.6666666947,
+    "totalMoney": 1677858.6666666956,
+    "users": 480,
+    "fire": 0.03,
+    "employees": {
+      "dev01": 3,
+      "sales02": 3,
+      "buzz03": 2,
+      "care04": 2,
+      "fire05": 2,
+      "security06": 1
+    },
+    "products": {
+      "dailyReportAi": {
+        "id": "dailyReportAi",
+        "status": "selling",
+        "progress": 100,
+        "quality": 80,
+        "bugs": 14.002999999999998,
+        "awareness": 100,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 252,
+        "unitsSold": 0,
+        "mrr": 176400,
+        "lifetimeRevenue": 296742.6666666665,
+        "salesPityCounter": 11,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 600,
+        "version": 3,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 100,
+        "satisfaction": 0,
+        "churnRisk": 63.580659999999995
+      },
+      "meetingMinutesAi": {
+        "id": "meetingMinutesAi",
+        "status": "selling",
+        "progress": 180,
+        "quality": 100,
+        "bugs": 0,
+        "awareness": 48,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 73,
+        "unitsSold": 0,
+        "mrr": 87600,
+        "lifetimeRevenue": 175236,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 100,
+        "churnRisk": 0
+      },
+      "slideKitAi": {
+        "id": "slideKitAi",
+        "status": "selling",
+        "progress": 160,
+        "quality": 57,
+        "bugs": 4,
+        "awareness": 100,
+        "productFire": 13.500000000000197,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 38,
+        "mrr": 0,
+        "lifetimeRevenue": 372400,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 70,
+        "churnRisk": 0
+      },
+      "supportReplyAi": {
+        "id": "supportReplyAi",
+        "status": "developing",
+        "progress": 135,
+        "quality": 62,
+        "bugs": 5,
+        "awareness": 25,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 0,
+        "mrr": 0,
+        "lifetimeRevenue": 0,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 20,
+        "satisfaction": 15.9073649999998,
+        "churnRisk": 36.455449250000115
+      },
+      "apologyWriterAi": {
+        "id": "apologyWriterAi",
+        "status": "idea",
+        "progress": 0,
+        "quality": 52,
+        "bugs": 0,
+        "awareness": 3,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 0,
+        "mrr": 0,
+        "lifetimeRevenue": 0,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 70,
+        "churnRisk": 0
+      }
+    },
+    "productFlags": {
+      "dailyReportAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "meetingMinutesAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "slideKitAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "supportReplyAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "apologyWriterAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      }
+    },
+    "assignments": {
+      "development": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "meetingMinutesAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "slideKitAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "supportReplyAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "apologyWriterAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          }
+        }
+      },
+      "qa": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": [
+              "security06"
+            ]
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "sales": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [
+              "sales02"
+            ]
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "marketing": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": [
+              "buzz03"
+            ]
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "support": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": [
+              "care04"
+            ]
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "crisis": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [
+              "fire05"
+            ]
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      }
+    },
+    "playSeconds": 600,
+    "strategyId": "quality",
+    "decisionThreads": {},
+    "decisionStats": {
+      "approved": 0,
+      "rejected": 0
+    },
+    "metricHistory": [
+      {
+        "t": 0,
+        "money": 100000,
+        "mrr": 30000,
+        "customers": 60,
+        "bugs": 12,
+        "fire": 10,
+        "productFire": 8
+      },
+      {
+        "t": 0,
+        "money": 250000,
+        "mrr": 52000,
+        "customers": 130,
+        "bugs": 18,
+        "fire": 18,
+        "productFire": 15
+      },
+      {
+        "t": 0,
+        "money": 420000,
+        "mrr": 91000,
+        "customers": 260,
+        "bugs": 35,
+        "fire": 30,
+        "productFire": 28
+      },
+      {
+        "t": 0,
+        "money": 680000,
+        "mrr": 178000,
+        "customers": 480,
+        "bugs": 28,
+        "fire": 42,
+        "productFire": 36
+      },
+      {
+        "t": 10,
+        "money": 686668.0000000005,
+        "mrr": 196800,
+        "customers": 255,
+        "bugs": 8.309999999999999,
+        "fire": 35.700000000000045,
+        "productFire": 0.22499999999999995
+      },
+      {
+        "t": 20,
+        "money": 693791.333333334,
+        "mrr": 215000,
+        "customers": 255,
+        "bugs": 14.002999999999998,
+        "fire": 29.400000000000077,
+        "productFire": 0.4500000000000001
+      },
+      {
+        "t": 30,
+        "money": 701064.0000000012,
+        "mrr": 216400,
+        "customers": 257,
+        "bugs": 14.002999999999998,
+        "fire": 23.100000000000087,
+        "productFire": 0.6749999999999999
+      },
+      {
+        "t": 40,
+        "money": 708378.6666666679,
+        "mrr": 217100,
+        "customers": 258,
+        "bugs": 14.002999999999998,
+        "fire": 16.800000000000097,
+        "productFire": 0.8999999999999996
+      },
+      {
+        "t": 50,
+        "money": 715656.0000000017,
+        "mrr": 215700,
+        "customers": 256,
+        "bugs": 14.002999999999998,
+        "fire": 10.500000000000076,
+        "productFire": 1.1249999999999993
+      },
+      {
+        "t": 60,
+        "money": 722949.6666666692,
+        "mrr": 217100,
+        "customers": 258,
+        "bugs": 14.002999999999998,
+        "fire": 4.200000000000073,
+        "productFire": 1.349999999999999
+      },
+      {
+        "t": 70,
+        "money": 730264.3333333359,
+        "mrr": 217100,
+        "customers": 258,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 1.5749999999999986
+      },
+      {
+        "t": 80,
+        "money": 737607.0000000031,
+        "mrr": 218500,
+        "customers": 260,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 1.7999999999999983
+      },
+      {
+        "t": 90,
+        "money": 744984.6666666701,
+        "mrr": 219200,
+        "customers": 261,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 2.024999999999998
+      },
+      {
+        "t": 100,
+        "money": 752357.6666666706,
+        "mrr": 218500,
+        "customers": 260,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 2.249999999999998
+      },
+      {
+        "t": 110,
+        "money": 759726.0000000045,
+        "mrr": 218500,
+        "customers": 260,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 2.4749999999999974
+      },
+      {
+        "t": 120,
+        "money": 767115.3333333384,
+        "mrr": 220600,
+        "customers": 263,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 2.699999999999997
+      },
+      {
+        "t": 130,
+        "money": 774565.3333333388,
+        "mrr": 222000,
+        "customers": 265,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 2.9249999999999967
+      },
+      {
+        "t": 140,
+        "money": 782062.0000000063,
+        "mrr": 222700,
+        "customers": 266,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 3.1499999999999964
+      },
+      {
+        "t": 150,
+        "money": 789563.3333333405,
+        "mrr": 222700,
+        "customers": 266,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 3.374999999999996
+      },
+      {
+        "t": 160,
+        "money": 797106.6666666744,
+        "mrr": 224800,
+        "customers": 269,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 3.5999999999999956
+      },
+      {
+        "t": 170,
+        "money": 804678.0000000086,
+        "mrr": 224800,
+        "customers": 269,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 3.8249999999999953
+      },
+      {
+        "t": 180,
+        "money": 812291.3333333426,
+        "mrr": 226900,
+        "customers": 272,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 4.049999999999995
+      },
+      {
+        "t": 190,
+        "money": 819932.6666666768,
+        "mrr": 226900,
+        "customers": 272,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 4.274999999999995
+      },
+      {
+        "t": 200,
+        "money": 827597.3333333435,
+        "mrr": 227600,
+        "customers": 273,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 4.499999999999995
+      },
+      {
+        "t": 210,
+        "money": 835262.0000000102,
+        "mrr": 227600,
+        "customers": 273,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 4.724999999999994
+      },
+      {
+        "t": 220,
+        "money": 842926.666666677,
+        "mrr": 227600,
+        "customers": 273,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 4.949999999999994
+      },
+      {
+        "t": 230,
+        "money": 850610.0000000107,
+        "mrr": 228300,
+        "customers": 274,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 5.174999999999994
+      },
+      {
+        "t": 240,
+        "money": 858316.6666666782,
+        "mrr": 229000,
+        "customers": 275,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 5.399999999999993
+      },
+      {
+        "t": 250,
+        "money": 866025.6666666786,
+        "mrr": 229700,
+        "customers": 276,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 5.624999999999993
+      },
+      {
+        "t": 260,
+        "money": 873804.6666666794,
+        "mrr": 231100,
+        "customers": 278,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 5.8499999999999925
+      },
+      {
+        "t": 270,
+        "money": 881590.6666666801,
+        "mrr": 231800,
+        "customers": 279,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 6.074999999999992
+      },
+      {
+        "t": 280,
+        "money": 889418.6666666806,
+        "mrr": 233200,
+        "customers": 281,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 6.299999999999992
+      },
+      {
+        "t": 290,
+        "money": 897274.6666666813,
+        "mrr": 233900,
+        "customers": 282,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 6.5249999999999915
+      },
+      {
+        "t": 300,
+        "money": 905175.0000000151,
+        "mrr": 235300,
+        "customers": 284,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 6.749999999999991
+      },
+      {
+        "t": 310,
+        "money": 913161.666666682,
+        "mrr": 238100,
+        "customers": 288,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 6.974999999999991
+      },
+      {
+        "t": 320,
+        "money": 921176.3333333487,
+        "mrr": 238100,
+        "customers": 288,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 7.19999999999999
+      },
+      {
+        "t": 330,
+        "money": 929214.333333349,
+        "mrr": 240200,
+        "customers": 291,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 7.42499999999999
+      },
+      {
+        "t": 340,
+        "money": 937303.6666666825,
+        "mrr": 240900,
+        "customers": 292,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 7.64999999999999
+      },
+      {
+        "t": 350,
+        "money": 945428.0000000165,
+        "mrr": 241600,
+        "customers": 293,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 7.874999999999989
+      },
+      {
+        "t": 360,
+        "money": 953578.0000000168,
+        "mrr": 241600,
+        "customers": 293,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 8.099999999999993
+      },
+      {
+        "t": 370,
+        "money": 961725.6666666837,
+        "mrr": 242300,
+        "customers": 294,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 8.325000000000001
+      },
+      {
+        "t": 380,
+        "money": 969889.666666684,
+        "mrr": 243000,
+        "customers": 295,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 8.55000000000001
+      },
+      {
+        "t": 390,
+        "money": 978067.6666666844,
+        "mrr": 243000,
+        "customers": 295,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 8.775000000000018
+      },
+      {
+        "t": 400,
+        "money": 986259.6666666851,
+        "mrr": 243700,
+        "customers": 296,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 9.000000000000027
+      },
+      {
+        "t": 410,
+        "money": 994486.6666666856,
+        "mrr": 245100,
+        "customers": 298,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 9.225000000000035
+      },
+      {
+        "t": 420,
+        "money": 1002767.3333333528,
+        "mrr": 247200,
+        "customers": 301,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 9.450000000000044
+      },
+      {
+        "t": 430,
+        "money": 1011071.333333353,
+        "mrr": 246500,
+        "customers": 300,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 9.675000000000052
+      },
+      {
+        "t": 440,
+        "money": 1019366.0000000198,
+        "mrr": 246500,
+        "customers": 300,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 9.90000000000006
+      },
+      {
+        "t": 450,
+        "money": 1027681.6666666869,
+        "mrr": 247200,
+        "customers": 301,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 10.12500000000007
+      },
+      {
+        "t": 460,
+        "money": 1036011.3333333542,
+        "mrr": 247900,
+        "customers": 302,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 10.350000000000078
+      },
+      {
+        "t": 470,
+        "money": 1044362.0000000215,
+        "mrr": 249300,
+        "customers": 304,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 10.575000000000086
+      },
+      {
+        "t": 480,
+        "money": 1052764.0000000217,
+        "mrr": 250000,
+        "customers": 305,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 10.800000000000095
+      },
+      {
+        "t": 490,
+        "money": 1061196.3333333558,
+        "mrr": 251400,
+        "customers": 307,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 11.025000000000103
+      },
+      {
+        "t": 500,
+        "money": 1069654.3333333563,
+        "mrr": 251400,
+        "customers": 307,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 11.250000000000112
+      },
+      {
+        "t": 510,
+        "money": 1078142.6666666898,
+        "mrr": 252800,
+        "customers": 309,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 11.47500000000012
+      },
+      {
+        "t": 520,
+        "money": 1086675.3333333568,
+        "mrr": 254200,
+        "customers": 311,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 11.700000000000129
+      },
+      {
+        "t": 530,
+        "money": 1095243.000000024,
+        "mrr": 255600,
+        "customers": 313,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 11.925000000000137
+      },
+      {
+        "t": 540,
+        "money": 1103876.0000000244,
+        "mrr": 257000,
+        "customers": 315,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 12.150000000000146
+      },
+      {
+        "t": 550,
+        "money": 1112558.0000000247,
+        "mrr": 259100,
+        "customers": 318,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 12.375000000000155
+      },
+      {
+        "t": 560,
+        "money": 1121317.0000000254,
+        "mrr": 261200,
+        "customers": 321,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 12.600000000000163
+      },
+      {
+        "t": 570,
+        "money": 1130111.0000000263,
+        "mrr": 261900,
+        "customers": 322,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 12.825000000000172
+      },
+      {
+        "t": 580,
+        "money": 1138923.6666666933,
+        "mrr": 262600,
+        "customers": 323,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 13.05000000000018
+      },
+      {
+        "t": 590,
+        "money": 1147780.6666666942,
+        "mrr": 264000,
+        "customers": 325,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 13.275000000000189
+      },
+      {
+        "t": 600,
+        "money": 1156658.6666666947,
+        "mrr": 264000,
+        "customers": 325,
+        "bugs": 14.002999999999998,
+        "fire": 0.03,
+        "productFire": 13.500000000000197
+      }
+    ],
+    "aiUsageSeconds": {
+      "dev01": 12,
+      "sales02": 600,
+      "buzz03": 600,
+      "care04": 600,
+      "fire05": 600,
+      "security06": 600
+    },
+    "relationshipFlags": {}
+  },
+  "end": {
+    "money": 14421222.00000028,
+    "totalMoney": 34222421.99999911,
+    "users": 5480,
+    "fire": 0.03,
+    "employees": {
+      "dev01": 5,
+      "sales02": 5,
+      "buzz03": 5,
+      "care04": 5,
+      "fire05": 5,
+      "security06": 5
+    },
+    "products": {
+      "dailyReportAi": {
+        "id": "dailyReportAi",
+        "status": "selling",
+        "progress": 100,
+        "quality": 96,
+        "bugs": 15.464999999999995,
+        "awareness": 100,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 276,
+        "unitsSold": 0,
+        "mrr": 193200,
+        "lifetimeRevenue": 320482.0000000002,
+        "salesPityCounter": 3,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 600,
+        "version": 3,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 100,
+        "satisfaction": 0,
+        "churnRisk": 63.9023
+      },
+      "meetingMinutesAi": {
+        "id": "meetingMinutesAi",
+        "status": "selling",
+        "progress": 180,
+        "quality": 100,
+        "bugs": 0,
+        "awareness": 100,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 74,
+        "unitsSold": 0,
+        "mrr": 88800,
+        "lifetimeRevenue": 177600,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 100,
+        "churnRisk": 0
+      },
+      "slideKitAi": {
+        "id": "slideKitAi",
+        "status": "selling",
+        "progress": 160,
+        "quality": 88,
+        "bugs": 7,
+        "awareness": 100,
+        "productFire": 13.500000000000197,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 38,
+        "mrr": 0,
+        "lifetimeRevenue": 372400,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 70,
+        "churnRisk": 0
+      },
+      "supportReplyAi": {
+        "id": "supportReplyAi",
+        "status": "selling",
+        "progress": 140,
+        "quality": 88,
+        "bugs": 7,
+        "awareness": 100,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 617,
+        "unitsSold": 0,
+        "mrr": 555300,
+        "lifetimeRevenue": 1114500,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 100,
+        "satisfaction": 0,
+        "churnRisk": 68.0445
+      },
+      "apologyWriterAi": {
+        "id": "apologyWriterAi",
+        "status": "selling",
+        "progress": 120,
+        "quality": 88,
+        "bugs": 7,
+        "awareness": 100,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 410,
+        "mrr": 0,
+        "lifetimeRevenue": 3198000,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 70,
+        "churnRisk": 0
+      }
+    },
+    "productFlags": {
+      "dailyReportAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "meetingMinutesAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "slideKitAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "supportReplyAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "apologyWriterAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      }
+    },
+    "assignments": {
+      "development": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "meetingMinutesAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "slideKitAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "supportReplyAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "apologyWriterAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          }
+        }
+      },
+      "qa": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": [
+              "security06"
+            ]
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "sales": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [
+              "sales02"
+            ]
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "marketing": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": [
+              "buzz03"
+            ]
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "support": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": [
+              "care04"
+            ]
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "crisis": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [
+              "fire05"
+            ]
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      }
+    },
+    "playSeconds": 600,
+    "strategyId": "quality",
+    "decisionThreads": {},
+    "decisionStats": {
+      "approved": 0,
+      "rejected": 0
+    },
+    "metricHistory": [
+      {
+        "t": 0,
+        "money": 100000,
+        "mrr": 30000,
+        "customers": 60,
+        "bugs": 12,
+        "fire": 10,
+        "productFire": 8
+      },
+      {
+        "t": 0,
+        "money": 250000,
+        "mrr": 52000,
+        "customers": 130,
+        "bugs": 18,
+        "fire": 18,
+        "productFire": 15
+      },
+      {
+        "t": 0,
+        "money": 420000,
+        "mrr": 91000,
+        "customers": 260,
+        "bugs": 35,
+        "fire": 30,
+        "productFire": 28
+      },
+      {
+        "t": 0,
+        "money": 680000,
+        "mrr": 178000,
+        "customers": 480,
+        "bugs": 28,
+        "fire": 42,
+        "productFire": 36
+      },
+      {
+        "t": 10,
+        "money": 12825366.000000004,
+        "mrr": 757200,
+        "customers": 878,
+        "bugs": 10.149999999999995,
+        "fire": 30.18000000000005,
+        "productFire": 0.22499999999999995
+      },
+      {
+        "t": 20,
+        "money": 12851365.66666668,
+        "mrr": 776300,
+        "customers": 879,
+        "bugs": 15.464999999999995,
+        "fire": 18.3600000000001,
+        "productFire": 0.4500000000000001
+      },
+      {
+        "t": 30,
+        "money": 12877400.333333347,
+        "mrr": 777000,
+        "customers": 880,
+        "bugs": 15.464999999999995,
+        "fire": 6.540000000000105,
+        "productFire": 0.6749999999999999
+      },
+      {
+        "t": 40,
+        "money": 12903477.000000019,
+        "mrr": 778400,
+        "customers": 882,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 0.8999999999999996
+      },
+      {
+        "t": 50,
+        "money": 12929609.666666694,
+        "mrr": 779800,
+        "customers": 884,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 1.1249999999999993
+      },
+      {
+        "t": 60,
+        "money": 12955793.666666696,
+        "mrr": 782600,
+        "customers": 888,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 1.349999999999999
+      },
+      {
+        "t": 70,
+        "money": 12982075.666666701,
+        "mrr": 784700,
+        "customers": 891,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 1.5749999999999986
+      },
+      {
+        "t": 80,
+        "money": 13008381.000000034,
+        "mrr": 785400,
+        "customers": 892,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 1.7999999999999983
+      },
+      {
+        "t": 90,
+        "money": 13034728.333333377,
+        "mrr": 786100,
+        "customers": 893,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 2.024999999999998
+      },
+      {
+        "t": 100,
+        "money": 13061080.333333384,
+        "mrr": 786800,
+        "customers": 894,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 2.249999999999998
+      },
+      {
+        "t": 110,
+        "money": 13087467.333333386,
+        "mrr": 788200,
+        "customers": 896,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 2.4749999999999974
+      },
+      {
+        "t": 120,
+        "money": 13113896.333333392,
+        "mrr": 789600,
+        "customers": 898,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 2.699999999999997
+      },
+      {
+        "t": 130,
+        "money": 13140360.333333395,
+        "mrr": 789600,
+        "customers": 898,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 2.9249999999999967
+      },
+      {
+        "t": 140,
+        "money": 13166840.666666733,
+        "mrr": 791000,
+        "customers": 900,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 3.1499999999999964
+      },
+      {
+        "t": 150,
+        "money": 13193370.000000069,
+        "mrr": 791700,
+        "customers": 901,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 3.374999999999996
+      },
+      {
+        "t": 160,
+        "money": 13219927.333333412,
+        "mrr": 792400,
+        "customers": 902,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 3.5999999999999956
+      },
+      {
+        "t": 170,
+        "money": 13246498.666666748,
+        "mrr": 792400,
+        "customers": 902,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 3.8249999999999953
+      },
+      {
+        "t": 180,
+        "money": 13273065.33333342,
+        "mrr": 793100,
+        "customers": 903,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 4.049999999999995
+      },
+      {
+        "t": 190,
+        "money": 13299622.666666763,
+        "mrr": 792400,
+        "customers": 902,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 4.274999999999995
+      },
+      {
+        "t": 200,
+        "money": 13326215.000000104,
+        "mrr": 794500,
+        "customers": 905,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 4.499999999999995
+      },
+      {
+        "t": 210,
+        "money": 13352870.333333436,
+        "mrr": 795900,
+        "customers": 907,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 4.724999999999994
+      },
+      {
+        "t": 220,
+        "money": 13379544.33333344,
+        "mrr": 795900,
+        "customers": 907,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 4.949999999999994
+      },
+      {
+        "t": 230,
+        "money": 13406246.333333444,
+        "mrr": 797100,
+        "customers": 909,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 5.174999999999994
+      },
+      {
+        "t": 240,
+        "money": 13433007.000000114,
+        "mrr": 799200,
+        "customers": 912,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 5.399999999999993
+      },
+      {
+        "t": 250,
+        "money": 13459807.333333455,
+        "mrr": 799900,
+        "customers": 913,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 5.624999999999993
+      },
+      {
+        "t": 260,
+        "money": 13486638.000000121,
+        "mrr": 801300,
+        "customers": 915,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 5.8499999999999925
+      },
+      {
+        "t": 270,
+        "money": 13513510.666666796,
+        "mrr": 802000,
+        "customers": 916,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 6.074999999999992
+      },
+      {
+        "t": 280,
+        "money": 13540402.000000132,
+        "mrr": 802700,
+        "customers": 917,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 6.299999999999992
+      },
+      {
+        "t": 290,
+        "money": 13567384.33333347,
+        "mrr": 806200,
+        "customers": 922,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 6.5249999999999915
+      },
+      {
+        "t": 300,
+        "money": 13594441.333333474,
+        "mrr": 807600,
+        "customers": 924,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 6.749999999999991
+      },
+      {
+        "t": 310,
+        "money": 13621517.000000147,
+        "mrr": 808300,
+        "customers": 925,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 6.974999999999991
+      },
+      {
+        "t": 320,
+        "money": 13648616.000000155,
+        "mrr": 809700,
+        "customers": 927,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 7.19999999999999
+      },
+      {
+        "t": 330,
+        "money": 13675785.000000158,
+        "mrr": 810400,
+        "customers": 928,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 7.42499999999999
+      },
+      {
+        "t": 340,
+        "money": 13702942.333333502,
+        "mrr": 810400,
+        "customers": 928,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 7.64999999999999
+      },
+      {
+        "t": 350,
+        "money": 13730120.666666834,
+        "mrr": 811100,
+        "customers": 929,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 7.874999999999989
+      },
+      {
+        "t": 360,
+        "money": 13757327.000000171,
+        "mrr": 812500,
+        "customers": 931,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 8.099999999999993
+      },
+      {
+        "t": 370,
+        "money": 13784549.666666847,
+        "mrr": 812500,
+        "customers": 931,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 8.325000000000001
+      },
+      {
+        "t": 380,
+        "money": 13811816.666666852,
+        "mrr": 814600,
+        "customers": 934,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 8.55000000000001
+      },
+      {
+        "t": 390,
+        "money": 13839114.000000196,
+        "mrr": 814600,
+        "customers": 934,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 8.775000000000018
+      },
+      {
+        "t": 400,
+        "money": 13866451.0000002,
+        "mrr": 816700,
+        "customers": 937,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 9.000000000000027
+      },
+      {
+        "t": 410,
+        "money": 13893851.000000205,
+        "mrr": 818800,
+        "customers": 940,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 9.225000000000035
+      },
+      {
+        "t": 420,
+        "money": 13921311.666666878,
+        "mrr": 820900,
+        "customers": 943,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 9.450000000000044
+      },
+      {
+        "t": 430,
+        "money": 13948851.666666882,
+        "mrr": 822300,
+        "customers": 945,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 9.675000000000052
+      },
+      {
+        "t": 440,
+        "money": 13976405.666666886,
+        "mrr": 822300,
+        "customers": 945,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 9.90000000000006
+      },
+      {
+        "t": 450,
+        "money": 14003987.66666689,
+        "mrr": 823700,
+        "customers": 947,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 10.12500000000007
+      },
+      {
+        "t": 460,
+        "money": 14031572.00000023,
+        "mrr": 823700,
+        "customers": 947,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 10.350000000000078
+      },
+      {
+        "t": 470,
+        "money": 14059172.666666893,
+        "mrr": 823700,
+        "customers": 947,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 10.575000000000086
+      },
+      {
+        "t": 480,
+        "money": 14086794.333333563,
+        "mrr": 825100,
+        "customers": 949,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 10.800000000000095
+      },
+      {
+        "t": 490,
+        "money": 14114455.6666669,
+        "mrr": 826500,
+        "customers": 951,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 11.025000000000103
+      },
+      {
+        "t": 500,
+        "money": 14142205.666666904,
+        "mrr": 828600,
+        "customers": 954,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 11.250000000000112
+      },
+      {
+        "t": 510,
+        "money": 14169978.333333578,
+        "mrr": 828400,
+        "customers": 954,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 11.47500000000012
+      },
+      {
+        "t": 520,
+        "money": 14197745.000000251,
+        "mrr": 829800,
+        "customers": 956,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 11.700000000000129
+      },
+      {
+        "t": 530,
+        "money": 14225572.333333593,
+        "mrr": 831200,
+        "customers": 958,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 11.925000000000137
+      },
+      {
+        "t": 540,
+        "money": 14253427.666666925,
+        "mrr": 831900,
+        "customers": 959,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 12.150000000000146
+      },
+      {
+        "t": 550,
+        "money": 14281322.666666929,
+        "mrr": 833300,
+        "customers": 961,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 12.375000000000155
+      },
+      {
+        "t": 560,
+        "money": 14309278.333333602,
+        "mrr": 834700,
+        "customers": 963,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 12.600000000000163
+      },
+      {
+        "t": 570,
+        "money": 14337246.666666942,
+        "mrr": 834500,
+        "customers": 963,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 12.825000000000172
+      },
+      {
+        "t": 580,
+        "money": 14365207.333333606,
+        "mrr": 834500,
+        "customers": 963,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 13.05000000000018
+      },
+      {
+        "t": 590,
+        "money": 14393186.666666942,
+        "mrr": 835900,
+        "customers": 965,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 13.275000000000189
+      },
+      {
+        "t": 600,
+        "money": 14421222.00000028,
+        "mrr": 837300,
+        "customers": 967,
+        "bugs": 15.464999999999995,
+        "fire": 0.03,
+        "productFire": 13.500000000000197
+      }
+    ],
+    "aiUsageSeconds": {
+      "dev01": 10,
+      "sales02": 600,
+      "buzz03": 600,
+      "care04": 600,
+      "fire05": 600,
+      "security06": 600
+    },
+    "relationshipFlags": {}
+  },
+  "crisis": {
+    "money": 944355.0000000086,
+    "totalMoney": 1667022.0000000265,
+    "users": 480,
+    "fire": 0.03,
+    "employees": {
+      "dev01": 3,
+      "sales02": 3,
+      "buzz03": 2,
+      "care04": 2,
+      "fire05": 2,
+      "security06": 1
+    },
+    "products": {
+      "dailyReportAi": {
+        "id": "dailyReportAi",
+        "status": "selling",
+        "progress": 100,
+        "quality": 32,
+        "bugs": 96.00299999999993,
+        "awareness": 100,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 238,
+        "unitsSold": 0,
+        "mrr": 166600,
+        "lifetimeRevenue": 288002.0000000001,
+        "salesPityCounter": 15,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 600,
+        "version": 3,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 100,
+        "satisfaction": 0,
+        "churnRisk": 81.62065999999999
+      },
+      "meetingMinutesAi": {
+        "id": "meetingMinutesAi",
+        "status": "selling",
+        "progress": 180,
+        "quality": 100,
+        "bugs": 0,
+        "awareness": 48,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 72,
+        "unitsSold": 0,
+        "mrr": 86400,
+        "lifetimeRevenue": 173140,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 100,
+        "churnRisk": 0
+      },
+      "slideKitAi": {
+        "id": "slideKitAi",
+        "status": "selling",
+        "progress": 160,
+        "quality": 57,
+        "bugs": 4,
+        "awareness": 100,
+        "productFire": 13.500000000000197,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 38,
+        "mrr": 0,
+        "lifetimeRevenue": 372400,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 70,
+        "churnRisk": 0
+      },
+      "supportReplyAi": {
+        "id": "supportReplyAi",
+        "status": "developing",
+        "progress": 135,
+        "quality": 62,
+        "bugs": 5,
+        "awareness": 25,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 0,
+        "mrr": 0,
+        "lifetimeRevenue": 0,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 20,
+        "satisfaction": 7.9723499999997784,
+        "churnRisk": 40.81970750000013
+      },
+      "apologyWriterAi": {
+        "id": "apologyWriterAi",
+        "status": "idea",
+        "progress": 0,
+        "quality": 52,
+        "bugs": 0,
+        "awareness": 3,
+        "productFire": 0,
+        "priceAdjustment": 0,
+        "customers": 0,
+        "unitsSold": 0,
+        "mrr": 0,
+        "lifetimeRevenue": 0,
+        "salesPityCounter": 0,
+        "oneShotSalesPityCounter": 0,
+        "sellingSeconds": 0,
+        "version": 1,
+        "upgradeProgress": 0,
+        "upgradeStatus": "idle",
+        "supportLoad": 0,
+        "satisfaction": 70,
+        "churnRisk": 0
+      }
+    },
+    "productFlags": {
+      "dailyReportAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "meetingMinutesAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "slideKitAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "supportReplyAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      },
+      "apologyWriterAi": {
+        "startedLogged": true,
+        "completedLogged": true,
+        "salesStartedLogged": true,
+        "firstCustomerGranted": true,
+        "customer10Logged": true,
+        "customer50Logged": true,
+        "customer100Logged": true,
+        "mrr10kLogged": true,
+        "mrr100kLogged": true,
+        "firstSaleLogged": true,
+        "sales10Logged": true,
+        "sales50Logged": true,
+        "sales100Logged": true,
+        "unit10Logged": true,
+        "qaLogShown": true,
+        "marketingStartedLogged": true,
+        "marketingFireLogged": true,
+        "awareness50Logged": true,
+        "awareness100Logged": true,
+        "supportLoad50Logged": true,
+        "satisfaction40Logged": true,
+        "churnRisk50Logged": true,
+        "firstChurnLogged": true,
+        "productFire50Logged": true,
+        "productFire80Logged": true,
+        "productFire100Logged": true,
+        "crisisStartedLogged": true,
+        "crisisContainedLogged": true,
+        "impossibleRequestHandled": true,
+        "aiRunawayHandled": true
+      }
+    },
+    "assignments": {
+      "development": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "meetingMinutesAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "slideKitAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "supportReplyAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          },
+          "apologyWriterAi": {
+            "aiIds": [],
+            "mode": "newProduct"
+          }
+        }
+      },
+      "qa": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": [
+              "security06"
+            ]
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "sales": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [
+              "sales02"
+            ]
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "marketing": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": [
+              "buzz03"
+            ]
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "support": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": []
+          },
+          "meetingMinutesAi": {
+            "aiIds": [
+              "care04"
+            ]
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      },
+      "crisis": {
+        "productAssignments": {
+          "dailyReportAi": {
+            "aiIds": [
+              "fire05"
+            ]
+          },
+          "meetingMinutesAi": {
+            "aiIds": []
+          },
+          "slideKitAi": {
+            "aiIds": []
+          },
+          "supportReplyAi": {
+            "aiIds": []
+          },
+          "apologyWriterAi": {
+            "aiIds": []
+          }
+        }
+      }
+    },
+    "playSeconds": 600,
+    "strategyId": "quality",
+    "decisionThreads": {},
+    "decisionStats": {
+      "approved": 0,
+      "rejected": 0
+    },
+    "metricHistory": [
+      {
+        "t": 0,
+        "money": 100000,
+        "mrr": 30000,
+        "customers": 60,
+        "bugs": 12,
+        "fire": 10,
+        "productFire": 8
+      },
+      {
+        "t": 0,
+        "money": 250000,
+        "mrr": 52000,
+        "customers": 130,
+        "bugs": 18,
+        "fire": 18,
+        "productFire": 15
+      },
+      {
+        "t": 0,
+        "money": 420000,
+        "mrr": 91000,
+        "customers": 260,
+        "bugs": 35,
+        "fire": 30,
+        "productFire": 28
+      },
+      {
+        "t": 0,
+        "money": 680000,
+        "mrr": 178000,
+        "customers": 480,
+        "bugs": 28,
+        "fire": 42,
+        "productFire": 36
+      },
+      {
+        "t": 10,
+        "money": 686658.0000000005,
+        "mrr": 197400,
+        "customers": 255,
+        "bugs": 90.30999999999995,
+        "fire": 85.70000000000005,
+        "productFire": 89.90000000000003
+      },
+      {
+        "t": 20,
+        "money": 693821.333333334,
+        "mrr": 216200,
+        "customers": 256,
+        "bugs": 96.00299999999993,
+        "fire": 79.40000000000009,
+        "productFire": 85.80000000000007
+      },
+      {
+        "t": 30,
+        "money": 701106.0000000007,
+        "mrr": 216200,
+        "customers": 256,
+        "bugs": 96.00299999999993,
+        "fire": 73.10000000000014,
+        "productFire": 81.7000000000001
+      },
+      {
+        "t": 40,
+        "money": 673338.0000000005,
+        "mrr": 215700,
+        "customers": 256,
+        "bugs": 96.00299999999993,
+        "fire": 66.80000000000018,
+        "productFire": 77.60000000000014
+      },
+      {
+        "t": 50,
+        "money": 680606.0000000009,
+        "mrr": 215700,
+        "customers": 256,
+        "bugs": 96.00299999999993,
+        "fire": 60.50000000000023,
+        "productFire": 73.50000000000017
+      },
+      {
+        "t": 60,
+        "money": 687852.6666666684,
+        "mrr": 215200,
+        "customers": 256,
+        "bugs": 96.00299999999993,
+        "fire": 54.20000000000027,
+        "productFire": 69.4000000000002
+      },
+      {
+        "t": 70,
+        "money": 695104.0000000026,
+        "mrr": 215200,
+        "customers": 256,
+        "bugs": 96.00299999999993,
+        "fire": 47.90000000000032,
+        "productFire": 65.30000000000024
+      },
+      {
+        "t": 80,
+        "money": 702371.6666666695,
+        "mrr": 215900,
+        "customers": 257,
+        "bugs": 96.00299999999993,
+        "fire": 41.600000000000364,
+        "productFire": 61.20000000000027
+      },
+      {
+        "t": 90,
+        "money": 709646.3333333363,
+        "mrr": 215900,
+        "customers": 257,
+        "bugs": 96.00299999999993,
+        "fire": 35.30000000000041,
+        "productFire": 57.10000000000031
+      },
+      {
+        "t": 100,
+        "money": 716937.3333333366,
+        "mrr": 216600,
+        "customers": 258,
+        "bugs": 96.00299999999993,
+        "fire": 29.000000000000437,
+        "productFire": 53.00000000000034
+      },
+      {
+        "t": 110,
+        "money": 724235.3333333371,
+        "mrr": 216600,
+        "customers": 258,
+        "bugs": 96.00299999999993,
+        "fire": 22.700000000000447,
+        "productFire": 48.900000000000375
+      },
+      {
+        "t": 120,
+        "money": 731568.3333333377,
+        "mrr": 218700,
+        "customers": 261,
+        "bugs": 96.00299999999993,
+        "fire": 16.400000000000457,
+        "productFire": 44.80000000000041
+      },
+      {
+        "t": 130,
+        "money": 738955.0000000051,
+        "mrr": 219400,
+        "customers": 262,
+        "bugs": 96.00299999999993,
+        "fire": 10.100000000000433,
+        "productFire": 40.70000000000044
+      },
+      {
+        "t": 140,
+        "money": 746346.3333333393,
+        "mrr": 219400,
+        "customers": 262,
+        "bugs": 96.00299999999993,
+        "fire": 3.8000000000004306,
+        "productFire": 36.60000000000048
+      },
+      {
+        "t": 150,
+        "money": 753756.3333333395,
+        "mrr": 220100,
+        "customers": 263,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 32.50000000000051
+      },
+      {
+        "t": 160,
+        "money": 723482.6666666667,
+        "mrr": 220100,
+        "customers": 263,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 28.400000000000514
+      },
+      {
+        "t": 170,
+        "money": 730916.0000000005,
+        "mrr": 220800,
+        "customers": 264,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 24.300000000000512
+      },
+      {
+        "t": 180,
+        "money": 738354.0000000009,
+        "mrr": 220800,
+        "customers": 264,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 20.20000000000051
+      },
+      {
+        "t": 190,
+        "money": 745822.3333333347,
+        "mrr": 222200,
+        "customers": 266,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 16.10000000000051
+      },
+      {
+        "t": 200,
+        "money": 753307.0000000014,
+        "mrr": 222200,
+        "customers": 266,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 12.00000000000051
+      },
+      {
+        "t": 210,
+        "money": 760803.333333335,
+        "mrr": 222900,
+        "customers": 267,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 7.900000000000508
+      },
+      {
+        "t": 220,
+        "money": 768311.3333333355,
+        "mrr": 222900,
+        "customers": 267,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 4.949999999999994
+      },
+      {
+        "t": 230,
+        "money": 775826.333333336,
+        "mrr": 222900,
+        "customers": 267,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 5.174999999999994
+      },
+      {
+        "t": 240,
+        "money": 783334.3333333365,
+        "mrr": 222900,
+        "customers": 267,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 5.399999999999993
+      },
+      {
+        "t": 250,
+        "money": 790854.0000000038,
+        "mrr": 223600,
+        "customers": 268,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 5.624999999999993
+      },
+      {
+        "t": 260,
+        "money": 798385.333333338,
+        "mrr": 223600,
+        "customers": 268,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 5.8499999999999925
+      },
+      {
+        "t": 270,
+        "money": 805947.0000000049,
+        "mrr": 225700,
+        "customers": 271,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 6.074999999999992
+      },
+      {
+        "t": 280,
+        "money": 813569.3333333384,
+        "mrr": 226400,
+        "customers": 272,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 6.299999999999992
+      },
+      {
+        "t": 290,
+        "money": 821224.333333339,
+        "mrr": 227800,
+        "customers": 274,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 6.5249999999999915
+      },
+      {
+        "t": 300,
+        "money": 828933.0000000059,
+        "mrr": 229200,
+        "customers": 276,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 6.749999999999991
+      },
+      {
+        "t": 310,
+        "money": 795239.0000000003,
+        "mrr": 231300,
+        "customers": 279,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 6.974999999999991
+      },
+      {
+        "t": 320,
+        "money": 803052.6666666674,
+        "mrr": 233400,
+        "customers": 282,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 7.19999999999999
+      },
+      {
+        "t": 330,
+        "money": 810950.3333333344,
+        "mrr": 234800,
+        "customers": 284,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 7.42499999999999
+      },
+      {
+        "t": 340,
+        "money": 818855.0000000012,
+        "mrr": 234800,
+        "customers": 284,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 7.64999999999999
+      },
+      {
+        "t": 350,
+        "money": 826785.333333335,
+        "mrr": 236200,
+        "customers": 286,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 7.874999999999989
+      },
+      {
+        "t": 360,
+        "money": 834736.6666666692,
+        "mrr": 236200,
+        "customers": 286,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 8.099999999999993
+      },
+      {
+        "t": 370,
+        "money": 842713.6666666695,
+        "mrr": 237600,
+        "customers": 288,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 8.325000000000001
+      },
+      {
+        "t": 380,
+        "money": 850702.3333333365,
+        "mrr": 236900,
+        "customers": 287,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 8.55000000000001
+      },
+      {
+        "t": 390,
+        "money": 858688.6666666701,
+        "mrr": 237600,
+        "customers": 288,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 8.775000000000018
+      },
+      {
+        "t": 400,
+        "money": 866686.6666666706,
+        "mrr": 237600,
+        "customers": 288,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 9.000000000000027
+      },
+      {
+        "t": 410,
+        "money": 874696.3333333379,
+        "mrr": 238300,
+        "customers": 289,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 9.225000000000035
+      },
+      {
+        "t": 420,
+        "money": 882717.6666666721,
+        "mrr": 238300,
+        "customers": 289,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 9.450000000000044
+      },
+      {
+        "t": 430,
+        "money": 846614.0000000005,
+        "mrr": 239000,
+        "customers": 290,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 9.675000000000052
+      },
+      {
+        "t": 440,
+        "money": 854684.3333333343,
+        "mrr": 239700,
+        "customers": 291,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 9.90000000000006
+      },
+      {
+        "t": 450,
+        "money": 862771.0000000017,
+        "mrr": 240400,
+        "customers": 292,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 10.12500000000007
+      },
+      {
+        "t": 460,
+        "money": 827723.3333333342,
+        "mrr": 240400,
+        "customers": 292,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 10.350000000000078
+      },
+      {
+        "t": 470,
+        "money": 835847.3333333347,
+        "mrr": 241800,
+        "customers": 294,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 10.575000000000086
+      },
+      {
+        "t": 480,
+        "money": 843990.0000000019,
+        "mrr": 242500,
+        "customers": 295,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 10.800000000000095
+      },
+      {
+        "t": 490,
+        "money": 852186.3333333357,
+        "mrr": 244600,
+        "customers": 298,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 11.025000000000103
+      },
+      {
+        "t": 500,
+        "money": 860417.6666666699,
+        "mrr": 244600,
+        "customers": 298,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 11.250000000000112
+      },
+      {
+        "t": 510,
+        "money": 868651.3333333373,
+        "mrr": 245300,
+        "customers": 299,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 11.47500000000012
+      },
+      {
+        "t": 520,
+        "money": 876917.6666666709,
+        "mrr": 246000,
+        "customers": 300,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 11.700000000000129
+      },
+      {
+        "t": 530,
+        "money": 885214.3333333384,
+        "mrr": 246700,
+        "customers": 301,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 11.925000000000137
+      },
+      {
+        "t": 540,
+        "money": 893555.3333333388,
+        "mrr": 248800,
+        "customers": 304,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 12.150000000000146
+      },
+      {
+        "t": 550,
+        "money": 901945.3333333391,
+        "mrr": 249500,
+        "customers": 305,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 12.375000000000155
+      },
+      {
+        "t": 560,
+        "money": 910375.0000000063,
+        "mrr": 251600,
+        "customers": 308,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 12.600000000000163
+      },
+      {
+        "t": 570,
+        "money": 918853.6666666733,
+        "mrr": 252300,
+        "customers": 309,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 12.825000000000172
+      },
+      {
+        "t": 580,
+        "money": 927341.6666666737,
+        "mrr": 252300,
+        "customers": 309,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 13.05000000000018
+      },
+      {
+        "t": 590,
+        "money": 935843.6666666744,
+        "mrr": 253000,
+        "customers": 310,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 13.275000000000189
+      },
+      {
+        "t": 600,
+        "money": 944355.0000000086,
+        "mrr": 253000,
+        "customers": 310,
+        "bugs": 96.00299999999993,
+        "fire": 0.03,
+        "productFire": 13.500000000000197
+      }
+    ],
+    "aiUsageSeconds": {
+      "dev01": 12,
+      "sales02": 600,
+      "buzz03": 600,
+      "care04": 600,
+      "fire05": 600,
+      "security06": 600
+    },
+    "relationshipFlags": {}
+  }
+}

@@ -19,9 +19,7 @@ jobs:
       - run: python scripts/release_version.py --check
       - name: JavaScript syntax
         run: |
-          node --check main.js
-          node --check sw.js
-          find js scripts -name '*.js' -exec node --check {} \;
+          python scripts/check_javascript.py
       - run: python -m pytest -q
       - run: node scripts/evaluate_balance.js --assert
       - run: python scripts/public_experience_check.py
