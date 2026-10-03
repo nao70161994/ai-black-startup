@@ -27,6 +27,8 @@ jobs:
       - run: python scripts/public_experience_check.py
       - uses: browser-actions/setup-chrome@v1
         id: chrome
+        with:
+          chrome-version: stable
       - name: Chromium UI checks
         env:
           AIBS_BROWSER: ${{ steps.chrome.outputs.chrome-path }}

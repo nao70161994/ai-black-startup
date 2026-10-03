@@ -220,6 +220,11 @@ function collect() {
     });
   }
   window.setTimeout(() => {
+    // Virtual time can advance timers before the compositor advances page-enter.
+    // Measure its final layout, not the intentional 8px entrance translation.
+    doc.querySelectorAll(".app-page").forEach(page => {
+      page.getAnimations().forEach(animation => animation.finish());
+    });
     const controls = Array.from(doc.querySelectorAll("button, select, summary, a[href]"))
       .filter(node => visible(node, win));
     const controlHeights = controls.map(node => Math.round(node.getBoundingClientRect().height));
