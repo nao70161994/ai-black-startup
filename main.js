@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.05.24.60";
-  const APP_ASSET_TOKEN = "20260524-60";
+  const APP_VERSION = "2026.10.03.1";
+  const APP_ASSET_TOKEN = "20261003-1";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -218,6 +218,61 @@
     normalizeHistory: OPERATIONS_RUNTIME.normalizeHistory
   });
 
+  const OFFICE_RENDERER = readExternalFactory("AIBS_CREATE_OFFICE_RENDERER")({
+    get APP_ASSET_TOKEN() { return APP_ASSET_TOKEN; },
+    get CHARACTER_ASSETS() { return CHARACTER_ASSETS; },
+    get EMPLOYEES() { return EMPLOYEES; },
+    get PRODUCTS() { return PRODUCTS; },
+    get TASKS() { return TASKS; },
+    get activateCharacterImageFallbacks() { return activateCharacterImageFallbacks; },
+    get canAssignTaskToProduct() { return canAssignTaskToProduct; },
+    get dashboardUi() { return dashboardUi; },
+    get escapeHtml() { return escapeHtml; },
+    get focusMainContent() { return focusMainContent; },
+    get formatCurrency() { return formatCurrency; },
+    get getCharacterAvatarHtml() { return getCharacterAvatarHtml; },
+    get getDashboardBugLevel() { return getDashboardBugLevel; },
+    get getPrimaryProductDefinition() { return getPrimaryProductDefinition; },
+    get getProduct() { return getProduct; },
+    get getProductAssignment() { return getProductAssignment; },
+    get getTotalProductMrr() { return getTotalProductMrr; },
+    get getWorkerLabel() { return getWorkerLabel; },
+    get navigateToPage() { return navigateToPage; },
+    get openProductAssignmentModal() { return openProductAssignmentModal; },
+    get openWorkerAssignmentModal() { return openWorkerAssignmentModal; },
+    get safeNumber() { return safeNumber; },
+    get setText() { return setText; },
+    get state() { return state; }
+  });
+  const PRODUCTS_RENDERER = readExternalFactory("AIBS_CREATE_PRODUCTS_RENDERER")({
+    get PRODUCTS() { return PRODUCTS; },
+    get clamp() { return clamp; },
+    get dashboardUi() { return dashboardUi; },
+    get escapeHtml() { return escapeHtml; },
+    get formatCurrency() { return formatCurrency; },
+    get getPrimaryProductDefinition() { return getPrimaryProductDefinition; },
+    get getPrimaryProductRecommendation() { return getPrimaryProductRecommendation; },
+    get getPrimaryProductRiskHtml() { return getPrimaryProductRiskHtml; },
+    get getPrimaryProductSummary() { return getPrimaryProductSummary; },
+    get getPrimaryProductTitle() { return getPrimaryProductTitle; },
+    get getPrimaryProductValueText() { return getPrimaryProductValueText; },
+    get getProduct() { return getProduct; },
+    get getProductActionButtons() { return getProductActionButtons; },
+    get getProductActionHint() { return getProductActionHint; },
+    get getProductAssignmentBadges() { return getProductAssignmentBadges; },
+    get getProductDisplayName() { return getProductDisplayName; },
+    get getProductMrr() { return getProductMrr; },
+    get getProductProgressPercent() { return getProductProgressPercent; },
+    get getProductStatusLabel() { return getProductStatusLabel; },
+    get getProductSummaryMetrics() { return getProductSummaryMetrics; },
+    get getProductTypeLine() { return getProductTypeLine; },
+    get getTotalOneShotRevenue() { return getTotalOneShotRevenue; },
+    get getTotalProductMrr() { return getTotalProductMrr; },
+    get openProductActionMenu() { return openProductActionMenu; },
+    get openProductDetailModal() { return openProductDetailModal; },
+    get safeNumber() { return safeNumber; },
+    get toggleDashboardPanel() { return toggleDashboardPanel; }
+  });
   let state = createInitialState();
   let randomLogTimer = null;
   let gameTickTimer = null;
@@ -2141,65 +2196,10 @@
     return "販売と広報を継続";
   }
 
-  function renderPrimaryProductPanel() {
-    const panel = document.getElementById("primaryProductPanel");
-    if (!panel) return;
-    const definition = getPrimaryProductDefinition();
-    const product = getProduct(definition.id);
-    panel.innerHTML = '<div class="section-heading"><h2>現在の主力製品</h2><span>' + escapeHtml(getPrimaryProductValueText(product, definition)) + '</span></div>' +
-      '<article class="primary-product-card"><div><strong>' + escapeHtml(getPrimaryProductTitle(product, definition)) + '</strong><span>' + escapeHtml(getPrimaryProductSummary(product, definition)) + '</span>' + getPrimaryProductRiskHtml(product, definition) + '<em>おすすめ: ' + escapeHtml(getPrimaryProductRecommendation(product, definition)) + '</em></div><div class="assignment-badge-list">' + getProductAssignmentBadges(definition.id) + '</div><div class="primary-product-actions"><button type="button" class="product-action-button" data-primary-product-menu="' + definition.id + '">操作メニューへ</button><button type="button" class="product-action-button product-detail-button" data-primary-product-detail="' + definition.id + '">詳細</button></div></article>';
-    panel.querySelectorAll("button[data-primary-product-menu]").forEach(function (button) {
-      button.addEventListener("click", function () { openProductActionMenu(button.getAttribute("data-primary-product-menu")); });
-    });
-    panel.querySelectorAll("button[data-primary-product-detail]").forEach(function (button) {
-      button.addEventListener("click", function () { openProductDetailModal(button.getAttribute("data-primary-product-detail")); });
-    });
-  }
-
-  function renderProductPanel() {
-    const panel = document.getElementById("productPanel");
-    if (!panel) return;
-    const body = dashboardUi.productsExpanded ? '<div class="portfolio-products">' + PRODUCTS.map(function (definition) { return getProductCardHtml(definition); }).join('') + '</div>' : getProductPortfolioPreviewHtml();
-    panel.innerHTML = '<div class="section-heading"><div><span class="section-kicker">PRODUCT LINE</span><h2>製品ポートフォリオ</h2></div><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (dashboardUi.productsExpanded ? '製品一覧を閉じる' : '製品一覧を開く') + '</button></div>' +
-      '<p class="dashboard-summary">' + PRODUCTS.length + '製品運用 / 総MRR ' + formatCurrency(getTotalProductMrr()) + '/月 / 売り切り累計 ' + formatCurrency(getTotalOneShotRevenue()) + '</p>' + body;
-    const toggle = document.getElementById("toggleProductsButton");
-    if (toggle) toggle.addEventListener("click", function () { toggleDashboardPanel("productsExpanded"); });
-    panel.querySelectorAll("button[data-product-detail]").forEach(function (button) {
-      button.addEventListener("click", function () { openProductDetailModal(button.getAttribute("data-product-detail")); });
-    });
-    panel.querySelectorAll("button[data-product-menu]").forEach(function (button) {
-      button.addEventListener("click", function () { openProductActionMenu(button.getAttribute("data-product-menu")); });
-    });
-  }
-
-  function getProductPortfolioPreviewHtml() {
-    const statusIcons = { idea: "01", developing: "02", ready: "03", selling: "LIVE" };
-    return '<div class="product-portfolio-preview" aria-label="製品ラインの稼働状況">' + PRODUCTS.map(function (definition, index) {
-      const product = getProduct(definition.id);
-      const progress = product.status === "idea" ? 0 : (product.status === "developing" ? clamp(product.progress, 0, 100) : 100);
-      const value = definition.type === "subscription" ? formatCurrency(getProductMrr(product, definition)) + "/月" : formatCurrency(safeNumber(product.lifetimeRevenue, 0));
-      return '<button type="button" class="portfolio-preview-item status-' + product.status + '" data-product-detail="' + definition.id + '">' +
-        '<span class="portfolio-preview-index" aria-hidden="true">0' + (index + 1) + '</span>' +
-        '<span class="portfolio-preview-icon" aria-hidden="true">' + (statusIcons[product.status] || "01") + '</span>' +
-        '<span class="portfolio-preview-copy"><strong>' + escapeHtml(definition.name) + '</strong><small>' + escapeHtml(getProductStatusLabel(product.status)) + ' · ' + escapeHtml(value) + '</small></span>' +
-        '<span class="portfolio-preview-progress" aria-hidden="true"><i style="width:' + progress + '%"></i></span>' +
-      '</button>';
-    }).join("") + '</div>';
-  }
-
-  function getProductCardHtml(definition) {
-    const product = getProduct(definition.id);
-    const progressPercent = product.upgradeStatus === "upgrading" ? clamp(product.upgradeProgress, 0, 100) : getProductProgressPercent(product, definition);
-    const shouldShowProgress = product.status === "developing" || product.upgradeStatus === "upgrading";
-    return '<article class="product-card product-' + product.status + '">' +
-      '<div class="product-top"><div><strong>' + escapeHtml(getProductDisplayName(product, definition)) + '</strong><span>' + escapeHtml(getProductTypeLine(definition, product)) + '</span></div><div class="level-badge">' + getProductStatusLabel(product.status) + '</div></div>' +
-      (shouldShowProgress ? '<div class="product-progress"><span style="width:' + progressPercent + '%"></span></div>' : '') +
-      '<div class="product-metrics product-summary-metrics">' + getProductSummaryMetrics(product, definition, progressPercent) + '</div>' +
-      getProductActionHint(product, definition) +
-      getProductActionButtons(product, definition) +
-      '</article>';
-  }
-
+  function renderPrimaryProductPanel() { return PRODUCTS_RENDERER.renderPrimaryProductPanel.apply(null, arguments); }
+  function renderProductPanel() { return PRODUCTS_RENDERER.renderProductPanel.apply(null, arguments); }
+  function getProductPortfolioPreviewHtml() { return PRODUCTS_RENDERER.getProductPortfolioPreviewHtml.apply(null, arguments); }
+  function getProductCardHtml() { return PRODUCTS_RENDERER.getProductCardHtml.apply(null, arguments); }
 
   function toggleDashboardPanel(key) {
     dashboardUi[key] = !dashboardUi[key];
@@ -2757,198 +2757,19 @@
   }
 
 
-  function getOfficeLevel() {
-    return Math.min(5, Math.max(1, Math.floor(safeNumber(state.companyLevel, 1))));
-  }
+  function getOfficeLevel() { return OFFICE_RENDERER.getOfficeLevel.apply(null, arguments); }
+  function getOfficeWorkerAssignment() { return OFFICE_RENDERER.getOfficeWorkerAssignment.apply(null, arguments); }
+  function getOfficeTaskSymbol() { return OFFICE_RENDERER.getOfficeTaskSymbol.apply(null, arguments); }
+  function getOfficeWorkerState() { return OFFICE_RENDERER.getOfficeWorkerState.apply(null, arguments); }
+  function getOfficeWorkerDialogue() { return OFFICE_RENDERER.getOfficeWorkerDialogue.apply(null, arguments); }
+  function getOfficeWorkerPosition() { return OFFICE_RENDERER.getOfficeWorkerPosition.apply(null, arguments); }
+  function getOfficeWorkerHtml() { return OFFICE_RENDERER.getOfficeWorkerHtml.apply(null, arguments); }
+  function getOfficeEquipmentHtml() { return OFFICE_RENDERER.getOfficeEquipmentHtml.apply(null, arguments); }
+  function handleOfficeZoneAction() { return OFFICE_RENDERER.handleOfficeZoneAction.apply(null, arguments); }
+  function renderOfficeWorkerInspector() { return OFFICE_RENDERER.renderOfficeWorkerInspector.apply(null, arguments); }
+  function activateOfficeImageFallbacks() { return OFFICE_RENDERER.activateOfficeImageFallbacks.apply(null, arguments); }
+  function renderOffice() { return OFFICE_RENDERER.renderOffice.apply(null, arguments); }
 
-  function getOfficeWorkerAssignment(workerId) {
-    for (let taskIndex = 0; taskIndex < TASKS.length; taskIndex += 1) {
-      const task = TASKS[taskIndex];
-      for (let productIndex = 0; productIndex < PRODUCTS.length; productIndex += 1) {
-        const definition = PRODUCTS[productIndex];
-        const assignment = getProductAssignment(task.id, definition.id);
-        if (assignment.aiIds.indexOf(workerId) >= 0) return { task: task, definition: definition, mode: assignment.mode };
-      }
-    }
-    return null;
-  }
-
-  function getOfficeTaskSymbol(taskId) {
-    return { development: "{ }", qa: "✓", sales: "↗", marketing: "✦", support: "♡", crisis: "!" }[taskId] || "…";
-  }
-
-  function getOfficeWorkerState(workerId, assignment) {
-    const latest = state.logs.find(function (log) { return log.employeeId === workerId || (workerId === "boss" && log.employeeId === "company"); });
-    if (latest && Date.now() - latest.createdAt < 9000 && latest.type === "success") return "success";
-    if (assignment && assignment.task.id === "crisis") return "crisis";
-    if ((state.fire >= 70 && workerId === "fire05") || (getDashboardBugLevel() >= 70 && workerId === "security06")) return "alert";
-    return assignment ? "working" : "resting";
-  }
-
-  function getOfficeWorkerDialogue(workerId, assignment) {
-    const character = CHARACTER_ASSETS[workerId] || {};
-    if (state.fire >= 70 && (workerId === "boss" || workerId === "fire05")) return "炎上 " + Math.round(state.fire) + "。いま火消しを！";
-    if (getDashboardBugLevel() >= 70 && (workerId === "boss" || workerId === "security06")) return "バグ " + Math.round(getDashboardBugLevel()) + "。品質確認します";
-    const latest = state.logs.find(function (log) { return log.employeeId === workerId && Date.now() - log.createdAt < 16000; });
-    if (latest) return latest.text.length > 34 ? latest.text.slice(0, 33) + "…" : latest.text;
-    if (assignment) {
-      if (assignment.task.id === "sales") return "MRR " + formatCurrency(getTotalProductMrr()) + "。商談中です";
-      if (assignment.task.id === "development") return assignment.definition.name + "を開発中です";
-      return assignment.task.label + "を進めています";
-    }
-    const dialogue = Array.isArray(character.dialogue) ? character.dialogue : [];
-    return dialogue.length ? dialogue[(state.playSeconds + workerId.length) % dialogue.length] : "次の仕事を待っています";
-  }
-
-  const OFFICE_TASK_ZONES = {
-    development: { x: 28, y: 77, label: "開発ベイ", shortLabel: "開発", icon: "{ }", unlock: 1 },
-    sales: { x: 76, y: 78, label: "セールス端末", shortLabel: "販売", icon: "↗", unlock: 2 },
-    marketing: { x: 17, y: 57, label: "広報ブース", shortLabel: "広報", icon: "✦", unlock: 3 },
-    qa: { x: 68, y: 55, label: "品質スキャナ", shortLabel: "品質", icon: "✓", unlock: 3 },
-    support: { x: 51, y: 53, label: "サポート席", shortLabel: "支援", icon: "♡", unlock: 4 },
-    crisis: { x: 86, y: 53, label: "危機対応室", shortLabel: "危機", icon: "!", unlock: 4 }
-  };
-
-  function getOfficeWorkerPosition(workerId, assignment, slotIndex, idleIndex) {
-    if (assignment && OFFICE_TASK_ZONES[assignment.task.id]) {
-      const zone = OFFICE_TASK_ZONES[assignment.task.id];
-      return { x: zone.x + (slotIndex ? 7 : -2), y: zone.y + (slotIndex ? 1 : 0) };
-    }
-    if (workerId === "boss") return { x: 50, y: 76 };
-    const idlePositions = [{ x: 40, y: 82 }, { x: 57, y: 82 }, { x: 34, y: 62 }, { x: 62, y: 65 }, { x: 76, y: 64 }, { x: 23, y: 68 }];
-    return idlePositions[idleIndex % idlePositions.length];
-  }
-
-  function getOfficeWorkerHtml(workerId, index, position, zoneSlot) {
-    const character = CHARACTER_ASSETS[workerId] || {};
-    const assignment = getOfficeWorkerAssignment(workerId);
-    const label = character.label || getWorkerLabel(workerId);
-    const detail = assignment ? assignment.definition.name + "の" + assignment.task.label + "を担当中" : "待機中。タップして仕事を割り振る";
-    const src = character.officeSrc || character.src || "";
-    const workerState = getOfficeWorkerState(workerId, assignment);
-    const dialogue = getOfficeWorkerDialogue(workerId, assignment);
-    const selected = dashboardUi.officeWorkerSelected === workerId;
-    return '<button type="button" class="office-worker' + (selected ? ' selected' : '') + '" data-office-worker="' + escapeHtml(workerId) + '" data-task="' + escapeHtml(assignment ? assignment.task.id : "idle") + '" data-worker-state="' + escapeHtml(workerState) + '" data-zone-slot="' + zoneSlot + '" style="--worker-index:' + index + ';--worker-x:' + position.x + '%;--worker-y:' + position.y + '%" aria-pressed="' + String(selected) + '" aria-label="' + escapeHtml(label + "、" + detail + "。" + dialogue) + '"><span class="office-speech" aria-hidden="true">' + escapeHtml(dialogue) + '</span><span class="office-work-effect" aria-hidden="true"><i></i><b>' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "☕") + '</b></span><span class="office-worker-fallback" aria-hidden="true">' + escapeHtml(character.shortLabel || "AI") + '</span>' + (src ? '<img data-office-character-image src="' + escapeHtml(src + "?v=" + APP_ASSET_TOKEN) + '" alt="" width="512" height="768" decoding="async">' : '') + '<span class="office-worker-status"><span aria-hidden="true">' + escapeHtml(assignment ? getOfficeTaskSymbol(assignment.task.id) : "☕") + '</span> ' + escapeHtml(assignment ? assignment.task.label : "待機") + '</span></button>';
-  }
-
-  function getOfficeEquipmentHtml(officeLevel) {
-    return Object.keys(OFFICE_TASK_ZONES).map(function (taskId) {
-      const zone = OFFICE_TASK_ZONES[taskId];
-      const locked = officeLevel < zone.unlock;
-      return '<button type="button" class="office-zone zone-' + taskId + (locked ? ' locked' : '') + '" data-office-zone="' + taskId + '" data-zone-label="' + escapeHtml(zone.shortLabel) + '" style="--zone-x:' + zone.x + '%;--zone-y:' + zone.y + '%"' + (locked ? ' disabled' : '') + ' aria-label="' + escapeHtml(zone.label + (locked ? '、会社Lv' + zone.unlock + 'で解放' : 'を操作')) + '"><b aria-hidden="true">' + zone.icon + '</b><span>' + escapeHtml(zone.label) + '</span>' + (locked ? '<small>Lv' + zone.unlock + '</small>' : '') + '</button>';
-    }).join("");
-  }
-
-  function handleOfficeZoneAction(taskId) {
-    const task = TASKS.find(function (item) { return item.id === taskId; });
-    if (!task) return;
-    const assignedDefinition = PRODUCTS.find(function (definition) { return getProductAssignment(taskId, definition.id).aiIds.length > 0; });
-    const target = assignedDefinition || PRODUCTS.find(function (definition) { return canAssignTaskToProduct(taskId, definition.id); }) || getPrimaryProductDefinition();
-    if (!target || !canAssignTaskToProduct(taskId, target.id)) {
-      navigateToPage("products", { updateHistory: true, scrollTop: true });
-      focusMainContent();
-      return;
-    }
-    const product = getProduct(target.id);
-    const mode = taskId === "development" && product.upgradeStatus === "upgrading" ? "upgrade" : "normal";
-    openProductAssignmentModal(taskId, target.id, mode);
-  }
-
-  function renderOfficeWorkerInspector() {
-    const panel = document.getElementById("officeWorkerInspector");
-    if (!panel) return;
-    const workerId = dashboardUi.officeWorkerSelected;
-    const hired = workerId === "boss" || EMPLOYEES.some(function (employee) { return employee.id === workerId && (state.employees[employee.id] || 0) > 0; });
-    if (!workerId || !hired) { panel.hidden = true; panel.innerHTML = ""; return; }
-    const character = CHARACTER_ASSETS[workerId] || {};
-    const assignment = getOfficeWorkerAssignment(workerId);
-    const label = character.label || getWorkerLabel(workerId);
-    const taskLine = assignment ? assignment.definition.name + " / " + assignment.task.label : "待機中 / 新しい指令を待っています";
-    panel.hidden = false;
-    panel.innerHTML = '<button type="button" class="office-inspector-close" data-office-inspector-close aria-label="社員詳細を閉じる">×</button>' + getCharacterAvatarHtml(workerId, "office-inspector-avatar", false) + '<div class="office-inspector-copy"><span>SELECTED AI</span><strong>' + escapeHtml(label) + '</strong><p>' + escapeHtml(taskLine) + '</p><small>' + escapeHtml(getOfficeWorkerDialogue(workerId, assignment)) + '</small></div><button type="button" class="office-inspector-assign" data-office-inspector-assign="' + escapeHtml(workerId) + '">担当を変更</button>';
-    activateCharacterImageFallbacks(panel);
-    const closeButton = panel.querySelector("[data-office-inspector-close]");
-    if (closeButton) closeButton.addEventListener("click", function () { dashboardUi.officeWorkerSelected = ""; renderOffice(); });
-    const assignButton = panel.querySelector("[data-office-inspector-assign]");
-    if (assignButton) assignButton.addEventListener("click", function () { openWorkerAssignmentModal(workerId); });
-  }
-
-  function activateOfficeImageFallbacks(root) {
-    if (!root || !root.querySelectorAll) return;
-    root.querySelectorAll("img[data-office-character-image]").forEach(function (image) {
-      function showFallback() { image.hidden = true; if (image.parentElement) image.parentElement.classList.add("image-failed"); }
-      image.addEventListener("error", showFallback, { once: true });
-      if (image.complete && image.naturalWidth === 0) showFallback();
-    });
-  }
-
-  function renderOffice() {
-    const officePanel = document.getElementById("officePanel");
-    const officeName = document.getElementById("officeName");
-    const officeMood = document.getElementById("officeMood");
-    if (!officePanel || !officeName || !officeMood) return;
-    const officeLevel = getOfficeLevel();
-    const officeNames = ["仮想ワンルーム", "ミニスタートアップ空間", "自動化オフィス", "クラウド企業フロア", "AI企業タワー"];
-    const level = state.companyLevel;
-    officeName.textContent = officeNames[officeLevel - 1];
-    setText("officeCompanyLevel", officeLevel);
-    const officeStage = document.getElementById("officeStage");
-    if (officeStage && typeof officeStage.setAttribute === "function") officeStage.setAttribute("data-office-level", String(officeLevel));
-    const bugLevel = getDashboardBugLevel();
-    officeMood.textContent = bugLevel >= 70 && state.fire >= 70 ? "警告灯が会議室より多く点灯しています。" : state.fire >= 60 ? "広報チャンネルが高温話題化しています。" : bugLevel >= 60 ? "未分類機能が廊下を歩いています。" : level >= 5 ? "全フロアが自律稼働中。停止ボタンは申請制です。" : level >= 3 ? "自動化が進み、誰が何を自動化したか不明です。" : level >= 2 ? "人員は少ないですが、全員が24時間います。" : "起業直後。まだクラウド代の方が重いです。";
-    officePanel.classList.toggle("alert", bugLevel >= 65 || state.fire >= 65);
-    const background = document.getElementById("officeBackground");
-    if (background && typeof background.getAttribute === "function") {
-      const nextSrc = "assets/office/backgrounds/office-level-" + officeLevel + ".webp?v=" + APP_ASSET_TOKEN;
-      if (background.getAttribute("src") !== nextSrc) { background.hidden = false; background.setAttribute("src", nextSrc); }
-      background.onerror = function () { background.hidden = true; officePanel.classList.add("office-background-failed"); };
-      background.onload = function () { background.hidden = false; officePanel.classList.remove("office-background-failed"); };
-    }
-    const decor = document.getElementById("officeDecor");
-    if (decor) {
-      decor.innerHTML = getOfficeEquipmentHtml(officeLevel);
-      if (typeof decor.setAttribute === "function") decor.setAttribute("data-office-level", String(officeLevel));
-      decor.querySelectorAll("button[data-office-zone]").forEach(function (button) { button.addEventListener("click", function () { handleOfficeZoneAction(button.getAttribute("data-office-zone")); }); });
-    }
-    const hiredWorkerIds = ["boss"].concat(EMPLOYEES.filter(function (employee) { return (state.employees[employee.id] || 0) > 0; }).map(function (employee) { return employee.id; }));
-    const workers = document.getElementById("officeWorkers");
-    if (workers) {
-      const workerSignature = hiredWorkerIds.map(function (workerId) {
-        const assignment = getOfficeWorkerAssignment(workerId);
-        const latest = state.logs.find(function (log) { return log.employeeId === workerId || (workerId === "boss" && log.employeeId === "company"); });
-        return workerId + ":" + (assignment ? assignment.task.id + ":" + assignment.definition.id + ":" + assignment.mode : "idle") + ":" + getOfficeWorkerState(workerId, assignment) + ":" + (latest ? String(latest.id || latest.createdAt || "") + ":" + latest.text : "");
-      }).join("|") + "|selected:" + dashboardUi.officeWorkerSelected;
-      const canTrackSignature = typeof workers.getAttribute === "function" && typeof workers.setAttribute === "function";
-      if (!canTrackSignature || workers.getAttribute("data-office-signature") !== workerSignature) {
-        if (canTrackSignature) {
-          workers.setAttribute("data-worker-count", String(hiredWorkerIds.length));
-          workers.setAttribute("data-office-signature", workerSignature);
-        }
-        const taskSlots = {};
-        let idleIndex = 0;
-        workers.innerHTML = hiredWorkerIds.map(function (workerId, index) {
-          const assignment = getOfficeWorkerAssignment(workerId);
-          const taskId = assignment ? assignment.task.id : "idle";
-          const slot = taskSlots[taskId] || 0;
-          taskSlots[taskId] = slot + 1;
-          const position = getOfficeWorkerPosition(workerId, assignment, slot, idleIndex);
-          if (!assignment && workerId !== "boss") idleIndex += 1;
-          return getOfficeWorkerHtml(workerId, index, position, slot);
-        }).join("");
-        workers.querySelectorAll("button[data-office-worker]").forEach(function (button) { button.addEventListener("click", function () { dashboardUi.officeWorkerSelected = button.getAttribute("data-office-worker"); renderOffice(); }); });
-        activateOfficeImageFallbacks(workers);
-      }
-    }
-    renderOfficeWorkerInspector();
-    const workingCount = hiredWorkerIds.filter(function (workerId) { return Boolean(getOfficeWorkerAssignment(workerId)); }).length;
-    const summary = document.getElementById("officeSummary");
-    const summaryText = "稼働中 " + workingCount + "体 / 待機中 " + (hiredWorkerIds.length - workingCount) + "体。キャラクターをタップすると担当を変更できます。";
-    if (summary && summary.textContent !== summaryText) summary.textContent = summaryText;
-    const decisionHotspot = document.getElementById("officeDecisionHotspot");
-    if (decisionHotspot) decisionHotspot.hidden = !state.pendingDecisionEvent;
-  }
-
-  // === Rendering: Employees ===
   function renderEmployees() {
     const panel = document.getElementById("employeePanel");
     if (!panel) return;
@@ -4435,7 +4256,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20260524-60").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20261003-1").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

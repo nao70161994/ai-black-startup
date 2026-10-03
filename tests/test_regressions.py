@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+APP_VERSION = json.loads((ROOT / "version.json").read_text())["version"]
+ASSET_TOKEN = "".join(APP_VERSION.split(".")[:3]) + "-" + APP_VERSION.split(".")[3]
 
 
 def app_source():
@@ -21,6 +23,8 @@ def app_source():
         "../render/risk.js",
         "../render/debug.js",
         "../render/insights.js",
+        "../render/office.js",
+        "../render/products.js",
         "../runtime/decisions.js",
         "../runtime/tick.js",
         "../runtime/effects.js",
@@ -36,26 +40,26 @@ def test_cache_busting_versions_match_app_version():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.60"' in index
-    assert 'style.css?v=20260524-60' in index
-    assert 'main.js?v=20260524-60' in index
-    assert 'manifest.webmanifest?v=20260524-60' in index
-    assert 'icon.svg?v=20260524-60' in index
-    assert 'ogp.png?v=20260524-60' in index
-    assert 'icon-512.png?v=20260524-60' in index
+    assert f'content="{APP_VERSION}"' in index
+    assert f'style.css?v={ASSET_TOKEN}' in index
+    assert f'main.js?v={ASSET_TOKEN}' in index
+    assert f'manifest.webmanifest?v={ASSET_TOKEN}' in index
+    assert f'icon.svg?v={ASSET_TOKEN}' in index
+    assert f'ogp.png?v={ASSET_TOKEN}' in index
+    assert f'icon-512.png?v={ASSET_TOKEN}' in index
     assert '<meta name="theme-color" content="#07131f">' in index
-    assert 'const APP_VERSION = "2026.05.24.60"' in main
-    assert 'const APP_VERSION = "2026.05.24.60"' in sw
-    assert 'sw.js?v=20260524-60' in main
+    assert f'const APP_VERSION = "{APP_VERSION}"' in main
+    assert f'const APP_VERSION = "{APP_VERSION}"' in sw
+    assert f'sw.js?v={ASSET_TOKEN}' in main
 
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["name"] == "AI社長のブラック起業"
     assert manifest["short_name"] == "AI社長"
-    assert manifest["start_url"] == "./index.html?v=20260524-60"
+    assert manifest["start_url"] == f'./index.html?v={ASSET_TOKEN}'
     assert manifest["display"] == "standalone"
     assert manifest["theme_color"] == "#07131f"
     assert manifest["background_color"] == "#030811"
-    assert any(icon["src"] == "./icon-512.png?v=20260524-60" and icon["type"] == "image/png" for icon in manifest["icons"])
+    assert any(icon["src"] == f'./icon-512.png?v={ASSET_TOKEN}' and icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 def png_size(path):
@@ -75,13 +79,13 @@ def test_external_data_files_are_loaded_before_main_and_precached():
     sw = (ROOT / "sw.js").read_text()
     main = app_source()
     data_files = ["balance", "employees", "characters", "products", "tasks", "decision-events", "achievements", "missions"]
-    main_pos = index.index('main.js?v=20260524-60')
+    main_pos = index.index(f'main.js?v={ASSET_TOKEN}')
     for name in data_files:
         path = ROOT / "js" / "data" / f"{name}.js"
         assert path.exists()
-        assert f'js/data/{name}.js?v=20260524-60' in index
-        assert index.index(f'js/data/{name}.js?v=20260524-60') < main_pos
-        assert f'./js/data/{name}.js?v=20260524-60' in sw
+        assert f'js/data/{name}.js?v={ASSET_TOKEN}' in index
+        assert index.index(f'js/data/{name}.js?v={ASSET_TOKEN}') < main_pos
+        assert f'./js/data/{name}.js?v={ASSET_TOKEN}' in sw
     assert 'readExternalData("AIBS_PRODUCTS", [])' in main
     assert 'readExternalData("AIBS_EMPLOYEES", [])' in main
     assert 'readExternalData("AIBS_CHARACTER_ASSETS", {})' in main
@@ -138,11 +142,11 @@ def test_service_worker_update_flow_present():
     assert "self.skipWaiting()" in sw
     assert "self.clients.claim()" in sw
     assert "caches.delete" in sw
-    assert "manifest.webmanifest?v=20260524-60" in sw
-    assert "icon.svg?v=20260524-60" in sw
-    assert "ogp.svg?v=20260524-60" in sw
-    assert "ogp.png?v=20260524-60" in sw
-    assert "icon-512.png?v=20260524-60" in sw
+    assert f'manifest.webmanifest?v={ASSET_TOKEN}' in sw
+    assert f'icon.svg?v={ASSET_TOKEN}' in sw
+    assert f'ogp.svg?v={ASSET_TOKEN}' in sw
+    assert f'ogp.png?v={ASSET_TOKEN}' in sw
+    assert f'icon-512.png?v={ASSET_TOKEN}' in sw
 
 
 def test_share_button_and_share_fallback_present():
@@ -186,7 +190,7 @@ def run_browser_smoke(save):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
+const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/render/office.js', 'js/render/products.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
 code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
@@ -316,7 +320,7 @@ def test_existing_save_is_normalized_with_security06():
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
-    assert output["save"]["appVersion"] == "2026.05.24.60"
+    assert output["save"]["appVersion"] == f'{APP_VERSION}'
 
 
 def test_security06_visible_at_company_level_5():
@@ -830,10 +834,10 @@ def test_cache_busting_updated_for_mrr_discrete_fix():
     main = app_source()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'content="2026.05.24.60"' in index
-    assert 'main.js?v=20260524-60' in index
-    assert 'sw.js?v=20260524-60' in main
-    assert 'const APP_VERSION = "2026.05.24.60"' in sw
+    assert f'content="{APP_VERSION}"' in index
+    assert f'main.js?v={ASSET_TOKEN}' in index
+    assert f'sw.js?v={ASSET_TOKEN}' in main
+    assert f'const APP_VERSION = "{APP_VERSION}"' in sw
 
 
 
@@ -898,7 +902,7 @@ def run_game_action_smoke(save, action_script):
     script = r'''
 const fs = require('fs');
 const vm = require('vm');
-const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
+const dataFiles = ['js/data/balance.js', 'js/data/employees.js', 'js/data/characters.js', 'js/data/products.js', 'js/data/tasks.js', 'js/data/strategies.js', 'js/data/decision-events.js', 'js/data/achievements.js', 'js/data/missions.js', 'js/render/risk.js', 'js/render/debug.js', 'js/render/insights.js', 'js/render/office.js', 'js/render/products.js', 'js/runtime/legacy-decisions.js', 'js/runtime/decisions.js', 'js/runtime/tick.js', 'js/runtime/effects.js', 'js/runtime/assignments.js', 'js/runtime/operations.js', 'js/runtime/storage.js', 'js/runtime/state.js', 'js/runtime/save.js'];
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
 code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
@@ -2868,7 +2872,7 @@ def test_release_candidate_readme_mentions_public_share_and_cache_url():
     assert "共有テキストはXへ投稿しやすい短い形式" in readme
     assert "全製品の詳細、担当一覧、最新ログは共有文には入れず" in readme
     assert "- 公開URL" in readme
-    assert "https://nao70161994.github.io/ai-black-startup/?v=20260524-60" in readme
+    assert f'https://nao70161994.github.io/ai-black-startup/?v={ASSET_TOKEN}' in readme
 
 
 def test_decision_panel_explains_impact_and_warning_style():
@@ -3271,11 +3275,11 @@ def test_release_qa_beta36_and_share_url_not_doubled_in_web_share_data():
     sw = (ROOT / "sw.js").read_text()
     readme = (ROOT / "README.md").read_text()
 
-    assert 'content="2026.05.24.60"' in index
+    assert f'content="{APP_VERSION}"' in index
     assert 'property="og:image:type" content="image/png"' in index
-    assert 'const APP_VERSION = "2026.05.24.60"' in main
-    assert 'const APP_VERSION = "2026.05.24.60"' in sw
-    assert 'sw.js?v=20260524-60' in main
+    assert f'const APP_VERSION = "{APP_VERSION}"' in main
+    assert f'const APP_VERSION = "{APP_VERSION}"' in sw
+    assert f'sw.js?v={ASSET_TOKEN}' in main
     assert 'url: PUBLIC_URL' not in main[main.index('function shareGameStatus()'):main.index('function copyShareText', main.index('function shareGameStatus()'))]
     assert 'v0.4の内部構成' in readme
     assert '製品別炎上' in readme
@@ -3730,7 +3734,7 @@ def test_debug_decision_tools_do_not_overwrite_pending_and_can_reset():
 
 
 def test_service_worker_runtime_install_activate_and_message_handlers():
-    script = r'''const fs = require('fs');
+    script = ((r'''const fs = require('fs');
 const vm = require('vm');
 const events = {};
 const deleted = [];
@@ -3780,15 +3784,15 @@ events.fetch({
 Promise.all(waits.concat(fetchResponses)).then(function () {
   console.log(JSON.stringify({ events: Object.keys(events).sort(), skipped, claimed, deleted, assets: recordedAssets, fetchResponses: fetchResponses.length, fetchCount, cachePutCount, indexFallbackMatched }));
 }).catch(function (error) { console.error(error); process.exit(1); });
-'''
+''').replace("2026.05.24.60", APP_VERSION)).replace("20260524-60", ASSET_TOKEN)
     result = subprocess.run(["node", "-e", script], cwd=ROOT, text=True, capture_output=True, check=True)
     data = json.loads(result.stdout)
     assert data["events"] == ["activate", "fetch", "install", "message"]
     assert data["skipped"] >= 2
     assert data["claimed"] == 1
     assert "ai-black-startup-old" in data["deleted"]
-    assert "./main.js?v=20260524-60" in data["assets"]
-    assert "./js/data/missions.js?v=20260524-60" in data["assets"]
+    assert f'./main.js?v={ASSET_TOKEN}' in data["assets"]
+    assert f'./js/data/missions.js?v={ASSET_TOKEN}' in data["assets"]
     assert data["fetchResponses"] == 2
     assert data["fetchCount"] == 2
     assert data["cachePutCount"] == 1
@@ -4035,7 +4039,7 @@ def test_global_fire_risk_chip_dependency_is_explicit():
 def test_manifest_has_stable_pwa_id_when_start_url_is_cache_busted():
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text())
     assert manifest["id"] == "./"
-    assert manifest["start_url"] == "./index.html?v=20260524-60"
+    assert manifest["start_url"] == f'./index.html?v={ASSET_TOKEN}'
 
 
 def test_product_bug_and_quality_risks_are_in_operational_risk_panel_and_recommendation():
@@ -4259,7 +4263,7 @@ console.log(JSON.stringify({
 def test_game_save_has_explicit_schema_version_after_legacy_migration():
     output = run_browser_smoke({"money": 123, "appVersion": "legacy"})
     assert output["save"]["schemaVersion"] == 3
-    assert output["save"]["appVersion"] == "2026.05.24.60"
+    assert output["save"]["appVersion"] == f'{APP_VERSION}'
     assert output["save"]["money"] >= 123
 
 
@@ -4268,9 +4272,9 @@ def test_save_recovery_ui_and_runtime_are_precached_before_main():
     sw = (ROOT / "sw.js").read_text()
     main = (ROOT / "main.js").read_text()
     assert 'id="restoreBackupButton"' in index
-    assert 'js/runtime/save.js?v=20260524-60' in index
-    assert index.index('js/runtime/save.js?v=20260524-60') < index.index('main.js?v=20260524-60')
-    assert './js/runtime/save.js?v=20260524-60' in sw
+    assert f'js/runtime/save.js?v={ASSET_TOKEN}' in index
+    assert index.index(f'js/runtime/save.js?v={ASSET_TOKEN}') < index.index(f'main.js?v={ASSET_TOKEN}')
+    assert f'./js/runtime/save.js?v={ASSET_TOKEN}' in sw
     assert 'const SAVE_SCHEMA_VERSION = 3;' in main
     assert 'readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")' in main
     assert 'function restoreBackupSave()' in main
@@ -4339,7 +4343,7 @@ def test_public_experience_http_asset_graph_check_passes():
     report = json.loads(result.stdout)
 
     assert report["status"] == "ok"
-    assert report["appVersion"] == "2026.05.24.60"
+    assert report["appVersion"] == f'{APP_VERSION}'
     assert report["checkedAssets"] >= 20
     assert report["serviceWorkerAssets"] >= 20
 
@@ -4355,9 +4359,9 @@ def test_strategy_synergy_relationship_and_insights_assets_are_precached():
         "js/runtime/operations.js",
         "js/render/insights.js",
     ]:
-        assert f'{asset}?v=20260524-60' in index
-        assert f'./{asset}?v=20260524-60' in sw
-        assert index.index(f'{asset}?v=20260524-60') < index.index("main.js?v=20260524-60")
+        assert f'{asset}?v={ASSET_TOKEN}' in index
+        assert f'./{asset}?v={ASSET_TOKEN}' in sw
+        assert index.index(f'{asset}?v={ASSET_TOKEN}') < index.index(f'main.js?v={ASSET_TOKEN}')
     assert 'readExternalData("AIBS_STRATEGIES", [])' in main
     assert 'readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")' in main
     assert 'readExternalFactory("AIBS_CREATE_INSIGHTS_RENDERER")' in main
@@ -4567,8 +4571,8 @@ def test_ai_character_assets_are_release_ready_and_precached():
     index = (ROOT / "index.html").read_text()
     sw = (ROOT / "sw.js").read_text()
 
-    assert 'js/data/characters.js?v=20260524-60' in index
-    assert './js/data/characters.js?v=20260524-60' in sw
+    assert f'js/data/characters.js?v={ASSET_TOKEN}' in index
+    assert f'./js/data/characters.js?v={ASSET_TOKEN}' in sw
     for character_id in character_ids:
         path = ROOT / "assets" / "characters" / f"{character_id}.webp"
         data = path.read_bytes()
@@ -4576,7 +4580,7 @@ def test_ai_character_assets_are_release_ready_and_precached():
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
         assert b"ALPH" in data
         assert f'assets/characters/{character_id}.webp' in character_data
-        assert f'./assets/characters/{character_id}.webp?v=20260524-60' in sw
+        assert f'./assets/characters/{character_id}.webp?v={ASSET_TOKEN}' in sw
 
 
 def test_ai_character_portraits_cover_gameplay_surfaces_and_fallbacks():
@@ -4654,13 +4658,13 @@ def test_office_assets_are_optimized_transparent_precached_and_mapped():
         assert 20_000 < len(data) < 120_000
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP" and b"ALPH" in data
         assert f'office/characters/{character_id}.webp' in characters
-        assert f'./assets/office/characters/{character_id}.webp?v=20260524-60' in sw
+        assert f'./assets/office/characters/{character_id}.webp?v={ASSET_TOKEN}' in sw
     for level in range(1, 6):
         path = ROOT / "assets" / "office" / "backgrounds" / f"office-level-{level}.webp"
         data = path.read_bytes()
         assert 20_000 < len(data) < 160_000
         assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
-        assert f'./assets/office/backgrounds/office-level-{level}.webp?v=20260524-60' in sw
+        assert f'./assets/office/backgrounds/office-level-{level}.webp?v={ASSET_TOKEN}' in sw
 
 
 def test_office_runtime_uses_level_hired_cast_and_real_assignment_status():
@@ -4714,7 +4718,7 @@ def test_guided_experience_covers_all_eight_uiux_requirements():
 
     # 1: character speech explains events and live numeric risk.
     assert 'class="office-speech"' in main
-    assert '"炎上 " + Math.round(state.fire)' in main
+    assert '"炎上 " + Math.round(context.state.fire)' in main
     assert 'latest.text.slice(0, 33)' in main
     # 2: exactly one contextual recommendation CTA is rendered.
     assert 'buttons[0]' in main and 'handleRecommendationAction(button)' in main
@@ -4902,10 +4906,10 @@ def test_main_controller_delegates_state_storage_and_legacy_decisions_to_precach
         "js/runtime/state.js": "AIBS_CREATE_STATE_RUNTIME",
         "js/runtime/legacy-decisions.js": "AIBS_CREATE_LEGACY_DECISION_RUNTIME",
     }
-    main_position = index.index("main.js?v=20260524-60")
+    main_position = index.index(f'main.js?v={ASSET_TOKEN}')
     for asset, factory in modules.items():
         source = (ROOT / asset).read_text()
-        versioned = f"{asset}?v=20260524-60"
+        versioned = f"{asset}?v={ASSET_TOKEN}"
         assert versioned in index
         assert index.index(versioned) < main_position
         assert f"./{versioned}" in sw
@@ -4946,7 +4950,7 @@ def test_live_updates_are_scoped_to_atomic_status_regions():
 def test_product_quality_css_guards_touch_layout_contrast_and_motion():
     index = (ROOT / "index.html").read_text()
     css = (ROOT / "style.css").read_text()
-    assert css.startswith("/* AI Black Startup — command-center interface v2026.05.24.60 */")
+    assert css.startswith(f'/* AI Black Startup — command-center interface v{APP_VERSION} */')
     for contract in [
         "min-height: 44px", "--focus: #ffd166", ".command-sidebar", ".home-command-stage",
         ".product-room", ".team-studio", ".executive-board", ".archive-console",
@@ -5029,18 +5033,18 @@ def test_real_browser_ui_experience_checker_covers_pages_states_widths_and_modal
 
 def test_command_center_redesign_is_page_specific_and_keeps_primary_content_visible():
     index = (ROOT / "index.html").read_text()
-    main = (ROOT / "main.js").read_text()
+    main = app_source()
     css = (ROOT / "style.css").read_text()
     assert 'class="command-sidebar"' in index
     for structure in ["home-command-stage", "product-room", "team-studio", "executive-board", "archive-console"]:
         assert structure in index
         assert f'.{structure}' in css
-    assert 'assets/products/product-lab-stage.webp?v=20260524-60' in index
+    assert f'assets/products/product-lab-stage.webp?v={ASSET_TOKEN}' in index
     lab_asset = (ROOT / "assets" / "products" / "product-lab-stage.webp").read_bytes()
     assert 80_000 < len(lab_asset) < 160_000
     assert lab_asset[:4] == b"RIFF" and lab_asset[8:12] == b"WEBP"
     assert 'width="1440" height="810"' in index
-    assert './assets/products/product-lab-stage.webp?v=20260524-60' in (ROOT / "sw.js").read_text()
+    assert f'./assets/products/product-lab-stage.webp?v={ASSET_TOKEN}' in (ROOT / "sw.js").read_text()
     assert 'document.body.setAttribute("data-page", nextPage)' in main
     assert "getProductPortfolioPreviewHtml()" in main
     assert 'class="product-portfolio-preview"' in main
@@ -5084,3 +5088,26 @@ def test_ui_checker_accepts_direct_modal_case_for_targeted_visual_review():
     assert 'parts = args.case.split(":")' in checker
     assert 'if len(parts) > 3:' in checker
     assert 'cases[0]["modal"] = parts[3]' in checker
+
+
+def test_extracted_renderers_follow_replaced_save_state():
+    output = run_game_action_smoke({"companyLevel": 1}, """
+window.__testApi.setUnsafeRuntimeStateForTest({companyLevel:5});
+const imported = window.__testApi.exportSaveJson(true);
+window.__testApi.setUnsafeRuntimeStateForTest({companyLevel:1});
+window.__testApi.importSaveText(imported,true);
+window.__testApi.render();
+window.__testResult={level:window.__testApi.getOfficeLevel()};
+""")
+    assert output["testResult"]["level"] == 5
+    assert output["save"]["schemaVersion"] == 3
+    assert "5製品運用" in output["productHtml"]
+
+
+def test_extracted_renderers_load_before_controller_and_are_precached():
+    index = (ROOT / "index.html").read_text()
+    sw = (ROOT / "sw.js").read_text()
+    for name in ("office", "products"):
+        asset = f"js/render/{name}.js?v={ASSET_TOKEN}"
+        assert index.index(asset) < index.index(f"main.js?v={ASSET_TOKEN}")
+        assert f"./{asset}" in sw

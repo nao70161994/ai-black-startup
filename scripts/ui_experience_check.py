@@ -7,6 +7,7 @@ import argparse
 import copy
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -417,6 +418,8 @@ class ProbeHandler(SimpleHTTPRequestHandler):
 
 
 def find_browser() -> str:
+    if os.environ.get("AIBS_BROWSER"):
+        return os.environ["AIBS_BROWSER"]
     for name in ("chromium-browser", "chromium", "google-chrome", "google-chrome-stable"):
         path = shutil.which(name)
         if path:
