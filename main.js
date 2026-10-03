@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.10.03.2";
-  const APP_ASSET_TOKEN = "20261003-2";
+  const APP_VERSION = "2026.10.04.1";
+  const APP_ASSET_TOKEN = "20261004-1";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -292,7 +292,8 @@
     get dashboardUi() { return dashboardUi; },
     get escapeHtml() { return escapeHtml; },
     get formatCurrency() { return formatCurrency; },
-    get getPrimaryProductDefinition() { return getPrimaryProductDefinition; },
+    get getPrimaryProductDefinition() { return EXPERIENCE.getFocusProductDefinition; },
+    get EXPERIENCE() { return EXPERIENCE; },
     get getPrimaryProductRecommendation() { return getPrimaryProductRecommendation; },
     get getPrimaryProductRiskHtml() { return getPrimaryProductRiskHtml; },
     get getPrimaryProductSummary() { return getPrimaryProductSummary; },
@@ -387,6 +388,7 @@
     get PRODUCTS() { return PRODUCTS; },
     get TASKS() { return TASKS; },
     get assignmentDraft() { return assignmentDraft; },
+    get EXPERIENCE() { return EXPERIENCE; },
     get assignmentModalMode() { return assignmentModalMode; },
     get assignmentModalOpen() { return assignmentModalOpen; },
     get canAssignTaskToProduct() { return canAssignTaskToProduct; },
@@ -451,6 +453,7 @@
     get EMPLOYEES() { return EMPLOYEES; },
     get MAX_LEVEL() { return MAX_LEVEL; },
     get WORKER_TASK_PROFILES() { return WORKER_TASK_PROFILES; },
+    get EXPERIENCE() { return EXPERIENCE; },
     get activateCharacterImageFallbacks() { return activateCharacterImageFallbacks; },
     get canUnlockEmployee() { return canUnlockEmployee; },
     get dashboardUi() { return dashboardUi; },
@@ -469,6 +472,37 @@
     get state() { return state; },
     get toggleDashboardPanel() { return toggleDashboardPanel; }
   });
+
+  const EXPERIENCE = readExternalFactory("AIBS_CREATE_EXPERIENCE_RENDERER")({
+    get state() { return state; }, PRODUCTS, TASKS, EMPLOYEES, STORAGE, SAVE_RUNTIME,
+    get readOnly() { return saveReadOnly; },
+    get dashboardUi() { return dashboardUi; },
+    escapeHtml, formatCurrency, getProduct, getProductDefinition, getProductProgressPercent,
+    getProductMrr, getProductFire, getDashboardBugLevel, getTotalProductMrr,
+    getTotalProductCustomers, getRates, getNextRecommendation, getProductAssignment,
+    getAssignedWorkersForProduct, getWorkerLabel, canAssignTaskToProduct,
+    openProductAssignmentModal, openProductDetailModal,
+    showAppToast, renderPrimaryProductPanel, renderProductPanel, getEmployeeEffectPreview,
+    getCompanyGoal: function () { return state.companyLevel >= MAX_LEVEL ? "会社は最大Lvです" : "次の拡張まで " + formatCurrency(Math.max(0, LEVEL_THRESHOLDS[state.companyLevel] - state.totalMoney)); },
+    monthSeconds: MRR_TO_REVENUE_DIVISOR, effectSeconds: TICK_MS / 1000
+  });
+
+  function getEmployeeEffectPreview(workerId, level) {
+    const runtime = readExternalFactory("AIBS_CREATE_EFFECT_RUNTIME")({
+      getEmployeeLevel: function (id) { return id === workerId ? level : state.employees[id] || 0; },
+      clamp, applyAffinity, getProductFire, getGlobalFire: function () { return state.fire; },
+      globalFireSalesPenaltyDivisor: GLOBAL_FIRE_SALES_PENALTY_DIVISOR,
+      productFireSalesPenaltyDivisor: PRODUCT_FIRE_SALES_PENALTY_DIVISOR,
+      oneShotSaleChanceCap: ONE_SHOT_SALE_CHANCE_CAP
+    });
+    if (workerId === "dev01") return { label: "開発進捗", value: runtime.getDevelopmentEffect(workerId).progress, unit: "/定期判定" };
+    if (workerId === "security06") return { label: "バグ削減", value: -runtime.getQaEffect(workerId).bugs, unit: "/定期判定" };
+    if (workerId === "buzz03") return { label: "認知度上昇", value: runtime.getMarketingEffect(workerId).awareness, unit: "/定期判定" };
+    if (workerId === "care04") return { label: "支援負荷削減", value: -runtime.getSupportEffect(workerId).supportLoad, unit: "/定期判定" };
+    if (workerId === "fire05") return { label: "製品炎上削減", value: -runtime.getCrisisEffect(workerId).productFire, unit: "/定期判定" };
+    const definition = EXPERIENCE.getFocusProductDefinition();
+    return { label: "顧客獲得率（" + definition.name + "）", value: runtime.getSalesEffect(workerId, getProduct(definition.id), definition).customerChance * 100, unit: "%/販売判定・サブスク換算" };
+  }
 
   // === State Creation / Normalization adapters ===
   function createInitialState() { return STATE_RUNTIME.createInitialState(); }
@@ -526,8 +560,9 @@
       state.appVersion = APP_VERSION;
       state.lastSavedAt = Date.now();
       SAVE_RUNTIME.save(STORAGE, state);
+      return true;
     }
-    catch (error) { console.warn("Save failed.", error); }
+    catch (error) { console.warn("Save failed.", error); return false; }
   }
 
   function restoreBackupSave() {
@@ -569,9 +604,11 @@
 
 
   function calculateOfflineReward() {
-    const elapsed = clamp(Date.now() - state.lastSavedAt, 0, MAX_OFFLINE_MS);
+    const absence = Math.max(0, Date.now() - state.lastSavedAt);
+    const elapsed = clamp(absence, 0, MAX_OFFLINE_MS);
     const ticks = Math.floor(elapsed / TICK_MS);
     const reward = getRates().money * ticks;
+    if (absence >= 60000) EXPERIENCE.setReturnReward({ absence: absence, elapsed: elapsed, reward: reward });
     if (reward > 0) {
       state.money += reward;
       state.totalMoney += reward;
@@ -947,7 +984,11 @@
     setText("storyText", event.text);
     setText("storyImpact", event.impact);
     const character = document.getElementById("storyCharacter");
-    if (character) { character.innerHTML = getCharacterAvatarHtml(event.characterId, "story-avatar", false); activateCharacterImageFallbacks(character); }
+    if (character && (!wasOpen || typeof character.getAttribute !== "function" || character.getAttribute("data-story-id") !== event.id)) {
+      character.innerHTML = getCharacterAvatarHtml(event.characterId, "story-avatar", false);
+      if (character.setAttribute) character.setAttribute("data-story-id", event.id);
+      activateCharacterImageFallbacks(character);
+    }
     if (!wasOpen) {
       const close = document.getElementById("storyClose");
       if (close && typeof close.focus === "function") close.focus();
@@ -968,6 +1009,7 @@
 
   function addLog(type, text, employeeId) {
     queueStoryFromLog(type, text, employeeId || "company");
+    if (typeof EXPERIENCE !== "undefined") EXPERIENCE.observeLog(type, text, employeeId);
     state.logs.unshift(createLog(type, text, employeeId || "company"));
     state.logs = state.logs.slice(0, MAX_LOGS);
   }
@@ -1087,10 +1129,13 @@
     getPage: function () { return currentAppPage; },
     isModalOpen: function () { return assignmentModalOpen || productDetailModalOpen || productActionMenuOpen || storyModalOpen; },
     afterRender: function () {
+      EXPERIENCE.renderReturnSummary();
+      EXPERIENCE.renderJourney();
       if (saveReadOnly && typeof document.querySelectorAll === "function") document.querySelectorAll("main button, main select, main input").forEach(function (control) { control.disabled = true; });
     },
     sections: [
       { render: renderStatus },
+      { render: function () { EXPERIENCE.renderBoard(); }, page: "management", id: "businessSummary" },
       { render: renderStrategyPanel, page: "management", id: "strategyPanel" },
       { render: renderInsightsPanel, page: "management", id: "insightsPanel" },
       { render: renderSaveManagerPanel, page: "records", id: "saveManagerPanel" },
@@ -1138,13 +1183,14 @@
     const history = state.metricHistory && state.metricHistory.length ? state.metricHistory : [OPERATIONS_RUNTIME.sampleMetrics(state, {
       mrr: getTotalProductMrr(), customers: getTotalProductCustomers(), bugs: getDashboardBugLevel(), productFire: getMaxProductFireLevel()
     })];
-    panel.innerHTML = INSIGHTS_RENDERER.getHistoryHtml(history);
+    panel.innerHTML = '<details class="insights-details"><summary>経営推移を詳しく見る</summary>' + INSIGHTS_RENDERER.getHistoryHtml(history) + '</details>';
   }
 
   function renderSaveManagerPanel() {
     const select = document.getElementById("saveSlotSelect");
     if (!select) return;
     const slots = SAVE_RUNTIME.listSlots(STORAGE);
+    EXPERIENCE.renderSaveSummary(slots);
     const saveStatus = document.getElementById("saveManagerStatus");
     if (saveStatus && !saveStatus.textContent) saveStatus.textContent = getStorageModeNotice() || "自動保存は有効です。重要な節目はスロット保存やJSON書き出しも利用できます。";
     Array.prototype.forEach.call(select.options || [], function (option) {
@@ -1245,16 +1291,20 @@
     if (state.tutorialCompleted) return 4;
     const hired = EMPLOYEES.some(function (employee) { return (state.employees[employee.id] || 0) > 0; });
     if (!hired) return 1;
-    const hasFirstRevenue = state.totalMoney > 0 || hasRevenueProduct() || PRODUCTS.some(function (definition) { return getProductUnitsSold(getProduct(definition.id)) > 0; });
+    const hasFirstRevenue = hasRevenueProduct() || PRODUCTS.some(function (definition) { return getProductUnitsSold(getProduct(definition.id)) > 0; });
     if (hasFirstRevenue) return 4;
+    if (PRODUCTS.some(function (d) { return ["ready", "selling"].indexOf(getProduct(d.id).status) >= 0; })) return 3;
     const hiredWorkerAssigned = EMPLOYEES.some(function (employee) { return (state.employees[employee.id] || 0) > 0 && Boolean(getOfficeWorkerAssignment(employee.id)); });
-    if (!hiredWorkerAssigned) return 2;
+    if (!hiredWorkerAssigned && !getOfficeWorkerAssignment("boss")) return 2;
     return 3;
   }
 
   function getTutorialContent(stage) {
-    if (stage === 1) return { title: "最初の仲間を迎えよう", text: "初回採用は¥0。開発が得意なDev-01か、販売が得意なSales-02を選びましょう。目標は「採用 → 開発 → 販売」です。", label: "AI社員を選ぶ", characterId: "boss" };
+    if (stage === 1) return { title: "最初の仲間を迎えよう", text: "初回採用は¥0。Dev-01なら開発が速く、Sales-02なら完成後の販売が得意です。採用 → 開発 → 完成 → 初売上を目指しましょう。", label: "AI社員を選ぶ", characterId: "boss" };
+    if (stage === 2 && getFirstHiredWorkerId() === "sales02") return { title: "まず社長に開発を任せよう", text: "Sales-02は販売専門です。AI社長に日報AIの開発を任せ、完成後にSales-02へ販売を引き継ぎましょう。", label: "社長に開発を任せる", characterId: "boss" };
     if (stage === 2) return { title: "仕事をひとつ任せよう", text: "雇ったAIをAI日報メーカーの開発へ割り振ります。担当変更画面で内容を確認して決定してください。", label: "担当を決める", characterId: getFirstHiredWorkerId() };
+    const developing = PRODUCTS.find(function (d) { return getProduct(d.id).status === "developing"; });
+    if (developing) return { title: "完成を待って、販売へ", text: developing.name + "は開発" + Math.floor(getProductProgressPercent(getProduct(developing.id), developing)) + "%です。完成すると開発担当は待機に戻ります。次は販売担当を設定して初売上へ。", label: "開発進捗を見る", characterId: getFirstHiredWorkerId() };
     return { title: "最初の売上をつくろう", text: "製品完成後に販売担当を設定すると売上判定が始まります。いま必要な操作を製品画面で確認しましょう。", label: "製品を確認する", characterId: getFirstHiredWorkerId() };
   }
 
@@ -1315,7 +1365,7 @@
       if (replaying) tutorialReplayStep = 3;
       navigateToPage("team", { updateHistory: true, scrollTop: true });
       focusMainContent();
-      openWorkerAssignmentModal(getFirstHiredWorkerId());
+      openProductAssignmentModal("development", PRODUCTS[0].id, "newProduct");
       renderOnboarding();
       return;
     }
@@ -1418,8 +1468,6 @@
       const product = getProductDefinition(pendingDecision.productId);
       return createRecommendation("社長判断を確認しましょう: " + product.name + " / " + (decision ? decision.label : "提案あり"), { ctaLabel: "社長判断を見る", action: "decision", targetId: "decisionPanel", path: "社長判断カード → 承認/却下" });
     }
-    if (getClaimableMissions().length > 0) return createRecommendation("達成済みミッションの報酬を受け取りましょう。", { ctaLabel: "ミッションを見る", action: "missions", targetId: "missionPanel", path: "現在のミッション → 報酬を受け取る" });
-    if (canExpandCompany()) return createRecommendation("会社を拡張してLvを上げましょう。", { ctaLabel: "会社を拡張する", action: "company", path: "会社Lvアップ可能 → 会社を拡張する" });
     const productFireHeavy = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return getProductFire(product) >= 60 && canAssignTaskToProduct("crisis", definition.id); });
     if (productFireHeavy) {
       const crisisWorker = isWorkerAvailable("fire05", state.employees) ? "Fire-05" : "AI社長";
@@ -1449,6 +1497,8 @@
       const reason = product.bugs >= 45 ? "製品バグが高い" : "品質が低下している";
       return createRecommendation(reason + riskyQualityProduct.name + "を品質管理しましょう。", { ctaLabel: "操作を開く", action: "product", productId: riskyQualityProduct.id, taskId: "qa", path: "製品一覧 → " + riskyQualityProduct.name + " → 操作 → 品質管理" });
     }
+    if (getClaimableMissions().length > 0) return createRecommendation("達成済みミッションの報酬を受け取りましょう。", { ctaLabel: "ミッションを見る", action: "missions", targetId: "missionPanel", path: "現在のミッション → 報酬を受け取る" });
+    if (canExpandCompany()) return createRecommendation("会社を拡張してLvを上げましょう。", { ctaLabel: "会社を拡張する", action: "company", path: "会社Lvアップ可能 → 会社を拡張する" });
     const pausedUpgrade = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && product.upgradeStatus === "upgrading" && !getAssignedWorkersForProduct("development", definition.id).length; });
     if (pausedUpgrade) return createRecommendation(pausedUpgrade.name + "のvNext開発が止まっています。AI社長かDev-01を割り振りましょう。", { ctaLabel: "操作を開く", action: "product", productId: pausedUpgrade.id, taskId: "development", mode: "upgrade", path: "製品一覧 → " + pausedUpgrade.name + " → 操作 → vNext開発担当" });
     const developing = PRODUCTS.find(function (definition) { const product = getProduct(definition.id); return product.status === "developing" && !getAssignedWorkersForProduct("development", definition.id).length; });
@@ -2858,18 +2908,24 @@
   }
 
   function setSaveManagerStatus(message) {
+    showAppToast(message, /できません|失敗/.test(message) ? "warning" : "success");
     const notice = getStorageModeNotice();
     setText("saveManagerStatus", notice ? notice + " " + message : message);
   }
 
   function saveToSlot(slotId) {
     if (saveReadOnly) return false;
-    commitRuntimeStateBeforeSave();
-    state.lastSavedAt = Date.now();
-    SAVE_RUNTIME.saveSlot(STORAGE, slotId || getSelectedSaveSlotId(), state);
-    setSaveManagerStatus("スロット" + (slotId || getSelectedSaveSlotId()) + "へ保存しました。");
-    renderSaveManagerPanel();
-    return true;
+    try {
+      commitRuntimeStateBeforeSave();
+      state.lastSavedAt = Date.now();
+      SAVE_RUNTIME.saveSlot(STORAGE, slotId || getSelectedSaveSlotId(), state);
+      setSaveManagerStatus("スロット" + (slotId || getSelectedSaveSlotId()) + "へ保存しました。");
+      renderSaveManagerPanel();
+      return true;
+    } catch (error) {
+      setSaveManagerStatus("スロットへ保存できませんでした。空き容量を確認してください。");
+      return false;
+    }
   }
 
   function loadFromSlot(slotId, skipConfirm) {
@@ -3733,7 +3789,7 @@
     if (!match) return '<span class="' + escapeHtml(classes + ' character-avatar-generic') + '" aria-hidden="true"><span class="character-avatar-fallback">AI</span></span>';
     const asset = match.asset;
     const alt = descriptive ? asset.label + "のキャラクター画像" : "";
-    return '<span class="' + escapeHtml(classes) + '" data-character-id="' + escapeHtml(match.id) + '"><span class="character-avatar-fallback" aria-hidden="true">' + escapeHtml(asset.shortLabel) + '</span><img data-character-image src="' + escapeHtml(asset.src + "?v=" + APP_ASSET_TOKEN) + '" alt="' + escapeHtml(alt) + '" width="128" height="128" loading="lazy" decoding="async"></span>';
+    return '<span class="' + escapeHtml(classes) + '" data-character-id="' + escapeHtml(match.id) + '"><span class="character-avatar-fallback" aria-hidden="true">' + escapeHtml(asset.shortLabel) + '</span><img data-character-image src="' + escapeHtml(asset.src + "?v=" + APP_ASSET_TOKEN) + '" alt="' + escapeHtml(alt) + '" width="128" height="128" loading="' + (className === 'story-avatar' ? 'eager' : 'lazy') + '" decoding="async"></span>';
   }
 
   function activateCharacterImageFallbacks(root) {
@@ -3817,7 +3873,7 @@
     scheduleRandomReport();
     scheduleNextTick();
     window.setInterval(saveGame, AUTO_SAVE_MS);
-    document.getElementById("saveButton").addEventListener("click", function () { addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); saveGame(); renderLatestLog(); renderLogs(); showAppToast("ゲームを保存しました", "success"); });
+    document.getElementById("saveButton").addEventListener("click", function () { addLog("success", "手動保存しました。AI社長の記憶領域に刻まれています。", "company"); const saved = saveGame(); renderLatestLog(); renderLogs(); renderSaveManagerPanel(); showAppToast(saved ? "ゲームを保存しました" : "保存できませんでした。JSON書き出しをご利用ください", saved ? "success" : "warning"); });
     const shareButton = document.getElementById("shareButton");
     if (shareButton) shareButton.addEventListener("click", shareGameStatus);
     document.getElementById("resetButton").addEventListener("click", resetGame);
@@ -3863,7 +3919,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20261003-2").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20261004-1").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;

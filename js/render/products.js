@@ -7,10 +7,12 @@
     if (!panel) return;
     const definition = context.getPrimaryProductDefinition();
     const product = context.getProduct(definition.id);
-    panel.innerHTML = '<div class="section-heading"><h2>現在の主力製品</h2><span>' + context.escapeHtml(context.getPrimaryProductValueText(product, definition)) + '</span></div>' +
-      '<article class="primary-product-card"><div><strong>' + context.escapeHtml(context.getPrimaryProductTitle(product, definition)) + '</strong><span>' + context.escapeHtml(context.getPrimaryProductSummary(product, definition)) + '</span>' + context.getPrimaryProductRiskHtml(product, definition) + '<em>おすすめ: ' + context.escapeHtml(context.getPrimaryProductRecommendation(product, definition)) + '</em></div><div class="assignment-badge-list">' + context.getProductAssignmentBadges(definition.id) + '</div><div class="primary-product-actions"><button type="button" class="product-action-button" data-primary-product-menu="' + definition.id + '">操作メニューへ</button><button type="button" class="product-action-button product-detail-button" data-primary-product-detail="' + definition.id + '">詳細</button></div></article>';
+    const action = context.EXPERIENCE.getProductAction(definition);
+    panel.innerHTML = '<div class="section-heading"><h2>注力製品</h2><span>' + context.escapeHtml(context.getPrimaryProductValueText(product, definition)) + '</span></div>' +
+      '<article class="primary-product-card"><div><strong>' + context.escapeHtml(context.getPrimaryProductTitle(product, definition)) + '</strong><span>' + context.escapeHtml(context.getPrimaryProductSummary(product, definition)) + '</span>' + context.getPrimaryProductRiskHtml(product, definition) + context.EXPERIENCE.getProgressHtml(definition) + '<em>次の一手: ' + context.escapeHtml(action.label) + '</em></div><div class="assignment-badge-list">' + context.getProductAssignmentBadges(definition.id) + '</div><div class="primary-product-actions"><button type="button" class="product-action-button" data-primary-product-menu="' + definition.id + '">' + context.escapeHtml(action.label) + '</button><button type="button" class="product-action-button product-detail-button" data-primary-product-detail="' + definition.id + '">詳細</button></div></article>' + context.EXPERIENCE.getFocusPickerHtml();
+    context.EXPERIENCE.bindFocusPicker(panel);
     panel.querySelectorAll("button[data-primary-product-menu]").forEach(function (button) {
-      button.addEventListener("click", function () { context.openProductActionMenu(button.getAttribute("data-primary-product-menu")); });
+      button.addEventListener("click", function () { context.EXPERIENCE.runProductAction(definition); });
     });
     panel.querySelectorAll("button[data-primary-product-detail]").forEach(function (button) {
       button.addEventListener("click", function () { context.openProductDetailModal(button.getAttribute("data-primary-product-detail")); });
@@ -21,7 +23,7 @@
     const panel = document.getElementById("productPanel");
     if (!panel) return;
     const body = context.dashboardUi.productsExpanded ? '<div class="portfolio-products">' + context.PRODUCTS.map(function (definition) { return getProductCardHtml(definition); }).join('') + '</div>' : getProductPortfolioPreviewHtml();
-    panel.innerHTML = '<div class="section-heading"><div><span class="section-kicker">PRODUCT LINE</span><h2>製品ポートフォリオ</h2></div><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (context.dashboardUi.productsExpanded ? '製品一覧を閉じる' : '製品一覧を開く') + '</button></div>' +
+    panel.innerHTML = '<div class="section-heading"><div><h2>製品一覧</h2></div><button type="button" id="toggleProductsButton" class="change-assignment-button">' + (context.dashboardUi.productsExpanded ? '概要に戻す' : '詳しい指標を表示') + '</button></div>' +
       '<p class="dashboard-summary">' + context.PRODUCTS.length + '製品運用 / 総MRR ' + context.formatCurrency(context.getTotalProductMrr()) + '/月 / 売り切り累計 ' + context.formatCurrency(context.getTotalOneShotRevenue()) + '</p>' + body;
     const toggle = document.getElementById("toggleProductsButton");
     if (toggle) toggle.addEventListener("click", function () { context.toggleDashboardPanel("productsExpanded"); });
@@ -38,10 +40,10 @@
     const statusIcons = { idea: "01", developing: "02", ready: "03", selling: "LIVE" };
     return '<div class="product-portfolio-preview" aria-label="製品ラインの稼働状況">' + context.PRODUCTS.map(function (definition, index) {
       const product = context.getProduct(definition.id);
-      const progress = product.status === "idea" ? 0 : (product.status === "developing" ? context.clamp(product.progress, 0, 100) : 100);
+      const progress = product.status === "idea" ? 0 : (product.status === "developing" ? context.getProductProgressPercent(product, definition) : 100);
       const value = definition.type === "subscription" ? context.formatCurrency(context.getProductMrr(product, definition)) + "/月" : context.formatCurrency(context.safeNumber(product.lifetimeRevenue, 0));
       return '<button type="button" class="portfolio-preview-item status-' + product.status + (definition.id === primaryId ? ' is-primary' : '') + '" data-product-detail="' + definition.id + '">' +
-        '<span class="portfolio-preview-index" aria-hidden="true">0' + (index + 1) + (definition.id === primaryId ? ' · 主力' : '') + '</span>' +
+        '<span class="portfolio-preview-index" aria-hidden="true">0' + (index + 1) + (definition.id === primaryId ? ' · 注力' : '') + '</span>' +
         '<span class="portfolio-preview-icon" aria-hidden="true">' + (statusIcons[product.status] || "01") + '</span>' +
         '<span class="portfolio-preview-copy"><strong>' + context.escapeHtml(definition.name) + '</strong><small>' + context.escapeHtml(context.getProductStatusLabel(product.status)) + ' · ' + context.escapeHtml(value) + '</small></span>' +
         '<span class="portfolio-preview-progress" aria-hidden="true"><i style="width:' + progress + '%"></i></span>' +

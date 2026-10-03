@@ -41,9 +41,16 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
   }
 
   function getStrategyHtml(strategies, selectedId, synergies, relationships) {
+    const current = strategies.find(function (s) { return s.id === selectedId; }) || strategies[0];
+    const labels = { development: "開発", qa: "品質管理", sales: "販売", marketing: "広報", support: "支援", crisis: "炎上対応", bugGeneration: "バグ発生", fireGeneration: "炎上発生", churnPressure: "解約圧力" };
     const strategyButtons = strategies.map(function (strategy) {
       const selected = strategy.id === selectedId;
-      return '<button type="button" class="strategy-option' + (selected ? ' selected' : '') + '" data-strategy-id="' + escapeHtml(strategy.id) + '" aria-pressed="' + selected + '"><strong>' + escapeHtml(strategy.label) + '</strong><span>' + escapeHtml(strategy.description) + '</span></button>';
+      const comparison = Object.keys(labels).map(function (key) {
+        const previous = Number(current.modifiers[key]) || 1, next = Number(strategy.modifiers[key]) || 1;
+        const change = Math.round((next / previous - 1) * 100);
+        return change ? labels[key] + (change > 0 ? "+" : "") + change + "%" : "";
+      }).filter(Boolean).join(" / ");
+      return '<button type="button" class="strategy-option' + (selected ? ' selected' : '') + '" data-strategy-id="' + escapeHtml(strategy.id) + '" aria-pressed="' + selected + '"><strong>' + escapeHtml(strategy.label) + '</strong><span>' + escapeHtml(strategy.description) + '</span>' + (selected ? '<small>現在の方針</small>' : '<small>現在からの変化: ' + escapeHtml(comparison || '基準効果は同じ') + '</small>') + '</button>';
     }).join("");
     const synergyHtml = synergies.length ? synergies.map(function (item) {
       return '<li><strong>連携中</strong> ' + escapeHtml(item.label) + ' — ' + escapeHtml(item.description) + '</li>';
@@ -54,7 +61,7 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
     }).join("") : '<li>相性のあるAIを同じ製品の別タスクへ配置すると共同効果が発生します。</li>';
     return '<div class="section-heading"><h2>会社方針</h2><span>いつでも変更可能</span></div>' +
       '<div class="strategy-grid" role="group" aria-label="会社方針を選択">' + strategyButtons + '</div>' +
-      '<div class="operations-bonuses"><h3>現在の連携効果</h3><ul>' + synergyHtml + relationshipHtml + '</ul></div>';
+      '<details class="operations-bonuses synergy-summary"><summary>現在の連携効果</summary><ul>' + synergyHtml + relationshipHtml + '</ul></details>';
   }
 
   return { getHistoryHtml: getHistoryHtml, getStrategyHtml: getStrategyHtml };

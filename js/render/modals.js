@@ -36,7 +36,7 @@ function renderAssignmentModalContent() {
       else if (!available) detail = workerId === "boss" ? "利用可能" : "未雇用";
       else if (selected) detail += " / 選択済み";
       else if (maxReached) detail += " / この仕事は満員です（最大2体まで）";
-      return '<button type="button" class="modal-option worker-option' + (selected ? ' active' : '') + '" data-modal-ai="' + workerId + '"' + (enabled ? '' : ' disabled') + '><strong>' + context.escapeHtml(context.getWorkerLabel(workerId)) + (selected ? ' 選択中' : '') + '</strong><span>' + context.escapeHtml(detail) + '</span></button>';
+      return '<button type="button" class="modal-option worker-option' + (selected ? ' active' : '') + (taskCompatible ? '' : ' incompatible') + '" data-modal-ai="' + workerId + '"' + (enabled ? '' : ' disabled') + '><strong>' + context.escapeHtml(context.getWorkerLabel(workerId)) + (selected ? ' 選択中' : '') + '</strong><span>' + context.escapeHtml(detail) + '</span></button>';
     }).join('');
     const currentWorkersHtml = '<div class="modal-current">現在担当: ' + context.escapeHtml(context.getWorkerGroupLabel(currentAiIds) || 'なし') + '</div>' +
       '<div class="modal-current selected-workers">選択中: ' + context.escapeHtml(context.getWorkerGroupLabel(selectedAiIds) || 'なし') + '（' + selectedAiIds.length + '/2）</div>';
@@ -53,7 +53,7 @@ function renderAssignmentModalContent() {
       '<div class="modal-current">対象: ' + context.escapeHtml(selectedTask.label) + ' / ' + context.escapeHtml(context.getProductDefinition(context.assignmentDraft.productId).name) + '</div>' +
       '<p class="modal-help">この仕事には最大2体までAIを割り振れます。2体選択中は他のAIを選べません。同じAIは別の仕事から外れます。</p>' +
       (warningText ? '<p class="modal-warning">' + context.escapeHtml(warningText) + '</p>' : '') +
-      '<div class="modal-actions"><button type="button" id="applyAssignmentButton" class="modal-apply-button"' + (assignable ? '' : ' disabled') + '>この担当にする</button><button type="button" id="clearAssignmentButton" class="modal-subtle-button modal-clear-button">担当を解除</button><button type="button" class="modal-subtle-button" data-modal-close="1">閉じる</button></div>' +
+      context.EXPERIENCE.getAssignmentImpactHtml(context.assignmentDraft) + '<div class="modal-actions"><button type="button" id="applyAssignmentButton" class="modal-apply-button"' + (assignable ? '' : ' disabled') + '>この担当にする</button><button type="button" id="clearAssignmentButton" class="modal-subtle-button modal-clear-button">担当を解除</button><button type="button" class="modal-subtle-button" data-modal-close="1">閉じる</button></div>' +
       '</div>';
     modal.querySelectorAll("[data-modal-close]").forEach(function (button) { button.addEventListener("click", context.closeAssignmentModal); });
     modal.querySelectorAll("button[data-modal-task]").forEach(function (button) { button.addEventListener("click", function () { context.selectAssignmentTask(button.getAttribute("data-modal-task")); }); });

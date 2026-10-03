@@ -172,7 +172,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = Array.from(fs.readFileSync('index.html', 'utf8').matchAll(/<script src="([^"?]+)/g), match => match[1]).filter(file => file !== 'main.js');
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, EXPERIENCE, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 function createElement(id) {
   const classes = new Set();
@@ -295,7 +295,7 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["productFlags"]["dailyReportAi"]["mrr10kLogged"] is False
     assert output["save"]["productFlags"]["meetingMinutesAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["slideKitAi"]["startedLogged"] is False
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert "5製品運用" in output["productHtml"]
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
@@ -873,7 +873,7 @@ def test_subscription_version_affects_rendered_mrr_and_share_text():
     assert product["upgradeProgress"] == 45
     assert product["upgradeStatus"] == "upgrading"
     assert product["mrr"] == 6000
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert "AI日報メーカー v2" in output["primaryProductHtml"]
     assert "MRR ¥6.0K/月" in output["primaryProductHtml"]
 
@@ -884,7 +884,7 @@ const fs = require('fs');
 const vm = require('vm');
 const dataFiles = Array.from(fs.readFileSync('index.html', 'utf8').matchAll(/<script src="([^"?]+)/g), match => match[1]).filter(file => file !== 'main.js');
 let code = dataFiles.map(function (file) { return fs.readFileSync(file, 'utf8'); }).join('\n') + '\n' + fs.readFileSync('main.js', 'utf8');
-code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
+code = code.replace('document.addEventListener("DOMContentLoaded", boot);', 'window.__testApi = { assignAiToTask, setTaskAis, tick, runGameTick, saveGame, setUnsafeRuntimeStateForTest, claimMissionReward, expandCompanyLevel, applyDecisionEventChoice, applyDecisionEventGeneration, applyAchievements, applyDebugAction, createShareText, getDecisionEventCandidates, getOperationModifiers, getNextRecommendation, applyTaskPreset, openProductActionMenu, openProductAssignmentModal, openWorkerAssignmentModal, openProductDetailModal, getDecisionEventHandler, getDecisionHandlerMissingEventIds, getRuntimeDebugSummary, getAssignmentDraftSnapshotForTest, setCompanyStrategy, recordMetricSample, getPlaytestReport, saveToSlot, loadFromSlot, exportSaveJson, importSaveText, render, getOfficeLevel, getOfficeWorkerAssignment, getOfficeWorkerHtml, setAppPage, renderNavigationBadges, EXPERIENCE, getTutorialStage, renderOnboarding, classifyStoryEvent, renderCompanyDetails, closeStoryModal, replayTutorial, handleTutorialAction, toggleCompanyDetails, STORAGE, syncModalIsolation, closeProductDetailModal }; document.addEventListener("DOMContentLoaded", boot);');
 const input = JSON.parse(process.argv[1]);
 const action = process.argv[2];
 let timeoutQueue = [];
@@ -1189,7 +1189,7 @@ def test_marketing_assignment_is_normalized_and_visible_behavior():
     assert "広報" in output["assignmentHtml"]
     assert "Buzz-03 → 自動議事録AI" in output["assignmentHtml"]
     assert "広報" in output["assignmentHtml"]
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
 
 
 def test_subscription_support_state_and_assignment_are_normalized():
@@ -1323,7 +1323,7 @@ def test_product_summary_cards_keep_assignment_summary_and_card_actions():
     })
     assert "Dev-01 → 自動議事録AI" in output["assignmentHtml"]
     assert "Sales-02 → AI日報メーカー" in output["assignmentHtml"]
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert 'data-product-detail="dailyReportAi"' in output["productHtml"]
     assert 'data-product-detail="meetingMinutesAi"' in output["productHtml"]
     assert "data-product-menu" not in output["productHtml"]
@@ -1378,7 +1378,7 @@ def test_product_cards_show_compact_operation_and_detail_buttons_only():
         "products": {"dailyReportAi": {"id": "dailyReportAi", "status": "selling", "progress": 100, "customers": 1, "version": 1}},
         "logs": [], "claimedMissions": [], "lastSavedAt": 9999999999999,
     })
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert 'data-product-detail="dailyReportAi"' in output["productHtml"]
     assert 'data-product-menu="dailyReportAi"' not in output["productHtml"]
     assert "data-product-action" not in output["productHtml"]
@@ -1430,8 +1430,8 @@ def test_dashboard_home_collapses_heavy_sections_by_default():
         "lastSavedAt": 9999999999999,
     })
 
-    assert "現在の主力製品" in output["primaryProductHtml"]
-    assert "製品一覧を開く" in output["productHtml"]
+    assert "注力製品" in output["primaryProductHtml"]
+    assert "詳しい指標を表示" in output["productHtml"]
     assert "ログを見る" in output["logPanelHtml"]
     assert "採用・強化を見る" in output["employeePanelHtml"]
     assert "すべての目標を見る" in output["objectiveHtml"]
@@ -1469,8 +1469,8 @@ def test_dashboard_home_prioritizes_three_metrics_and_discloses_risk_details():
     end = index.index('</section>', start)
     status_section = index[start:end]
     assert status_section.count('<article>') == 3
-    assert '<span>売上</span>' in status_section
-    assert '<span>MRR</span>' in status_section
+    assert '<span>資金</span>' in status_section
+    assert '月額収入</span>' in status_section and '300秒で1か月' in status_section
     assert '<span>顧客</span>' in status_section
     detail_start = index.index('<section class="company-details office-risk-console"')
     detail_end = index.index('</section>', detail_start)
@@ -4762,7 +4762,7 @@ def test_tutorial_stage_is_derived_from_real_hire_assignment_and_revenue_state()
     assert stage_three["testResult"]["stage"] == 3
 
     complete = run_game_action_smoke(
-        {"employees": {"dev01": 1}, "totalMoney": 1},
+        {"employees": {"dev01": 1}, "totalMoney": 1, "products": {"dailyReportAi": {"status": "selling", "customers": 1}}},
         "window.__testResult={stage:window.__testApi.getTutorialStage()};",
     )
     assert complete["testResult"]["stage"] == 4

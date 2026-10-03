@@ -5,11 +5,15 @@ window.AIBS_CREATE_CREW_RENDERER = function (context) {
 function renderEmployees() {
     const panel = document.getElementById("employeePanel");
     if (!panel) return;
-    const roster = context.dashboardUi.employeesExpanded ? "" : getTeamRosterPreviewHtml();
+    const firstHire = !context.EMPLOYEES.some(function (e) { return context.state.employees[e.id] > 0; });
+    const studio = document.querySelector ? document.querySelector(".team-studio") : null;
+    if (studio) studio.classList.toggle("recruit-first", firstHire);
+    const expanded = context.dashboardUi.employeesExpanded || firstHire;
+    const roster = expanded ? "" : getTeamRosterPreviewHtml();
     panel.innerHTML = '<div class="section-heading"><div><span class="section-kicker">AI CREW</span><h2>AI社員</h2></div><button type="button" id="toggleEmployeesButton" class="change-assignment-button">' + (context.dashboardUi.employeesExpanded ? '採用・強化を閉じる' : '採用・強化を見る') + '</button></div>' +
       roster +
       '<p class="dashboard-summary">雇用済み: ' + context.escapeHtml(context.getHiredEmployeeSummary()) + '</p>' +
-      '<div class="employee-list" id="employeeList">' + (context.dashboardUi.employeesExpanded ? getEmployeeCardsHtml() : '') + '</div>';
+      '<div class="employee-list" id="employeeList">' + (expanded ? getEmployeeCardsHtml() : '') + '</div>';
     const toggle = document.getElementById("toggleEmployeesButton");
     if (toggle) toggle.addEventListener("click", function () { context.toggleDashboardPanel("employeesExpanded"); });
     const list = document.getElementById("employeeList");
@@ -34,7 +38,7 @@ function getTeamRosterPreviewHtml() {
   }
 
 function getEmployeeCardsHtml() {
-    return getBossWorkerCardHtml() + context.EMPLOYEES.map(function (employee) {
+    const cards = context.EMPLOYEES.map(function (employee) {
       const level = context.state.employees[employee.id] || 0;
       const locked = !context.canUnlockEmployee(employee.id);
       const maxed = level >= context.MAX_LEVEL;
@@ -42,13 +46,14 @@ function getEmployeeCardsHtml() {
       const startupCredit = context.isStartupCreditAvailable(employee.id);
       const action = level === 0 ? "雇用" : "強化";
       const recommended = startupCredit && (employee.id === "dev01" || employee.id === "sales02");
-      const profileHtml = getEmployeePipelineProfileHtml(employee.id);
+      const profileHtml = getEmployeePipelineProfileHtml(employee.id) + context.EXPERIENCE.getEmployeeComparisonHtml(employee.id);
       if (locked) return '<article class="employee-card locked compact-locked"><div class="employee-top">' + context.getCharacterAvatarHtml(employee.id, "employee-character-avatar", true) + '<div class="employee-name"><strong>' + context.escapeHtml(employee.code) + ' / ' + context.escapeHtml(employee.nickname) + '</strong><span>' + context.escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + employee.unlockLevel + '</div></div>' + profileHtml + '<span class="lock-note">会社Lv' + employee.unlockLevel + 'で解放</span><div class="employee-action"><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button></div></article>';
       if (level === 0) {
         return '<article class="employee-card compact-unhired' + (recommended ? ' recommended' : '') + '"><div class="employee-top">' + context.getCharacterAvatarHtml(employee.id, "employee-character-avatar", true) + '<div class="employee-name"><strong>' + context.escapeHtml(employee.code) + ' / ' + context.escapeHtml(employee.nickname) + '</strong><span>' + context.escapeHtml(employee.role) + '</span></div><div class="level-badge">未雇用</div></div>' + profileHtml + '<div class="employee-action"><span class="cost-line">' + (startupCredit ? '初回創業クレジット: ¥0' : '雇用コスト: ' + context.formatCurrency(cost)) + '</span><button type="button" data-employee-id="' + employee.id + '">' + (startupCredit ? '雇用 ¥0' : '雇用 ' + context.formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" disabled>仕事を割り振る</button>' + (startupCredit ? '<span class="startup-note">最初の1体だけ無料です。</span>' : '') + '</div></article>';
       }
       return '<article class="employee-card hired"><div class="employee-top">' + context.getCharacterAvatarHtml(employee.id, "employee-character-avatar", true) + '<div class="employee-name"><strong>' + context.escapeHtml(employee.code) + ' / ' + context.escapeHtml(employee.nickname) + '</strong><span>' + context.escapeHtml(employee.role) + '</span></div><div class="level-badge">Lv ' + level + '</div></div>' + profileHtml + '<div class="quote compact-quote">「' + context.escapeHtml(employee.catchphrase) + '」</div><div class="employee-action"><span class="cost-line">' + action + 'コスト: ' + context.formatCurrency(cost) + '</span><button type="button" data-employee-id="' + employee.id + '"' + (maxed ? ' disabled' : '') + '>' + (maxed ? '最大Lv' : action + ' ' + context.formatCurrency(cost)) + '</button><button type="button" class="worker-assign-button" data-worker-assign="' + employee.id + '">仕事を割り振る</button></div></article>';
     }).join("");
+    return cards + getBossWorkerCardHtml();
   }
 
 function getBossWorkerCardHtml() {
