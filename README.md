@@ -242,7 +242,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20260524-60
+http://localhost:8000/?v=20261003-1
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -315,18 +315,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.05.24.60` です。
+現在のアプリバージョンは `2026.10.03.1` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーと起動背景はコマンドセンターに合わせた濃紺です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20260524-60">
-<script src="js/data/products.js?v=20260524-60"></script>
-<script src="js/data/achievements.js?v=20260524-60"></script>
-<script src="js/data/missions.js?v=20260524-60"></script>
-<script src="main.js?v=20260524-60"></script>
+<link rel="stylesheet" href="style.css?v=20261003-1">
+<script src="js/data/products.js?v=20261003-1"></script>
+<script src="js/data/achievements.js?v=20261003-1"></script>
+<script src="js/data/missions.js?v=20261003-1"></script>
+<script src="main.js?v=20261003-1"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -334,18 +334,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.05.24.60
+ai-black-startup-2026.10.03.1
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20260524-60` を付けて開く
+- URLに `?v=20261003-1` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20260524-60` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20261003-1` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -427,3 +427,22 @@ AI社員は、v0.3では売上や顧客を直接増減させる存在ではな�
 製品バグは各製品の `bugs` を唯一の実値とし、ダッシュボードには最大値を表示します。旧saveの全社 `bugs` はschema移行時に稼働中の製品へ引き継ぎます。全社 `fire` と各製品の `productFire` は影響範囲が異なるため別指標のままです。
 
 品質運用、事業拡大、AI企業タワーのミッションを追加し、Security-06雇用・品質安定化・会社Lv10・全サブスクv5・総MRR ¥1Mまで継続目標を用意しています。AI社員の個性は社員定義の性格・口癖、固有日報、雇用・強化・担当時の台詞へ反映しています。
+
+### リリースversionとCI
+
+versionの編集元は `version.json` です。リリース時はこの値だけを変更し、
+`python scripts/release_version.py` でHTML、controller、Service Worker、manifest、
+CSSの注記、READMEの配信例を更新して生成差分をコミットしてください。
+`python scripts/release_version.py --check` は生成漏れを検出します。
+APP_VERSION、SW cache名、CSS/JS/画像のasset token、SW登録URLは同じリリース値になります。
+今回の変更ではcache tokenを更新し、新しいrendererもオフラインキャッシュへ収録しています。
+保存キーとschemaVersionは変更していません。
+
+`.github/workflows/ci.yml` はpushとPRで構文、version生成漏れ、全pytest回帰、
+固定seedバランスシミュレーション、HTTP/PWA資産グラフ、ChromiumのUI検証を実行します。
+ブラウザパスを指定する場合は `AIBS_BROWSER=/path/to/chrome` を使用できます。
+
+描画責務は `js/render/office.js`（オフィス、社員配置、設備、画像fallback）と
+`js/render/products.js`（主力製品、ポートフォリオ、カード）へ分離しました。
+factoryへ渡すcontextはgetterを使用するため、save importやslot loadでstateを置き換えても
+最新状態を描画します。ゲーム操作と保存はcontroller/runtimeが引き続き管理します。

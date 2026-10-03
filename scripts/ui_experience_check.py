@@ -7,6 +7,7 @@ import argparse
 import copy
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -219,6 +220,11 @@ function collect() {
     });
   }
   window.setTimeout(() => {
+    // Virtual time can advance timers before the compositor advances page-enter.
+    // Measure its final layout, not the intentional 8px entrance translation.
+    doc.querySelectorAll(".app-page").forEach(page => {
+      page.getAnimations().forEach(animation => animation.finish());
+    });
     const controls = Array.from(doc.querySelectorAll("button, select, summary, a[href]"))
       .filter(node => visible(node, win));
     const controlHeights = controls.map(node => Math.round(node.getBoundingClientRect().height));
@@ -417,6 +423,8 @@ class ProbeHandler(SimpleHTTPRequestHandler):
 
 
 def find_browser() -> str:
+    if os.environ.get("AIBS_BROWSER"):
+        return os.environ["AIBS_BROWSER"]
     for name in ("chromium-browser", "chromium", "google-chrome", "google-chrome-stable"):
         path = shutil.which(name)
         if path:
