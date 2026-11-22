@@ -3404,7 +3404,7 @@ def test_v04_achievement_expansions_and_category_group_rendering():
     assert ".achievement-category-group" in css
 
     output = run_game_action_smoke({
-        "employees": {"dev01": 5, "sales02": 5, "buzz03": 5, "care04": 5, "fire05": 5, "security06": 5},
+        "employees": {"dev01": 5, "sales02": 5, "buzz03": 5, "care04": 5, "fire05": 5, "security06": 5, "finance07": 5},
         "decisionStats": {"approved": 25, "rejected": 25},
         "products": {
             "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 500, "version": 5, "satisfaction": 92, "quality": 96, "awareness": 100, "productFire": 85},
