@@ -242,7 +242,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20261004-1
+http://localhost:8000/?v=20261122-1
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -315,18 +315,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.10.04.1` です。
+現在のアプリバージョンは `2026.11.22.1` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーと起動背景はコマンドセンターに合わせた濃紺です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20261004-1">
-<script src="js/data/products.js?v=20261004-1"></script>
-<script src="js/data/achievements.js?v=20261004-1"></script>
-<script src="js/data/missions.js?v=20261004-1"></script>
-<script src="main.js?v=20261004-1"></script>
+<link rel="stylesheet" href="style.css?v=20261122-1">
+<script src="js/data/products.js?v=20261122-1"></script>
+<script src="js/data/achievements.js?v=20261122-1"></script>
+<script src="js/data/missions.js?v=20261122-1"></script>
+<script src="main.js?v=20261122-1"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -334,18 +334,18 @@ schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.10.04.1
+ai-black-startup-2026.11.22.1
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20261004-1` を付けて開く
+- URLに `?v=20261122-1` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20261004-1` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20261122-1` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -447,7 +447,7 @@ factoryへ渡すcontextはgetterを使用するため、save importやslot load�
 最新状態を描画します。ゲーム操作と保存はcontroller/runtimeが引き続き管理します。
 
 
-## モジュールの責務と再レビュー（2026.10.04.1）
+## モジュールの責務と再レビュー（2026.11.22.1）
 
 - `main.js`: 起動、操作コマンド、状態の接続。セーブの置換後も各モジュールはlive getterから現在状態を読みます。
 - `js/runtime/product-tasks.js`: 開発・品質・販売・顧客運用・製品収益の計算。DOM、タイマー、保存は直接扱いません。
@@ -462,7 +462,7 @@ factoryへ渡すcontextはgetterを使用するため、save importやslot load�
 
 `main.js` には社長判断・ミッション・担当コマンドなどが残っています。今回の分離境界を維持し、今後の機能追加時は該当runtime/renderへ配置してください。ブラウザ自動検証はChromiumで行い、Android/iOSの実機インストールとネイティブ共有は別途確認が必要です。
 
-## 2026.10.04.1 — 判断しやすさとプレイ体験の改善
+## 2026.11.22.1 — 判断しやすさとプレイ体験の改善
 
 - オフィスの「売上」は所持金を示す「資金」へ修正。毎秒収入、月額収入（MRR）、売り切り累計を区別し、300秒＝ゲーム内1か月の換算を説明します。
 - 製品概要の開発バーも必要開発量から百分率を計算します。「注力製品」は月額収入トップ／開発中から自動選択し、ユーザーが固定できます。累計ベストセラーは別表示です。固定は端末内の表示設定で、schema 3のゲームセーブや計算には影響しません。
