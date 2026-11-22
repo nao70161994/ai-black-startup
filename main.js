@@ -1202,7 +1202,9 @@
     const stageLabels = ["未解放", "第二創業宣言", "次の成長曲線", "全サブスクv6", "総MRR ¥1.5M", "総MRR ¥2M・計画完了"];
     const foundingHtml = '<section class="second-founding-panel"><div class="section-heading"><h2>第二創業計画</h2><span>' + (founding.unlocked ? 'Stage ' + founding.stage + ' / 5' : 'LOCKED') + '</span></div><p>' + (founding.unlocked ? '終わらない経営会議：第二創業計画を進行中です。' : '会社Lv10以降の新しい経営目標。4条件を満たすと社長判断イベントが発生します。') + '</p>' + (founding.unlocked ? '<strong>' + escapeHtml(stageLabels[founding.stage] || stageLabels[5]) + '</strong><ol><li>総MRR ¥1.25M/月</li><li>全サブスクv6以上</li><li>総MRR ¥1.5M/月</li><li>総MRR ¥2M/月</li></ol>' : '<ul class="second-founding-requirements">' + requirementsHtml + '</ul>') + '</section>';
     const businessUnitHtml = INSIGHTS_RENDERER.getBusinessUnitsHtml(OPERATIONS_RUNTIME.getBusinessUnitEvaluations(state), PRODUCTS, Boolean(founding.unlocked && state.businessUnits && state.businessUnits.enabled));
-    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml;
+    const board = getShareholderBoard();
+    const shareholderHtml = founding.unlocked ? INSIGHTS_RENDERER.getShareholderBoardHtml(board, SHAREHOLDER_RUNTIME.getRating(board.satisfaction)) : "";
+    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml + shareholderHtml;
 
   }
 
