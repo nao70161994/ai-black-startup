@@ -19,10 +19,6 @@ window.AIBS_CREATE_COMPETITION_RUNTIME = function (options) {
     const reduction = Math.max(0.7, 1 - Math.max(0, Number(financeLevel) || 0) * 0.03);
     return Math.max(0, Math.ceil(Math.max(0, Number(amount) || 0) * reduction));
   }
-  function calculateDecisionCost(amount, financeLevel) {
-    const reduction = Math.max(0.7, 1 - Math.max(0, Number(financeLevel) || 0) * 0.03);
-    return Math.max(0, Math.ceil(Math.max(0, Number(amount) || 0) * reduction));
-  }
   function getShare(state, companyMrr) {
     const own = Math.max(0, Number(companyMrr) || 0);
     const other = Math.max(0, Number(state && state.competitorMrr) || 0);
