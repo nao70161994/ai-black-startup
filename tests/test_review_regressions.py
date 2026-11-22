@@ -94,7 +94,9 @@ for(let i=0;i<600;i++) window.__testApi.tick(); window.__testApi.saveGame();
     # Phase 4 adds one product and a non-task finance advisor. Exclude those additive
     # records when comparing the unchanged six-specialist/five-product baseline.
     actual.get('employees', {}).pop('finance07', None)
+    actual.get('employees', {}).pop('legal08', None)
     actual.get('aiUsageSeconds', {}).pop('finance07', None)
+    actual.get('aiUsageSeconds', {}).pop('legal08', None)
     actual.get('products', {}).pop('attendanceMonitorAi', None)
     actual.get('productFlags', {}).pop('attendanceMonitorAi', None)
     for assignment in actual.get('assignments', {}).values():
