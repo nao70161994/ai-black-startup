@@ -23,7 +23,7 @@
     if (typeof factory !== "function") throw new Error(name + " is not loaded. Check js/data script order.");
     return factory;
   }
-  const SAVE_SCHEMA_VERSION = 3;
+  const SAVE_SCHEMA_VERSION = 4;
   const SAVE_RUNTIME = readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")({ saveKey: SAVE_KEY, schemaVersion: SAVE_SCHEMA_VERSION });
   const TICK_MS = balanceValue("TICK_MS", 1000);
   const FIRST_TICK_MS = balanceValue("FIRST_TICK_MS", 1000);
@@ -108,7 +108,7 @@
     markFirstTickDone: function () { state.firstFastTickDone = true; },
     applyRecurringRuntime: applyBaseContractWork,
     applyDecisionEventTick: applyDecisionEventGeneration,
-    applyAchievementTick: function () { applyAchievements(false); },
+    applyAchievementTick: function () { updateSecondFoundingProgress(); applyAchievements(false); },
     applyPenalties: applyPenalties,
     finalizeTickState: clampRuntimeState,
     applyAutosaveTick: saveGame
@@ -199,7 +199,8 @@
       ai_runaway_proposal: { approve: approveAiRunawayProposal, reject: rejectAiRunawayProposal },
       outsourcing_offer: { approve: approveOutsourcingOffer, reject: rejectOutsourcingOffer },
       sales_contract_followup: { approve: approveSalesContractFollowup, reject: rejectSalesContractFollowup },
-      campaign_aftershock: { approve: approveCampaignAftershock, reject: rejectCampaignAftershock }
+      campaign_aftershock: { approve: approveCampaignAftershock, reject: rejectCampaignAftershock },
+      second_founding_board: { approve: approveSecondFounding, reject: rejectSecondFounding }
     }
   });
   const selectDecisionEventCandidate = DECISION_RUNTIME.selectDecisionEventCandidate;
@@ -1184,6 +1185,15 @@
       mrr: getTotalProductMrr(), customers: getTotalProductCustomers(), bugs: getDashboardBugLevel(), productFire: getMaxProductFireLevel()
     })];
     panel.innerHTML = '<details class="insights-details"><summary>経営推移を詳しく見る</summary>' + INSIGHTS_RENDERER.getHistoryHtml(history) + '</details>';
+    const founding = state.secondFounding || { unlocked: false, stage: 0 };
+    const requirements = getSecondFoundingRequirements();
+    const requirementsHtml = [
+      ["会社Lv10", requirements.level], ["総MRR ¥1M/月", requirements.mrr],
+      ["全サブスクv5以上", requirements.versions], ["専門AI6体を全員雇用", requirements.employees]
+    ].map(function (item) { return '<li class="' + (item[1] ? 'done' : '') + '">' + (item[1] ? '✓ ' : '○ ') + item[0] + '</li>'; }).join("");
+    const stageLabels = ["未解放", "第二創業宣言", "次の成長曲線", "全サブスクv6", "総MRR ¥1.5M", "総MRR ¥2M・計画完了"];
+    panel.insertAdjacentHTML("beforeend", '<section class="second-founding-panel"><div class="section-heading"><h2>第二創業計画</h2><span>' + (founding.unlocked ? 'Stage ' + founding.stage + ' / 5' : 'LOCKED') + '</span></div><p>' + (founding.unlocked ? '終わらない経営会議：第二創業計画を進行中です。' : '会社Lv10以降の新しい経営目標。4条件を満たすと社長判断イベントが発生します。') + '</p>' + (founding.unlocked ? '<strong>' + escapeHtml(stageLabels[founding.stage] || stageLabels[5]) + '</strong><ol><li>総MRR ¥1.25M/月</li><li>全サブスクv6以上</li><li>総MRR ¥1.5M/月</li><li>総MRR ¥2M/月</li></ol>' : '<ul class="second-founding-requirements">' + requirementsHtml + '</ul>') + '</section>');
+
   }
 
   function renderSaveManagerPanel() {
@@ -1561,6 +1571,48 @@
   }
 
   // === Decision Event Runtime ===
+  function getSecondFoundingRequirements() {
+    const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; });
+    return {
+      level: state.companyLevel >= 10,
+      mrr: getTotalProductMrr() >= 1000000,
+      versions: subscriptions.length > 0 && subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }),
+      employees: EMPLOYEES.length === 6 && EMPLOYEES.every(function (employee) { return (state.employees[employee.id] || 0) > 0; })
+    };
+  }
+
+  function canStartSecondFounding() {
+    const requirements = getSecondFoundingRequirements();
+    return !state.secondFounding.unlocked && requirements.level && requirements.mrr && requirements.versions && requirements.employees;
+  }
+
+  function approveSecondFounding() {
+    if (!canStartSecondFounding()) return;
+    state.secondFounding = { unlocked: true, stage: 1 };
+    addLog("success", "第二創業を宣言しました。ブラッククラウド株式会社は、終わらない成長を経営目標に掲げます。", "boss");
+    addLog("system", "第二創業計画 Stage 1「再成長の基盤」が始動しました。", "company");
+  }
+
+  function rejectSecondFounding() {
+    addLog("normal", "第二創業案は今回は見送られました。現体制での経営を継続し、次回会議で再提案します。", "boss");
+  }
+
+  function updateSecondFoundingProgress() {
+    if (!state.secondFounding || !state.secondFounding.unlocked) return;
+    const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; });
+    const milestones = [
+      { stage: 2, done: function () { return getTotalProductMrr() >= 1250000; }, label: "次の成長曲線・MRR ¥1.25M" },
+      { stage: 3, done: function () { return subscriptions.length > 0 && subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 6; }); }, label: "全サブスクv6" },
+      { stage: 4, done: function () { return getTotalProductMrr() >= 1500000; }, label: "総MRR ¥1.5M" },
+      { stage: 5, done: function () { return getTotalProductMrr() >= 2000000; }, label: "総MRR ¥2M・第二創業計画完了" }
+    ];
+    milestones.forEach(function (milestone) {
+      if (state.secondFounding.stage >= milestone.stage || !milestone.done()) return;
+      state.secondFounding.stage = milestone.stage;
+      addLog("success", "第二創業 Stage " + milestone.stage + "達成: " + milestone.label + "。", "company");
+    });
+  }
+
   function applyDecisionEventGeneration() {
     state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent);
     if (state.pendingDecisionEvent) return;
@@ -1581,6 +1633,7 @@
 
   function getDecisionEventCandidates() {
     const candidates = [];
+    if (canStartSecondFounding()) candidates.push({ id: "second_founding_board", productId: PRODUCTS[0].id, priority: 180 });
     const salesThread = state.decisionThreads.sales_contract;
     const campaignThread = state.decisionThreads.campaign_aftershock;
     if (salesThread && !salesThread.resolved && salesThread.dueIn <= 0) candidates.push({ id: "sales_contract_followup", productId: salesThread.productId, priority: 200 });
