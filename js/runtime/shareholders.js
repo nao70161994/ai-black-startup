@@ -8,17 +8,18 @@ window.AIBS_CREATE_SHAREHOLDER_RUNTIME = function (options) {
   function normalize(board) {
     const source = board && typeof board === "object" ? board : {};
     return {
-      satisfaction: clamp(Math.floor(Number(source.satisfaction) || 0), 0, 100),
+      satisfaction: clamp(Math.floor(Number(source.satisfaction == null ? 50 : source.satisfaction) || 0), 0, 100),
       reviewSeconds: clamp(Math.floor(Number(source.reviewSeconds) || 0), 0, 29),
       lastMrr: Math.max(0, Number(source.lastMrr) || 0),
       dividendsPaid: Math.max(0, Number(source.dividendsPaid) || 0),
-      qualityInvestments: Math.max(0, Math.floor(Number(source.qualityInvestments) || 0))
+      qualityInvestments: Math.max(0, Math.floor(Number(source.qualityInvestments) || 0)),
+      meetingsHeld: Math.max(0, Math.floor(Number(source.meetingsHeld) || 0))
     };
   }
 
   function adjust(board, amount) {
     const target = board && typeof board === "object" ? board : {};
-    const before = clamp(Math.floor(Number(target.satisfaction) || 0), 0, 100);
+    const before = clamp(Math.floor(Number(target.satisfaction == null ? 50 : target.satisfaction) || 0), 0, 100);
     target.satisfaction = clamp(before + Math.round(Number(amount) || 0), 0, 100);
     return { before: before, after: target.satisfaction, delta: target.satisfaction - before };
   }
@@ -27,7 +28,7 @@ window.AIBS_CREATE_SHAREHOLDER_RUNTIME = function (options) {
     const target = board && typeof board === "object" ? board : {};
     const values = metrics && typeof metrics === "object" ? metrics : {};
     target.reviewSeconds = Math.max(0, Math.floor(Number(target.reviewSeconds) || 0)) + 1;
-    if (target.reviewSeconds < 30) return { reviewed: false, delta: 0, satisfaction: clamp(Number(target.satisfaction) || 0, 0, 100) };
+    if (target.reviewSeconds < 30) return { reviewed: false, delta: 0, satisfaction: clamp(Number(target.satisfaction == null ? 50 : target.satisfaction) || 0, 0, 100) };
     target.reviewSeconds -= 30;
     const mrr = Math.max(0, Number(values.mrr) || 0);
     const fire = clamp(Number(values.fire) || 0, 0, 100);
@@ -41,7 +42,7 @@ window.AIBS_CREATE_SHAREHOLDER_RUNTIME = function (options) {
     else if (fire <= 10) delta += 1;
     if (quality >= 90) delta += 1;
     else if (quality < 55) delta -= 1;
-    const before = clamp(Math.floor(Number(target.satisfaction) || 0), 0, 100);
+    const before = clamp(Math.floor(Number(target.satisfaction == null ? 50 : target.satisfaction) || 0), 0, 100);
     target.satisfaction = clamp(before + delta, 0, 100);
     target.lastMrr = mrr;
     return { reviewed: true, before: before, satisfaction: target.satisfaction, delta: target.satisfaction - before };
@@ -57,8 +58,13 @@ window.AIBS_CREATE_SHAREHOLDER_RUNTIME = function (options) {
     target.qualityInvestments = Math.max(0, Math.floor(Number(target.qualityInvestments) || 0)) + 1;
   }
 
+  function recordMeeting(board) {
+    const target = board && typeof board === "object" ? board : {};
+    target.meetingsHeld = Math.max(0, Math.floor(Number(target.meetingsHeld) || 0)) + 1;
+  }
+
   function getRating(value) {
-    const score = clamp(Math.floor(Number(value) || 0), 0, 100);
+    const score = clamp(Math.floor(Number(value == null ? 50 : value) || 0), 0, 100);
     if (score >= 80) return "安定";
     if (score >= 60) return "概ね良好";
     if (score >= 40) return "慎重";
@@ -72,6 +78,7 @@ window.AIBS_CREATE_SHAREHOLDER_RUNTIME = function (options) {
     review: review,
     recordDividend: recordDividend,
     recordQualityInvestment: recordQualityInvestment,
+    recordMeeting: recordMeeting,
     getRating: getRating
   };
 };
