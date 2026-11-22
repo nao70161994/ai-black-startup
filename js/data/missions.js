@@ -92,7 +92,7 @@ window.AIBS_CREATE_MISSION_DATA = function (api) {
       label: "AI企業タワー",
       missions: [
         { id: "company_level_10_mission", text: "会社Lv10に到達する", reward: 50000, done: function () { return getState().companyLevel >= 10; } },
-        { id: "subscription_v5_mission", text: "すべてのサブスク製品をv5以上にする", reward: 80000, done: function () { const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }); return subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }); } },
+        { id: "subscription_v5_mission", text: "すべてのサブスク製品をv5以上にする", reward: 80000, done: function () { const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription" && definition.id !== "attendanceMonitorAi"; }); return subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }); } },
         { id: "total_mrr_1m_mission", text: "総MRR ¥1M/月を達成する", reward: 100000, done: function () { return getTotalProductMrr() >= 1000000; } }
       ]
     }
