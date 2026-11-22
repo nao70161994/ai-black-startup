@@ -4,8 +4,8 @@ window.AIBS_PRODUCTS = [
     { id: "meetingMinutesAi", name: "自動議事録AI", type: "subscription", monthlyPrice: 1200, category: "document", developmentRequired: 180, demand: 1.0, risk: 1.0, initialQuality: 55 },
     { id: "slideKitAi", name: "AIスライド生成キット", type: "oneShot", price: 9800, category: "oneShotTool", developmentRequired: 160, demand: 1.2, risk: 1.0, initialQuality: 55 },
     { id: "supportReplyAi", name: "AI問い合わせ返信", type: "subscription", monthlyPrice: 900, category: "support", developmentRequired: 140, demand: 1.0, risk: 0.8, initialQuality: 58 },
-    { id: "apologyWriterAi", name: "AI謝罪文ジェネレーター", type: "oneShot", price: 7800, category: "crisis", developmentRequired: 120, demand: 0.9, risk: 1.3, initialQuality: 52 }
-,    { id: "attendanceMonitorAi", name: "AI勤怠監視クラウド", type: "subscription", monthlyPrice: 3000, category: "security", developmentRequired: 260, demand: 0.72, risk: 1.35, initialQuality: 48 }
+    { id: "apologyWriterAi", name: "AI謝罪文ジェネレーター", type: "oneShot", price: 7800, category: "crisis", developmentRequired: 120, demand: 0.9, risk: 1.3, initialQuality: 52 },
+    { id: "attendanceMonitorAi", name: "AI勤怠監視クラウド", type: "subscription", monthlyPrice: 3000, category: "security", developmentRequired: 260, demand: 0.72, risk: 1.35, initialQuality: 48 }
   ];
 
 window.AIBS_PRODUCT_LOG_TEXTS = {
