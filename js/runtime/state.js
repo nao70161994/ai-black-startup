@@ -282,6 +282,13 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     };
   }
 
+  // Schema v4 default-fill: Phase 5 fields are optional in every existing save.
+  function normalizeAcquisitions(savedAcquisitions) {
+    const known = ["paperclip", "clouddesk", "whiteboard", "megacorp"];
+    const ids = Array.isArray(savedAcquisitions) ? savedAcquisitions : [];
+    return known.filter(function (id) { return ids.indexOf(id) !== -1; });
+  }
+
   function normalizeShareholderBoard(savedBoard) {
     const source = savedBoard && typeof savedBoard === "object" ? savedBoard : {};
     return {
