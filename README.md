@@ -293,7 +293,7 @@ PCで確認する場合は `http://localhost:8000` でも起動できます。�
 
 ## 保存仕様
 
-保存にはブラウザの `localStorage` を使用します。主キーは互換性維持のため `ai_black_startup_save_v1` のままですが、保存データ内に明示的な `schemaVersion`（現在は3）と `appVersion` を持ちます。
+保存にはブラウザの `localStorage` を使用します。主キーは互換性維持のため `ai_black_startup_save_v1` のままですが、保存データ内に明示的な `schemaVersion`（現在は4）と `appVersion` を持ちます。
 
 保存対象:
 
@@ -309,7 +309,7 @@ PCで確認する場合は `http://localhost:8000` でも起動できます。�
 
 保存は稼働中のtickごと（通常1秒）、待機中は10秒ごと、雇用・強化、報酬受取、会社Lvアップ、手動保存、ページ離脱前、リセット時に行います。正常な主データを上書きする前に直前値をバックアップへ退避します。主データが壊れている場合は破損内容を別キーへ保存してから、正常なバックアップへ自動復旧します。セーブ管理の「バックアップ復元」から手動復元もできます。JSON読込・スロット読込・リセット前の状態は別の `_checkpoint` キーへ保存し、通常の自動保存では上書きしません。手動復元ではこのチェックポイントを優先します。
 
-schema 0/1/2の旧データは起動時にschema 3へ順番に移行します。旧来の全社 `bugs` は稼働中の製品（なければ先頭製品）の製品バグへ引き継ぎ、以降は製品別 `bugs` のみを使います。未知の将来schemaでは原本を保持してゲーム進行・保存・読込・リセットを停止し、画面上に最新版で開き直す案内と原本JSONの書き出しを表示します。保存runtime側も未対応schemaの主キー上書きを拒否します。
+schema 0/1/2/3の旧データは起動時にschema 4へ順番に移行します。旧来の全社 `bugs` は稼働中の製品（なければ先頭製品）の製品バグへ引き継ぎ、以降は製品別 `bugs` のみを使います。未知の将来schemaでは原本を保持してゲーム進行・保存・読込・リセットを停止し、画面上に最新版で開き直す案内と原本JSONの書き出しを表示します。保存runtime側も未対応schemaの主キー上書きを拒否します。
 
 オフライン報酬は最後の保存時刻から最大2時間分まで、売上のみ加算します。
 
@@ -435,7 +435,7 @@ CSSの注記、READMEの配信例を更新して生成差分をコミットし�
 `python scripts/release_version.py --check` は生成漏れを検出します。
 APP_VERSION、SW cache名、CSS/JS/画像のasset token、SW登録URLは同じリリース値になります。
 今回の変更ではcache tokenを更新し、新しいrendererもオフラインキャッシュへ収録しています。
-保存キーとschemaVersionは変更していません。
+Phase 1でschemaVersionは3から4へ移行済みです。このPhase 2ではschemaVersionを変更せず、schema 4のセーブへ事業部状態を既定値で補完します。
 
 `.github/workflows/ci.yml` はpushとPRで構文、version生成漏れ、全pytest回帰、
 固定seedバランスシミュレーション、HTTP/PWA資産グラフ、ChromiumのUI検証を実行します。
@@ -474,7 +474,7 @@ factoryへ渡すcontextはgetterを使用するため、save importやslot load�
 
 第二創業の解放後、事業部評価に応じて担当製品の業務効率ボーナスが適用されます。Bは+3%、Aは+6%、Sは+10%。開発、品質管理、販売、広報、サポート、炎上対応のタスク効果へ加算し、バグ発生・炎上発生の係数や製品価格、顧客数、MRRの算出式には直接変更を加えません。タスク改善を通じた間接的な成長は発生します。
 
-保存スキーマはschemaVersion 4のままです。schema 4以前のPhase 1セーブには `businessUnits.enabled` を既定値で補完し、会社Lv、製品、社員、売上、炎上、第二創業stage、実績、ログを保持します。新しいschema migrationは不要です。
+保存スキーマはschemaVersion 4のままです。Phase 1のschema 4セーブには `businessUnits.enabled` を既定値で補完し、会社Lv、製品、社員、売上、炎上、第二創業stage、実績、ログを保持します。新しいschema migrationは不要です。
 
 ## 2026.11.22.2 — 判断しやすさとプレイ体験の改善
 
