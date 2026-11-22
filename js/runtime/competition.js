@@ -15,6 +15,10 @@ window.AIBS_CREATE_COMPETITION_RUNTIME = function (options) {
     };
     return state;
   }
+  function calculateDecisionCost(amount, financeLevel) {
+    const reduction = Math.max(0.7, 1 - Math.max(0, Number(financeLevel) || 0) * 0.03);
+    return Math.max(0, Math.ceil(Math.max(0, Number(amount) || 0) * reduction));
+  }
   function getShare(state, companyMrr) {
     const own = Math.max(0, Number(companyMrr) || 0);
     const other = Math.max(0, Number(state && state.competitorMrr) || 0);
@@ -48,5 +52,5 @@ window.AIBS_CREATE_COMPETITION_RUNTIME = function (options) {
     const value = Number(share) || 0;
     return value >= 60 ? "業界リード" : value >= 40 ? "競争中" : value >= 20 ? "追い上げ中" : "挑戦者";
   }
-  return { normalize: normalize, getShare: getShare, tick: tick, applyCompetitorEvent: applyCompetitorEvent, getRating: getRating };
+  return { normalize: normalize, getShare: getShare, tick: tick, applyCompetitorEvent: applyCompetitorEvent, getRating: getRating, calculateDecisionCost: calculateDecisionCost };
 };
