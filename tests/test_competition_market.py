@@ -54,7 +54,7 @@ const window = {};
 vm.runInNewContext(fs.readFileSync("js/runtime/state.js", "utf8"), { window, Date });
 const products = [
   { id: "dailyReportAi", type: "subscription", initialQuality: 60, developmentRequired: 100, price: 500 },
-  { id: "attendanceMonitorAi", type: "subscription", initialQuality: 48, developmentRequired: 260, monthlyPrice: 3000 }
+  { id: "attendanceMonitorAI", type: "subscription", initialQuality: 48, developmentRequired: 260, monthlyPrice: 3000 }
 ];
 const employeeIds = ["dev01", "sales02", "buzz03", "care04", "fire05", "security06", "finance07"];
 const runtime = window.AIBS_CREATE_STATE_RUNTIME({
@@ -91,7 +91,7 @@ assert.strictEqual(state.fire, 17);
 assert.strictEqual(state.secondFounding.stage, 3);
 assert.strictEqual(state.products.dailyReportAi.customers, 12);
 assert.strictEqual(state.products.dailyReportAi.version, 5);
-assert.strictEqual(state.products.attendanceMonitorAi.status, "idea");
+assert.strictEqual(state.products.attendanceMonitorAI.status, "idea");
 assert.strictEqual(state.employees.dev01, 2);
 assert.strictEqual(state.employees.finance07, 2);
 assert.strictEqual(state.businessUnits.enabled, false);
@@ -105,7 +105,7 @@ assert.strictEqual(state.logs[0].text, "既存ログ");
 const fresh = runtime.createInitialState();
 assert.strictEqual(fresh.schemaVersion, 4);
 assert.strictEqual(fresh.competition.competitorMrr, 250000);
-assert.strictEqual(fresh.products.attendanceMonitorAi.status, "idea");
+assert.strictEqual(fresh.products.attendanceMonitorAI.status, "idea");
 assert.strictEqual(fresh.employees.finance07, 0);
 """)
  
@@ -119,7 +119,7 @@ const window = {};
 vm.runInNewContext(fs.readFileSync("js/data/products.js", "utf8"), { window });
 vm.runInNewContext(fs.readFileSync("js/data/employees.js", "utf8"), { window });
 vm.runInNewContext(fs.readFileSync("js/data/tasks.js", "utf8"), { window });
-const product = window.AIBS_PRODUCTS.find(item => item.id === "attendanceMonitorAi");
+const product = window.AIBS_PRODUCTS.find(item => item.id === "attendanceMonitorAI");
 assert.ok(product);
 assert.strictEqual(product.type, "subscription");
 assert.strictEqual(product.monthlyPrice, 3000);
