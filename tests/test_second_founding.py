@@ -29,7 +29,7 @@ assert.strictEqual(JSON.stringify(migrated.secondFounding), JSON.stringify({ unl
 for (const key of ['companyLevel', 'money', 'totalMoney', 'fire', 'employees', 'products', 'achievements', 'logs']) {
   assert.strictEqual(JSON.stringify(migrated[key]), JSON.stringify(original[key]), key + ' must be preserved');
 }
-""".replace(/\n/g, "\n"))
+""")
 
 
 def test_new_game_starts_with_second_founding_locked():
@@ -56,7 +56,7 @@ const runtime = window.AIBS_CREATE_STATE_RUNTIME({
   getStrategy: id => ({ id: id || 'balanced' }), normalizeHistory: value => value || []
 });
 assert.strictEqual(JSON.stringify(runtime.createInitialState().secondFounding), JSON.stringify({ unlocked: false, stage: 0 }));
-""".replace(/\n/g, "\n"))
+""")
 
 
 def test_normalizing_level_ten_save_preserves_company_and_gameplay_data():
@@ -101,4 +101,4 @@ assert.strictEqual(normalized.employees.security06, 1);
 assert.strictEqual(normalized.achievements.first_customer.unlocked, true);
 assert.strictEqual(normalized.logs[0].text, '既存ログ');
 assert.strictEqual(JSON.stringify(normalized.secondFounding), JSON.stringify({ unlocked: false, stage: 0 }));
-""".replace(/\n/g, "\n"))
+""")
