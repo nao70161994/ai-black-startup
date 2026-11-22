@@ -1,4 +1,4 @@
-/* AI Black Startup — command-center interface v2026.11.22.2 */
+/* AI Black Startup — command-center interface v2026.11.22.3 */
 :root {
   color-scheme: dark;
   --bg-0: #030811;
@@ -905,3 +905,18 @@ body:not([data-page="home"]) .page-location { min-height: 82px; padding-top: 16p
 .business-unit-metrics b { color:var(--text); }
 .business-unit-products { border-top:1px solid var(--line); padding-top:9px; }
 @media (max-width:959px) { .business-unit-grid { grid-template-columns:1fr; } }
+
+
+/* Shareholder and board panel */
+.shareholder-board-panel { margin-top:18px; padding:18px; border:1px solid var(--line); border-radius:15px; background:rgba(12,29,43,.72); }
+.shareholder-board-score { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:12px 0 8px; }
+.shareholder-board-score > strong { font-size:32px; }
+.shareholder-board-score small { color:var(--muted); font-size:13px; }
+.shareholder-board-score > span { color:var(--accent); font-weight:700; }
+.shareholder-board-meter { height:12px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.08); }
+.shareholder-board-meter > span { display:block; height:100%; border-radius:inherit; background:var(--accent); }
+.shareholder-board-panel > p { color:var(--muted); font-size:13px; line-height:1.65; }
+.shareholder-board-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:14px 0; }
+.shareholder-board-stats span { display:flex; flex-direction:column; gap:4px; padding:10px; border-radius:9px; background:rgba(255,255,255,.04); color:var(--muted); font-size:12px; }
+.shareholder-board-stats b { color:var(--text); font-size:14px; }
+@media (max-width:600px) { .shareholder-board-stats { grid-template-columns:1fr; } }

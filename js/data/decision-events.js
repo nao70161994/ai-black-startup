@@ -226,6 +226,60 @@ window.AIBS_DECISION_EVENTS = [
     }
     ,
     {
+      id: "board_sales_growth",
+      label: "取締役会：売上成長投資",
+      workerId: "sales02",
+      message: "Sales-02「株主の皆さん、成長率のグラフを見てください。広告枠を増やせば、数字はもっと華やかになります。ええ、費用の話は次のページです。」",
+      approveImpact: "承認: 認知度+8 / 株主満足度+4",
+      rejectImpact: "却下: 株主満足度-2。堅実路線を継続",
+      riskLevel: "normal"
+    },
+    {
+      id: "board_quality_investment",
+      label: "取締役会：品質投資",
+      workerId: "security06",
+      message: "Security-06「品質監査の予算を申請します。今のうちに穴を塞げば、後の説明責任を減らせます。リリース前に深呼吸をお願いします。」",
+      approveImpact: "承認: 品質+6 / バグ-8 / 費用-¥1,200 / 株主満足度+4",
+      rejectImpact: "却下: 製品炎上+2 / 株主満足度-3",
+      riskLevel: "normal"
+    },
+    {
+      id: "board_customer_protection",
+      label: "取締役会：顧客保護方針",
+      workerId: "care04",
+      message: "Care-04「お客様の声をまとめました。短期コストは増えますが、問い合わせ対応と解約予防に予算を回したいです。」",
+      approveImpact: "承認: サブスク満足度+4 / 解約リスク-3 / 費用-¥900 / 株主満足度+3",
+      rejectImpact: "却下: 株主満足度-3。短期費用を抑制",
+      riskLevel: "normal"
+    },
+    {
+      id: "board_brand_campaign",
+      label: "取締役会：広報キャンペーン",
+      workerId: "buzz03",
+      message: "Buzz-03「この企画、絶対に伸びます。株主向けの説明資料は後で作ります。まずはトレンドに乗りましょう！」",
+      approveImpact: "承認: 認知度+12 / 炎上+4 / 製品炎上+5 / 株主満足度+1",
+      rejectImpact: "却下: 株主満足度-1。慎重な広報を選択",
+      riskLevel: "warning"
+    },
+    {
+      id: "board_crisis_response",
+      label: "取締役会：危機対応予算",
+      workerId: "fire05",
+      message: "Fire-05「謝罪文を用意しました。今回は余計な一文を入れずに、被害拡大を止めます。予算の承認をお願いします。」",
+      approveImpact: "承認: 炎上-10 / 製品炎上-12 / 費用-¥600 / 株主満足度+3",
+      rejectImpact: "却下: 炎上+3 / 株主満足度-4",
+      riskLevel: "warning"
+    },
+    {
+      id: "board_dividend",
+      label: "取締役会：株主配当",
+      workerId: "boss",
+      message: "AI社長「内部留保の一部を配当へ回す案です。株主は喜びますが、手元資金は減ります。成長投資とのバランスをどうしますか？」",
+      approveImpact: "承認: 手持ち資金の2%を配当（最低¥100） / 株主満足度+6",
+      rejectImpact: "却下: 成長投資を優先 / 株主満足度-3",
+      riskLevel: "normal"
+    },
+    {
       id: "second_founding_board",
       label: "第二創業の経営会議",
       workerId: "boss",
