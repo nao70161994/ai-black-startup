@@ -50,7 +50,7 @@ assert.strictEqual(JSON.stringify({ mrr: state.products.p1.mrr, customers: 17 })
 state.secondFounding.unlocked = false;
 assert.strictEqual(runtime.getBusinessUnitEvaluations(state)[0].bonus, 0);
 assert.strictEqual(runtime.getModifiers(state, { id: "p1", type: "subscription" }).development, 1);
-""".replace(/\n/g, "\n"))
+""")
 
 
 def test_schema_four_save_defaults_business_unit_state_and_preserves_existing_data():
@@ -96,4 +96,4 @@ assert.strictEqual(normalized.products.dailyReportAi.version, 5);
 assert.strictEqual(normalized.logs[0].text, "preserve");
 const disabled = runtime.normalizeState(Object.assign({}, saved, { businessUnits: { enabled: false } }));
 assert.strictEqual(disabled.businessUnits.enabled, false);
-""".replace(/\n/g, "\n"))
+""")
