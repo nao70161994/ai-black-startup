@@ -3886,7 +3886,7 @@
 
   function canWorkerAssignToTask(workerId, taskId, employees) {
     const task = TASKS.find(function (item) { return item.id === taskId; });
-    if (!task || task.workers.indexOf(workerId) === -1) return false;
+    if (workerId === "finance07" || !task || task.workers.indexOf(workerId) === -1) return false;
     return isWorkerAvailable(workerId, employees);
   }
 
