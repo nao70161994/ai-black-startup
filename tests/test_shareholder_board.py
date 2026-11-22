@@ -47,6 +47,7 @@ const runtime = window.AIBS_CREATE_SHAREHOLDER_RUNTIME({});
 const board = runtime.normalize({ satisfaction: 150, reviewSeconds: 99 });
 assert.strictEqual(board.satisfaction, 100);
 assert.strictEqual(board.reviewSeconds, 29);
+board.reviewSeconds = 0;
 runtime.adjust(board, -500);
 assert.strictEqual(board.satisfaction, 0);
 runtime.adjust(board, 500);
