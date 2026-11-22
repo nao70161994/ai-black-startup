@@ -34,7 +34,7 @@ window.AIBS_CREATE_COMPETITION_RUNTIME = function (options) {
     const delta = Math.round((share - previousShare) * 10) / 10;
     market.lastShare = share;
     market.lastCompetitorMrr = market.competitorMrr;
-    return { state: market, reviewed: true, share: share, delta: delta, competitorGrowth: market.competitorMrr - previousCompetitorMrr };
+    return { state: market, reviewed: true, share: share, previousShare: previousShare, delta: delta, competitorGrowth: market.competitorMrr - previousCompetitorMrr };
   }
   function applyCompetitorEvent(state, eventId) {
     const market = normalize(state);
