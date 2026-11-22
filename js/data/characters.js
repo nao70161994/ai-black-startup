@@ -7,6 +7,6 @@ window.AIBS_CHARACTER_ASSETS = {
   buzz03: { label: "Buzz-03", shortLabel: "B", src: "assets/characters/buzz-03.webp", officeSrc: "assets/office/characters/buzz-03.webp", dialogue: ["伸びています！", "話題にしちゃいましょう"] },
   care04: { label: "Care-04", shortLabel: "C", src: "assets/characters/care-04.webp", officeSrc: "assets/office/characters/care-04.webp", dialogue: ["まず前提から整理します", "お客様の声を確認します"] },
   fire05: { label: "Fire-05", shortLabel: "F", src: "assets/characters/fire-05.webp", officeSrc: "assets/office/characters/fire-05.webp", dialogue: ["信頼回復を始めます", "火元を確認しました"] },
-  legal08: { label: "Legal-08", shortLabel: "L", dialogue: ["契約条項を監査します", "適法性を確認しました"] },
+  legal08: { label: "Legal-08", shortLabel: "L", src: "assets/characters/legal-08.svg", officeSrc: "assets/office/characters/legal-08.svg", dialogue: ["契約条項を監査します", "適法性を確認しました"] },
   security06: { label: "Security-06", shortLabel: "Q", src: "assets/characters/security-06.webp", officeSrc: "assets/office/characters/security-06.webp", dialogue: ["安全性を優先します", "リリース前に確認します"] }
 };
