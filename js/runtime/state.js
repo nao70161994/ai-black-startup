@@ -114,6 +114,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       playtestStageEnteredAt: 0,
       secondFounding: { unlocked: false, stage: 0 },
       businessUnits: { enabled: true },
+      shareholderBoard: { satisfaction: 50, reviewSeconds: 0, lastMrr: 0, dividendsPaid: 0, qualityInvestments: 0 },
       lastSavedAt: Date.now()
     };
     initialLogs.slice().reverse().forEach(function (text, index) {
@@ -269,6 +270,17 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     return { unlocked: unlocked, stage: unlocked ? clamp(Math.floor(safeNumber(source.stage, 1)), 1, 5) : 0 };
   }
 
+  function normalizeShareholderBoard(savedBoard) {
+    const source = savedBoard && typeof savedBoard === "object" ? savedBoard : {};
+    return {
+      satisfaction: clamp(Math.floor(safeNumber(source.satisfaction, 50)), 0, 100),
+      reviewSeconds: clamp(Math.floor(safeNumber(source.reviewSeconds, 0)), 0, 29),
+      lastMrr: Math.max(0, safeNumber(source.lastMrr, 0)),
+      dividendsPaid: Math.max(0, safeNumber(source.dividendsPaid, 0)),
+      qualityInvestments: Math.max(0, Math.floor(safeNumber(source.qualityInvestments, 0)))
+    };
+  }
+
   function normalizeState(saved) {
     saved = saved && typeof saved === "object" ? saved : {};
     const base = createInitialState();
@@ -308,6 +320,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       playtestStageEnteredAt: Math.max(0, Math.floor(safeNumber(saved.playtestStageEnteredAt, 0))),
       secondFounding: normalizeSecondFounding(saved.secondFounding),
       businessUnits: { enabled: !(saved.businessUnits && saved.businessUnits.enabled === false) },
+      shareholderBoard: normalizeShareholderBoard(saved.shareholderBoard),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     const legacyBugLevel = clamp(safeNumber(saved.legacyGlobalBugs, 0), 0, 100);
@@ -337,6 +350,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     normalizeDecisionThreads: normalizeDecisionThreads,
     normalizeBooleanMap: normalizeBooleanMap,
     normalizeAiUsageSeconds: normalizeAiUsageSeconds,
+    normalizeShareholderBoard: normalizeShareholderBoard,
     normalizeSecondFounding: normalizeSecondFounding,
     normalizeText: normalizeText,
     normalizeLogs: normalizeLogs,
