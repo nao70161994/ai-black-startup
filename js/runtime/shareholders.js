@@ -30,6 +30,7 @@ window.AIBS_CREATE_SHAREHOLDER_RUNTIME = function (options) {
     target.reviewSeconds = Math.max(0, Math.floor(Number(target.reviewSeconds) || 0)) + 1;
     if (target.reviewSeconds < 30) return { reviewed: false, delta: 0, satisfaction: clamp(Number(target.satisfaction == null ? 50 : target.satisfaction) || 0, 0, 100) };
     target.reviewSeconds -= 30;
+    target.meetingsHeld = Math.max(0, Math.floor(Number(target.meetingsHeld) || 0)) + 1;
     const mrr = Math.max(0, Number(values.mrr) || 0);
     const fire = clamp(Number(values.fire) || 0, 0, 100);
     const quality = clamp(Number(values.averageQuality) || 0, 0, 100);
