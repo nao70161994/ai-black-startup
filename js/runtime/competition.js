@@ -4,6 +4,26 @@ window.AIBS_CREATE_COMPETITION_RUNTIME = function (options) {
   const settings = options && typeof options === "object" ? options : {};
   const clamp = typeof settings.clamp === "function" ? settings.clamp : function (v, min, max) { return Math.max(min, Math.min(max, v)); };
   const WHITE_AI_BASE_MRR = 250000;
+  const ACQUISITION_TARGETS = Object.freeze([
+    { id: "paperclip", name: "ペーパークリップAI", price: 900000, mrr: 100000 },
+    { id: "clouddesk", name: "クラウドデスク社", price: 3500000, mrr: 350000 },
+    { id: "whiteboard", name: "ホワイトボードAI", price: 9000000, mrr: 800000 },
+    { id: "megacorp", name: "メガクラウド研究所", price: 25000000, mrr: 1800000 }
+  ]);
+  function getOwnedMrr(acquisitions) {
+    const owned = Array.isArray(acquisitions) ? acquisitions : [];
+    return ACQUISITION_TARGETS.reduce(function (sum, target) { return sum + (owned.indexOf(target.id) >= 0 ? target.mrr : 0); }, 0);
+  }
+  function acquisitionCost(target, legalLevel) {
+    return Math.ceil(target.price * Math.max(0.8, 1 - Math.max(0, Number(legalLevel) || 0) * 0.02));
+  }
+  function getValuation(totalMrr, cash) {
+    // 16x annual recurring revenue + liquid cash; valuation is not cash.
+    return Math.floor(Math.max(0, Number(totalMrr) || 0) * 12 * 16 + Math.max(0, Number(cash) || 0));
+  }
+  function checkEnding(share, totalMrr, valuation) {
+    return share >= 60 && totalMrr >= 5000000 && valuation >= 1000000000;
+  }
   function normalize(saved) {
     const source = saved && typeof saved === "object" ? saved : {};
     const state = {
@@ -52,5 +72,5 @@ window.AIBS_CREATE_COMPETITION_RUNTIME = function (options) {
     const value = Number(share) || 0;
     return value >= 60 ? "業界リード" : value >= 40 ? "競争中" : value >= 20 ? "追い上げ中" : "挑戦者";
   }
-  return { normalize: normalize, getShare: getShare, tick: tick, applyCompetitorEvent: applyCompetitorEvent, getRating: getRating, calculateDecisionCost: calculateDecisionCost };
+  return { targets: ACQUISITION_TARGETS, getOwnedMrr: getOwnedMrr, acquisitionCost: acquisitionCost, getValuation: getValuation, checkEnding: checkEnding, normalize: normalize, getShare: getShare, tick: tick, applyCompetitorEvent: applyCompetitorEvent, getRating: getRating, calculateDecisionCost: calculateDecisionCost };
 };
