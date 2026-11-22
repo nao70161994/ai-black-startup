@@ -50,6 +50,7 @@ const APP_SHELL = [
   "./js/runtime/effects.js?v=20261122-2",
   "./js/runtime/assignments.js?v=20261122-2",
   "./js/runtime/operations.js?v=20261122-2",
+  "./js/runtime/shareholders.js?v=20261122-2",
   "./js/runtime/storage.js?v=20261122-2",
   "./js/runtime/state.js?v=20261122-2",
   "./js/runtime/save.js?v=20261122-2",
