@@ -6,6 +6,7 @@ window.AIBS_EMPLOYEES = [
     { id: "care04", code: "Care-04", nickname: "ケアフォー", role: "サポートAI", unlockLevel: 3, baseCost: 1200, description: "サポート負荷を下げ、満足度を上げ、解約リスクを抑えます。", personality: "真面目で丁寧。長文返信をしがち。", catchphrase: "まず前提から整理します。" },
     { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "炎上対応専門。炎上度を大きく下げます。対応中は売上機会を少し失います。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。" },
     { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。" },
+    { id: "legal08", code: "Legal-08", nickname: "リーガルエイト", role: "法務・コンプライアンスAI", unlockLevel: 10, baseCost: 25000, description: "買収の法務デューデリジェンスを担当し、買収費用をLvごとに2%軽減。取引時の炎上リスクも抑えます。", personality: "契約書の脚注を愛し、社長の無茶な条項に赤線を引く。", catchphrase: "その買収、契約書を読んでから判を押してください。" },
     { id: "finance07", code: "Finance-07", nickname: "ファイナナ", role: "財務AI", unlockLevel: 10, baseCost: 18000, description: "経営判断に伴う費用を抑え、資金繰りを確認します。雇用すると社長判断の支出をレベルごとに3%軽減します。", personality: "数字に厳格。福利厚生も投資対効果で判断する。", catchphrase: "その支出は、将来のキャッシュフローで説明できますか？" }
   ];
 
@@ -17,7 +18,8 @@ window.AIBS_WORKERS = {
     buzz03: { id: "buzz03", label: "Buzz-03" },
     care04: { id: "care04", label: "Care-04" },
     fire05: { id: "fire05", label: "Fire-05" },
-    finance07: { id: "finance07", label: "Finance-07" }
+    finance07: { id: "finance07", label: "Finance-07" },
+    legal08: { id: "legal08", label: "Legal-08" }
   };
 
 window.AIBS_WORKER_TASK_PROFILES = {
@@ -28,5 +30,6 @@ window.AIBS_WORKER_TASK_PROFILES = {
     care04: { specialty: "サポート", description: "サポート負荷を下げ、満足度を上げ、解約リスクを抑えます。", levelHint: "Lvアップでサポート効果UP" },
     fire05: { specialty: "炎上対応", description: "炎上対応専門。炎上度を大きく下げます。対応中は売上機会を少し失います。", levelHint: "Lvアップで炎上対応効果UP" },
     security06: { specialty: "品質管理", description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", levelHint: "Lvアップで品質改善量UP" },
+    legal08: { specialty: "法務・コンプライアンス", description: "製品タスクには配置せず、買収の法務審査と支出軽減を自動で行う専任アドバイザーです。", levelHint: "Lvアップで買収費用を2%ずつ軽減し、取引時の炎上を抑制" },
     finance07: { specialty: "財務・資金管理", description: "雇用すると社長判断に伴う支出をレベルごとに3%軽減します。担当タスクを持たない経営アドバイザーです。", levelHint: "Lvアップで判断コストを3%ずつ軽減" }
   };
