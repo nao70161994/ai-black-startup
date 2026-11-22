@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.11.22.4";
-  const APP_ASSET_TOKEN = "20261122-4";
+  const APP_VERSION = "2026.11.23.1";
+  const APP_ASSET_TOKEN = "20261123-1";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -723,6 +723,43 @@
     applyRecurringRevenue();
     advanceOperationsState();
     updateCompetitionMarket();
+    checkFinalCompletion();
+  }
+
+  function acquireCompany(targetId) {
+    if (saveReadOnly || !state.secondFounding || !state.secondFounding.unlocked) return false;
+    const target = COMPETITION_RUNTIME.targets.find(function (item) { return item.id === targetId; });
+    if (!target || state.acquisitions.indexOf(targetId) !== -1) return false;
+    const legalLevel = Math.max(0, safeNumber(state.employees.legal08, 0));
+    const cost = COMPETITION_RUNTIME.acquisitionCost(target, legalLevel);
+    if (state.money < cost) { showAppToast("買収資金が不足しています", "warning"); return false; }
+    state.money -= cost;
+    state.acquisitions.push(targetId);
+    if (!legalLevel) state.fire = clamp(state.fire + 3, 0, 100);
+    addLog("success", target.name + "を買収。投資額 " + formatCurrency(cost) + "、継承MRR +" + formatCurrency(target.mrr) + "/月。Legal-08の法務審査" + (legalLevel ? "完了。" : "は未実施。"), legalLevel ? "legal08" : "boss");
+    checkFinalCompletion();
+    saveGame();
+    render();
+    showAppToast(target.name + "の買収が成立しました", "success");
+    return true;
+  }
+
+  function checkFinalCompletion() {
+    if (state.endingCompleted || !state.secondFounding || !state.secondFounding.unlocked) return;
+    const mrr = getTotalProductMrr();
+    const share = COMPETITION_RUNTIME.getShare(state.competition, mrr);
+    if (!COMPETITION_RUNTIME.checkEnding(share, mrr, COMPETITION_RUNTIME.getValuation(mrr, state.money))) return;
+    state.endingCompleted = true;
+    addLog("success", "【第二創業編 完結】業界シェア60%・総MRR500万円・時価総額10億円を達成。ブラッククラウド株式会社はAI企業帝国となりました。", "boss");
+    showCompletionOverlay();
+  }
+
+  function showCompletionOverlay() {
+    const overlay = document.getElementById("completionOverlay");
+    if (!overlay) return;
+    overlay.hidden = false;
+    const close = document.getElementById("completionClose");
+    if (close && typeof close.focus === "function") close.focus();
   }
 
   function updateCompetitionMarket() {
@@ -792,6 +829,9 @@
     state.money = Math.max(0, state.money + currentRates.baseMoney);
     state.totalMoney = Math.max(0, state.totalMoney + currentRates.baseMoney);
     applyProductTaskEffects();
+    const acquiredRevenue = COMPETITION_RUNTIME.getOwnedMrr(state.acquisitions) / MRR_TO_REVENUE_DIVISOR;
+    state.money += acquiredRevenue;
+    state.totalMoney += acquiredRevenue;
     const productRevenue = applyProductRevenue();
     state.money = Math.max(0, state.money + productRevenue);
     state.totalMoney = Math.max(0, state.totalMoney + productRevenue);
@@ -1225,8 +1265,17 @@
     const shareholderHtml = founding.unlocked ? INSIGHTS_RENDERER.getShareholderBoardHtml(board, SHAREHOLDER_RUNTIME.getRating(board.satisfaction)) : "";
     const market = COMPETITION_RUNTIME.normalize(state.competition);
     const marketShare = COMPETITION_RUNTIME.getShare(market, getTotalProductMrr());
+    const valuation = COMPETITION_RUNTIME.getValuation(getTotalProductMrr(), state.money);
+    const bought = Array.isArray(state.acquisitions) ? state.acquisitions : [];
+    const legalLevel = Math.max(0, safeNumber(state.employees.legal08, 0));
+    const acquisitionsHtml = founding.unlocked ? '<section class="competition-market-panel"><div class="section-heading"><h2>M&A / 企業買収</h2><span>法務：' + (legalLevel ? 'Legal-08 Lv' + legalLevel : '未雇用') + '</span></div><p>会社資金で企業を買収すると、そのMRRが毎月の収入と業界シェアに加算されます。購入済みの企業は重複買収できません。</p><div class="acquisition-list">' + COMPETITION_RUNTIME.targets.map(function (target) { const owned = bought.indexOf(target.id) !== -1; const cost = COMPETITION_RUNTIME.acquisitionCost(target, legalLevel); return '<article class="acquisition-target"><strong>' + escapeHtml(target.name) + '</strong><p>MRR +' + formatCurrency(target.mrr) + '/月 / 買収資金 ' + formatCurrency(cost) + '</p><button type="button" data-acquire-target="' + escapeHtml(target.id) + '"' + (owned || state.money < cost ? ' disabled' : '') + '>' + (owned ? '買収済み' : state.money < cost ? '資金不足' : '買収する') + '</button></article>'; }).join('') + '</div></section>' : "";
+    const complete = state.endingCompleted === true;
+    const endingHtml = founding.unlocked ? '<section class="competition-market-panel final-goals' + (complete ? ' completed' : '') + '"><div class="section-heading"><h2>FINAL / 企業帝国コンプリート</h2><span>' + (complete ? 'COMPLETE' : '挑戦中') + '</span></div><ul><li>' + (marketShare >= 60 ? '✓' : '○') + ' 業界シェア 60%：' + marketShare.toFixed(1) + '%</li><li>' + (getTotalProductMrr() >= 5000000 ? '✓' : '○') + ' 総MRR ¥5,000,000：' + formatCurrency(getTotalProductMrr()) + '</li><li>' + (valuation >= 1000000000 ? '✓' : '○') + ' 時価総額 ¥1,000,000,000：' + formatCurrency(valuation) + '</li></ul><p>推定時価総額 = 総MRR × 12か月 × 16倍 + 手元資金</p>' + (complete ? '<button type="button" id="replayCompletionButton">エンディングをもう一度見る</button>' : '') + '</section>' : "";
     const marketHtml = founding.unlocked ? '<section class="competition-market-panel"><div class="section-heading"><h2>業界シェア</h2><span>目標 60%</span></div><strong class="market-share-value">' + marketShare.toFixed(1) + '%</strong><div class="market-share-track" role="progressbar" aria-label="自社の業界シェア" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + marketShare.toFixed(1) + '"><span style="width:' + marketShare + '%"></span></div><p>株式会社ホワイトAI：推定MRR ¥' + Math.round(market.competitorMrr).toLocaleString("ja-JP") + '/月</p><p>市場評価：' + escapeHtml(COMPETITION_RUNTIME.getRating(marketShare)) + ' / 目標まで ' + Math.max(0, 60 - marketShare).toFixed(1) + 'pt</p></section>' : "";
-    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml + shareholderHtml + marketHtml;
+    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml + shareholderHtml + marketHtml + acquisitionsHtml + endingHtml;
+    panel.querySelectorAll("button[data-acquire-target]").forEach(function (button) { button.addEventListener("click", function () { acquireCompany(button.getAttribute("data-acquire-target")); }); });
+    const replay = document.getElementById("replayCompletionButton");
+    if (replay) replay.addEventListener("click", showCompletionOverlay);
 
   }
 
@@ -3886,7 +3935,7 @@
 
   function canWorkerAssignToTask(workerId, taskId, employees) {
     const task = TASKS.find(function (item) { return item.id === taskId; });
-    if (workerId === "finance07" || !task || task.workers.indexOf(workerId) === -1) return false;
+    if (workerId === "finance07" || workerId === "legal08" || !task || task.workers.indexOf(workerId) === -1) return false;
     return isWorkerAvailable(workerId, employees);
   }
 
@@ -3922,7 +3971,7 @@
   function getProductVersion(product) { return Math.max(1, Math.floor(Number(product.version) || 1)); }
   function getProductUnitsSold(product) { return Math.max(0, Math.floor(Number(product.unitsSold) || 0)); }
   function getProductRevenuePerSecondTotal() { return PRODUCTS.reduce(function (sum, definition) { return definition.type === "subscription" ? sum + getProductRevenuePerSecond(getProduct(definition.id), definition) : sum; }, 0); }
-  function getTotalProductMrr() { return PRODUCTS.reduce(function (sum, definition) { return definition.type === "subscription" ? sum + getProductMrr(getProduct(definition.id), definition) : sum; }, 0); }
+  function getTotalProductMrr() { return COMPETITION_RUNTIME.getOwnedMrr(state.acquisitions) + PRODUCTS.reduce(function (sum, definition) { return definition.type === "subscription" ? sum + getProductMrr(getProduct(definition.id), definition) : sum; }, 0); }
   function hasRevenueProduct() { return PRODUCTS.some(function (definition) { const product = getProduct(definition.id); return definition.type === "subscription" && (getProductCustomers(product) > 0 || getProductMrr(product, definition) > 0); }); }
   function getProductPrimaryScore(product, definition) {
     if (definition.type === "oneShot") return safeNumber(product.lifetimeRevenue, 0);
@@ -3988,6 +4037,8 @@
     state.playtestStageId = MISSION_STAGES.some(function (stage) { return stage.id === state.playtestStageId; }) ? state.playtestStageId : "";
     state.playtestStageEnteredAt = clamp(Math.floor(safeNumber(state.playtestStageEnteredAt, 0)), 0, state.playSeconds);
     state.companyLevel = clamp(Math.floor(safeNumber(state.companyLevel, 1)), 1, MAX_LEVEL);
+    state.acquisitions = COMPETITION_RUNTIME.targets.filter(function (target) { return Array.isArray(state.acquisitions) && state.acquisitions.indexOf(target.id) !== -1; }).map(function (target) { return target.id; });
+    state.endingCompleted = state.endingCompleted === true;
   }
 
   function clampRuntimeProduct(product, definition) {
@@ -4139,6 +4190,8 @@
     if (replayTutorialButton) replayTutorialButton.addEventListener("click", replayTutorial);
     const detailsToggle = document.getElementById("toggleCompanyDetails");
     if (detailsToggle) detailsToggle.addEventListener("click", toggleCompanyDetails);
+    const completionClose = document.getElementById("completionClose");
+    if (completionClose) completionClose.addEventListener("click", function () { document.getElementById("completionOverlay").hidden = true; });
     const storyClose = document.getElementById("storyClose");
     if (storyClose) storyClose.addEventListener("click", closeStoryModal);
     window.addEventListener("beforeunload", saveGame);
@@ -4158,7 +4211,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20261122-4").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20261123-1").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
