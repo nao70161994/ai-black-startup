@@ -5,7 +5,7 @@ window.AIBS_PRODUCTS = [
     { id: "slideKitAi", name: "AIスライド生成キット", type: "oneShot", price: 9800, category: "oneShotTool", developmentRequired: 160, demand: 1.2, risk: 1.0, initialQuality: 55 },
     { id: "supportReplyAi", name: "AI問い合わせ返信", type: "subscription", monthlyPrice: 900, category: "support", developmentRequired: 140, demand: 1.0, risk: 0.8, initialQuality: 58 },
     { id: "apologyWriterAi", name: "AI謝罪文ジェネレーター", type: "oneShot", price: 7800, category: "crisis", developmentRequired: 120, demand: 0.9, risk: 1.3, initialQuality: 52 },
-    { id: "attendanceMonitorAI", name: "AI勤怠監視クラウド", type: "subscription", monthlyPrice: 3000, category: "security", developmentRequired: 260, demand: 0.72, risk: 1.35, initialQuality: 48 }
+    { id: "attendanceMonitorAi", name: "AI勤怠監視クラウド", type: "subscription", monthlyPrice: 3000, category: "security", developmentRequired: 260, demand: 0.72, risk: 1.35, initialQuality: 48 }
   ];
 
 window.AIBS_PRODUCT_LOG_TEXTS = {
@@ -88,7 +88,7 @@ window.AIBS_PRODUCT_LOG_TEXTS = {
       awareness50: "AI謝罪文ジェネレーターの認知度が50を超えました。Fire-05が売れ行きを監視しています。",
       awareness100: "AI謝罪文ジェネレーターの認知度が100に到達しました。使わないことが一番の宣伝です。"
     },
-    attendanceMonitorAI: {
+    attendanceMonitorAi: {
       started: "AI勤怠監視クラウドの開発を開始しました。休憩時間も分析対象です。",
       developmentTargetChanged: "開発対象をAI勤怠監視クラウドに設定しました。",
       noDevelopmentWorker: "勤怠データの分析基盤が待機しています。Dev-01の割り当てをお願いします。",
