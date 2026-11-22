@@ -65,6 +65,36 @@ assert.strictEqual(JSON.stringify({ mrr: state.products.p1.mrr, customers: 17 })
 state.secondFounding.unlocked = false;
 assert.strictEqual(runtime.getBusinessUnitEvaluations(state)[0].bonus, 0);
 assert.strictEqual(runtime.getModifiers(state, { id: "p1", type: "subscription" }).development, 1);
+state.secondFounding.unlocked = true;
+state.products.p1.mrr = 25000;
+state.products.p2.mrr = 0;
+state.products.p1.quality = 80;
+state.products.p2.quality = 80;
+state.products.p1.satisfaction = 80;
+state.products.p2.satisfaction = 80;
+state.products.p1.productFire = 20;
+state.products.p2.productFire = 20;
+const gradeB = runtime.getBusinessUnitEvaluations(state)[0];
+assert.strictEqual(gradeB.grade, "B");
+assert.strictEqual(gradeB.bonus, 0.03);
+state.products.p1.mrr = 0;
+state.products.p1.quality = 70;
+state.products.p2.quality = 70;
+state.products.p1.satisfaction = 70;
+state.products.p2.satisfaction = 70;
+state.products.p1.productFire = 30;
+state.products.p2.productFire = 30;
+assert.strictEqual(runtime.getBusinessUnitEvaluations(state)[0].grade, "D");
+state.products.p1.mrr = 25000;
+state.products.p1.quality = 100;
+state.products.p2.quality = 100;
+state.products.p1.satisfaction = 100;
+state.products.p2.satisfaction = 100;
+state.products.p1.productFire = 0;
+state.products.p2.productFire = 0;
+const gradeS = runtime.getBusinessUnitEvaluations(state)[0];
+assert.strictEqual(gradeS.grade, "S");
+assert.strictEqual(gradeS.bonus, 0.10);
 """)
 
 def test_business_unit_renderer_shows_grade_and_product_names():
