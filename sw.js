@@ -35,6 +35,7 @@ const APP_SHELL = [
   "./js/data/employees.js?v=20261122-1",
   "./js/data/characters.js?v=20261122-1",
   "./js/data/products.js?v=20261122-1",
+  "./js/data/business-units.js?v=20261122-1",
   "./js/data/tasks.js?v=20261122-1",
   "./js/data/strategies.js?v=20261122-1",
   "./js/data/decision-events.js?v=20261122-1",
