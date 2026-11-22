@@ -65,6 +65,7 @@
   const TASK_PRESETS = readExternalData("AIBS_TASK_PRESETS", []);
   const STRATEGIES = readExternalData("AIBS_STRATEGIES", []);
   const PRODUCT_SYNERGIES = readExternalData("AIBS_PRODUCT_SYNERGIES", []);
+  const BUSINESS_UNITS = readExternalData("AIBS_BUSINESS_UNITS", []);
   const AI_RELATIONSHIPS = readExternalData("AIBS_AI_RELATIONSHIPS", []);
 
 
@@ -73,7 +74,7 @@
 
 
   const WORKER_TASK_PROFILES = readExternalData("AIBS_WORKER_TASK_PROFILES", {});
-  const OPERATIONS_RUNTIME = readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")({ strategies: STRATEGIES, synergies: PRODUCT_SYNERGIES, relationships: AI_RELATIONSHIPS, products: PRODUCTS, tasks: TASKS });
+  const OPERATIONS_RUNTIME = readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")({ strategies: STRATEGIES, synergies: PRODUCT_SYNERGIES, relationships: AI_RELATIONSHIPS, products: PRODUCTS, tasks: TASKS, businessUnits: BUSINESS_UNITS });
   const ASSIGNMENT_RUNTIME = readExternalFactory("AIBS_CREATE_ASSIGNMENT_RUNTIME")({
     tasks: TASKS,
     products: PRODUCTS,
@@ -1193,7 +1194,8 @@
     ].map(function (item) { return '<li class="' + (item[1] ? 'done' : '') + '">' + (item[1] ? '✓ ' : '○ ') + item[0] + '</li>'; }).join("");
     const stageLabels = ["未解放", "第二創業宣言", "次の成長曲線", "全サブスクv6", "総MRR ¥1.5M", "総MRR ¥2M・計画完了"];
     const foundingHtml = '<section class="second-founding-panel"><div class="section-heading"><h2>第二創業計画</h2><span>' + (founding.unlocked ? 'Stage ' + founding.stage + ' / 5' : 'LOCKED') + '</span></div><p>' + (founding.unlocked ? '終わらない経営会議：第二創業計画を進行中です。' : '会社Lv10以降の新しい経営目標。4条件を満たすと社長判断イベントが発生します。') + '</p>' + (founding.unlocked ? '<strong>' + escapeHtml(stageLabels[founding.stage] || stageLabels[5]) + '</strong><ol><li>総MRR ¥1.25M/月</li><li>全サブスクv6以上</li><li>総MRR ¥1.5M/月</li><li>総MRR ¥2M/月</li></ol>' : '<ul class="second-founding-requirements">' + requirementsHtml + '</ul>') + '</section>';
-    panel.innerHTML = insightsHtml + foundingHtml;
+    const businessUnitHtml = INSIGHTS_RENDERER.getBusinessUnitsHtml(OPERATIONS_RUNTIME.getBusinessUnitEvaluations(state), PRODUCTS, Boolean(founding.unlocked && state.businessUnits && state.businessUnits.enabled));
+    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml;
 
   }
 
