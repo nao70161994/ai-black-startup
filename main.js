@@ -75,6 +75,7 @@
 
   const WORKER_TASK_PROFILES = readExternalData("AIBS_WORKER_TASK_PROFILES", {});
   const OPERATIONS_RUNTIME = readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")({ strategies: STRATEGIES, synergies: PRODUCT_SYNERGIES, relationships: AI_RELATIONSHIPS, products: PRODUCTS, tasks: TASKS, businessUnits: BUSINESS_UNITS });
+  const SHAREHOLDER_RUNTIME = readExternalFactory("AIBS_CREATE_SHAREHOLDER_RUNTIME")({ clamp: clamp });
   const ASSIGNMENT_RUNTIME = readExternalFactory("AIBS_CREATE_ASSIGNMENT_RUNTIME")({
     tasks: TASKS,
     products: PRODUCTS,
@@ -109,7 +110,7 @@
     markFirstTickDone: function () { state.firstFastTickDone = true; },
     applyRecurringRuntime: applyBaseContractWork,
     applyDecisionEventTick: applyDecisionEventGeneration,
-    applyAchievementTick: function () { updateSecondFoundingProgress(); applyAchievements(false); },
+    applyAchievementTick: function () { updateSecondFoundingProgress(); updateShareholderBoard(); applyAchievements(false); },
     applyPenalties: applyPenalties,
     finalizeTickState: clampRuntimeState,
     applyAutosaveTick: saveGame
@@ -201,7 +202,13 @@
       outsourcing_offer: { approve: approveOutsourcingOffer, reject: rejectOutsourcingOffer },
       sales_contract_followup: { approve: approveSalesContractFollowup, reject: rejectSalesContractFollowup },
       campaign_aftershock: { approve: approveCampaignAftershock, reject: rejectCampaignAftershock },
-      second_founding_board: { approve: approveSecondFounding, reject: rejectSecondFounding }
+      second_founding_board: { approve: approveSecondFounding, reject: rejectSecondFounding },
+      board_sales_growth: { approve: approveBoardSalesGrowth, reject: rejectBoardSalesGrowth },
+      board_quality_investment: { approve: approveBoardQualityInvestment, reject: rejectBoardQualityInvestment },
+      board_customer_protection: { approve: approveBoardCustomerProtection, reject: rejectBoardCustomerProtection },
+      board_brand_campaign: { approve: approveBoardBrandCampaign, reject: rejectBoardBrandCampaign },
+      board_crisis_response: { approve: approveBoardCrisisResponse, reject: rejectBoardCrisisResponse },
+      board_dividend: { approve: approveBoardDividend, reject: rejectBoardDividend }
     }
   });
   const selectDecisionEventCandidate = DECISION_RUNTIME.selectDecisionEventCandidate;
@@ -1607,6 +1614,100 @@
     addLog("normal", "第二創業案は今回は見送られました。現体制での経営を継続し、次回会議で再提案します。", "boss");
   }
 
+  function getShareholderBoard() {
+    if (!state.shareholderBoard || typeof state.shareholderBoard !== "object") state.shareholderBoard = SHAREHOLDER_RUNTIME.normalize(null);
+    else state.shareholderBoard = SHAREHOLDER_RUNTIME.normalize(state.shareholderBoard);
+    return state.shareholderBoard;
+  }
+
+  function adjustShareholderSatisfaction(amount, reason, employeeId) {
+    const board = getShareholderBoard();
+    const result = SHAREHOLDER_RUNTIME.adjust(board, amount);
+    if (result.delta !== 0) addLog(result.delta > 0 ? "success" : "normal",
+      "株主満足度 " + (result.delta > 0 ? "+" : "") + result.delta + "：" + reason + "（" + result.after + "/100）。",
+      employeeId || "company");
+    return result;
+  }
+
+  function updateShareholderBoard() {
+    if (!state.secondFounding || !state.secondFounding.unlocked) return;
+    const board = getShareholderBoard();
+    const averageQuality = PRODUCTS.reduce(function (sum, definition) {
+      return sum + clamp(safeNumber(getProduct(definition.id).quality, 0), 0, 100);
+    }, 0) / Math.max(1, PRODUCTS.length);
+    const result = SHAREHOLDER_RUNTIME.review(board, {
+      mrr: getTotalProductMrr(),
+      fire: state.fire,
+      averageQuality: averageQuality
+    });
+    if (result.reviewed && result.delta !== 0) {
+      addLog(result.delta > 0 ? "success" : "normal",
+        "取締役会の定期レビュー：株主満足度 " + (result.delta > 0 ? "+" : "") + result.delta + "（" + result.satisfaction + "/100）。",
+        "company");
+    }
+  }
+
+  function approveBoardSalesGrowth(context) {
+    decisionAddAwareness(context.product, 8);
+    adjustShareholderSatisfaction(4, "Sales-02の成長投資案を承認", "sales02");
+  }
+  function rejectBoardSalesGrowth() {
+    adjustShareholderSatisfaction(-2, "成長投資を見送り", "sales02");
+  }
+  function approveBoardQualityInvestment(context) {
+    decisionAddProductBugs(context.product, -8);
+    decisionAddProductQuality(context.product, 6);
+    decisionAddCost(1200);
+    SHAREHOLDER_RUNTIME.recordQualityInvestment(getShareholderBoard());
+    adjustShareholderSatisfaction(4, "Security-06の品質投資を承認", "security06");
+    addLog("support", "Security-06「監査は通りました。念のため、もう一度深呼吸してから本番へ進めます。」", "security06");
+  }
+  function rejectBoardQualityInvestment(context) {
+    decisionAddProductFire(context.product, 2);
+    adjustShareholderSatisfaction(-3, "品質投資を先送り", "security06");
+  }
+  function approveBoardCustomerProtection() {
+    PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }).forEach(function (definition) {
+      const product = getProduct(definition.id);
+      decisionAddSatisfaction(product, 4);
+      decisionAddChurnRisk(product, -3);
+    });
+    decisionAddCost(900);
+    adjustShareholderSatisfaction(3, "Care-04の顧客保護策を承認", "care04");
+  }
+  function rejectBoardCustomerProtection() {
+    adjustShareholderSatisfaction(-3, "顧客保護策を見送り", "care04");
+  }
+  function approveBoardBrandCampaign(context) {
+    decisionAddAwareness(context.product, 12);
+    decisionAddGlobalFire(4);
+    decisionAddProductFire(context.product, 5);
+    adjustShareholderSatisfaction(1, "Buzz-03の認知拡大策を承認", "buzz03");
+  }
+  function rejectBoardBrandCampaign() {
+    adjustShareholderSatisfaction(-1, "広報投資を見送り", "buzz03");
+  }
+  function approveBoardCrisisResponse(context) {
+    decisionAddGlobalFire(-10);
+    decisionAddProductFire(context.product, -12);
+    decisionAddCost(600);
+    adjustShareholderSatisfaction(3, "Fire-05の危機対応を承認", "fire05");
+  }
+  function rejectBoardCrisisResponse() {
+    decisionAddGlobalFire(3);
+    adjustShareholderSatisfaction(-4, "危機対応を見送り", "fire05");
+  }
+  function approveBoardDividend() {
+    const amount = Math.min(state.money, Math.max(100, Math.round(state.money * 0.02)));
+    const paid = decisionAddCost(amount);
+    SHAREHOLDER_RUNTIME.recordDividend(getShareholderBoard(), paid);
+    adjustShareholderSatisfaction(paid > 0 ? 6 : 1, paid > 0 ? "株主配当を実施" : "配当方針を表明", "boss");
+    addLog("success", "配当 " + formatCurrency(paid) + " を実施しました。資金は減少しましたが、株主は拍手しています。", "boss");
+  }
+  function rejectBoardDividend() {
+    adjustShareholderSatisfaction(-3, "配当を見送り成長投資を優先", "boss");
+  }
+
   function updateSecondFoundingProgress() {
     if (!state.secondFounding || !state.secondFounding.unlocked) return;
     const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; });
@@ -1644,6 +1745,16 @@
   function getDecisionEventCandidates() {
     const candidates = [];
     if (canStartSecondFounding()) candidates.push({ id: "second_founding_board", productId: PRODUCTS[0].id, priority: 180 });
+    if (state.secondFounding && state.secondFounding.unlocked) {
+      const board = getShareholderBoard();
+      const boardProduct = getPrimaryProductDefinition().id;
+      if (isWorkerAvailable("sales02", state.employees)) candidates.push({ id: "board_sales_growth", productId: boardProduct, priority: 46 });
+      if (isWorkerAvailable("security06", state.employees)) candidates.push({ id: "board_quality_investment", productId: boardProduct, priority: 48 });
+      if (isWorkerAvailable("care04", state.employees)) candidates.push({ id: "board_customer_protection", productId: boardProduct, priority: 46 });
+      if (isWorkerAvailable("buzz03", state.employees)) candidates.push({ id: "board_brand_campaign", productId: boardProduct, priority: 42 });
+      if (isWorkerAvailable("fire05", state.employees) && state.fire >= 15) candidates.push({ id: "board_crisis_response", productId: boardProduct, priority: 54 });
+      if (board.satisfaction < 85 && state.money >= 100) candidates.push({ id: "board_dividend", productId: boardProduct, priority: 38 });
+    }
     const salesThread = state.decisionThreads.sales_contract;
     const campaignThread = state.decisionThreads.campaign_aftershock;
     if (salesThread && !salesThread.resolved && salesThread.dueIn <= 0) candidates.push({ id: "sales_contract_followup", productId: salesThread.productId, priority: 200 });
