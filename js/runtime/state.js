@@ -114,7 +114,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       playtestStageEnteredAt: 0,
       secondFounding: { unlocked: false, stage: 0 },
       businessUnits: { enabled: true },
-      shareholderBoard: { satisfaction: 50, reviewSeconds: 0, lastMrr: 0, dividendsPaid: 0, qualityInvestments: 0 },
+      shareholderBoard: { satisfaction: 50, reviewSeconds: 0, lastMrr: 0, dividendsPaid: 0, qualityInvestments: 0, meetingsHeld: 0 },
       lastSavedAt: Date.now()
     };
     initialLogs.slice().reverse().forEach(function (text, index) {
