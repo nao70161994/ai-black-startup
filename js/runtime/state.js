@@ -112,6 +112,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       aiUsageSeconds: {},
       playtestStageId: missionStages[0] ? missionStages[0].id : "",
       playtestStageEnteredAt: 0,
+      secondFounding: { unlocked: false, stage: 0 },
       lastSavedAt: Date.now()
     };
     initialLogs.slice().reverse().forEach(function (text, index) {
@@ -261,6 +262,12 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     return flags;
   }
 
+  function normalizeSecondFounding(savedFounding) {
+    const source = savedFounding && typeof savedFounding === "object" ? savedFounding : {};
+    const unlocked = Boolean(source.unlocked);
+    return { unlocked: unlocked, stage: unlocked ? clamp(Math.floor(safeNumber(source.stage, 1)), 1, 5) : 0 };
+  }
+
   function normalizeState(saved) {
     saved = saved && typeof saved === "object" ? saved : {};
     const base = createInitialState();
@@ -298,6 +305,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       aiUsageSeconds: normalizeAiUsageSeconds(saved.aiUsageSeconds),
       playtestStageId: missionStages.some(function (stage) { return stage.id === saved.playtestStageId; }) ? saved.playtestStageId : "",
       playtestStageEnteredAt: Math.max(0, Math.floor(safeNumber(saved.playtestStageEnteredAt, 0))),
+      secondFounding: normalizeSecondFounding(saved.secondFounding),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     const legacyBugLevel = clamp(safeNumber(saved.legacyGlobalBugs, 0), 0, 100);
@@ -327,6 +335,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     normalizeDecisionThreads: normalizeDecisionThreads,
     normalizeBooleanMap: normalizeBooleanMap,
     normalizeAiUsageSeconds: normalizeAiUsageSeconds,
+    normalizeSecondFounding: normalizeSecondFounding,
     normalizeText: normalizeText,
     normalizeLogs: normalizeLogs,
     normalizeClaimedMissions: normalizeClaimedMissions,

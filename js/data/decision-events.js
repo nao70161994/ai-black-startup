@@ -224,4 +224,14 @@ window.AIBS_DECISION_EVENTS = [
       riskLevel: "warning",
       followup: true
     }
+    ,
+    {
+      id: "second_founding_board",
+      label: "第二創業の経営会議",
+      workerId: "boss",
+      message: "AI社長「会社Lv10、総MRR ¥1M、全サブスクv5、専門AI6体の雇用を確認しました。ここから先も成長を続けるため、第二創業を宣言しますか？」",
+      approveImpact: "承認: 第二創業を開始し、新しい長期目標と実績を解放",
+      rejectImpact: "却下: 現体制を維持します。条件を満たしている限り、次の経営会議で再提案します。",
+      riskLevel: "warning"
+    }
   ];

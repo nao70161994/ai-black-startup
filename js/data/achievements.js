@@ -71,7 +71,12 @@ window.AIBS_CREATE_ACHIEVEMENTS = function (api) {
     { id: "support_reply_first_customer_achievement", category: "製品", title: "問い合わせ自動返信開始", description: "AI問い合わせ返信で初顧客を獲得", done: function () { return getProductCustomers(getProduct("supportReplyAi")) >= 1; } },
     { id: "apology_writer_first_sale_achievement", category: "製品", title: "謝罪文初販売", description: "AI謝罪文ジェネレーターを初販売", done: function () { return getProductUnitsSold(getProduct("apologyWriterAi")) >= 1; } },
     { id: "all_categories_started", category: "製品", title: "製品カテゴリ拡張", description: "3種類以上のカテゴリで製品開発を開始", done: function () { const started = {}; PRODUCTS.forEach(function (definition) { if (getProduct(definition.id).status !== "idea") started[getProductCategory(definition)] = true; }); return Object.keys(started).length >= 3; } },
-    { id: "two_ai_assignment", category: "AI", title: "2AI同時担当", description: "1つの仕事にAIを2体割り振る", done: function () { return TASKS.some(function (task) { return PRODUCTS.some(function (definition) { return getAssignedAiIds(task.id, definition.id).length >= 2; }); }); } }
+    { id: "two_ai_assignment", category: "AI", title: "2AI同時担当", description: "1つの仕事にAIを2体割り振る", done: function () { return TASKS.some(function (task) { return PRODUCTS.some(function (definition) { return getAssignedAiIds(task.id, definition.id).length >= 2; }); }); } },
+    { id: "second_founding_charter", category: "第二創業", title: "第二創業宣言", description: "社長判断で第二創業を承認する", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked); } },
+    { id: "second_founding_mrr_1250k", category: "第二創業", title: "次の成長曲線", description: "第二創業後の総MRRを¥1.25M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 1250000; } },
+    { id: "second_founding_all_v6", category: "第二創業", title: "全製品・再成長", description: "すべてのサブスク製品をv6以上にする", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }).every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 6; }); } },
+    { id: "second_founding_mrr_1500k", category: "第二創業", title: "成長企業の顔", description: "第二創業後の総MRRを¥1.5M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 1500000; } },
+    { id: "second_founding_mrr_2000k", category: "第二創業", title: "終わらない成長", description: "第二創業後の総MRRを¥2M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 2000000; } }
   ];
 
 

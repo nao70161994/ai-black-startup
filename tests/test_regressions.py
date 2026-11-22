@@ -4243,7 +4243,7 @@ console.log(JSON.stringify({
 
 def test_game_save_has_explicit_schema_version_after_legacy_migration():
     output = run_browser_smoke({"money": 123, "appVersion": "legacy"})
-    assert output["save"]["schemaVersion"] == 3
+    assert output["save"]["schemaVersion"] == 4
     assert output["save"]["appVersion"] == f'{APP_VERSION}'
     assert output["save"]["money"] >= 123
 
@@ -4256,7 +4256,7 @@ def test_save_recovery_ui_and_runtime_are_precached_before_main():
     assert f'js/runtime/save.js?v={ASSET_TOKEN}' in index
     assert index.index(f'js/runtime/save.js?v={ASSET_TOKEN}') < index.index(f'main.js?v={ASSET_TOKEN}')
     assert f'./js/runtime/save.js?v={ASSET_TOKEN}' in sw
-    assert 'const SAVE_SCHEMA_VERSION = 3;' in main
+    assert 'const SAVE_SCHEMA_VERSION = 4;' in main
     assert 'readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")' in main
     assert 'function restoreBackupSave()' in main
 
@@ -4268,7 +4268,7 @@ def test_schema_v2_migrates_legacy_global_bugs_into_an_active_product():
     })
     assert "bugs" not in output["save"]
     assert output["save"]["products"]["dailyReportAi"]["bugs"] == 76
-    assert output["save"]["schemaVersion"] == 3
+    assert output["save"]["schemaVersion"] == 4
 
 
 def test_product_bug_level_drives_runtime_accident_penalty():
@@ -5081,7 +5081,7 @@ window.__testApi.render();
 window.__testResult={level:window.__testApi.getOfficeLevel()};
 """)
     assert output["testResult"]["level"] == 5
-    assert output["save"]["schemaVersion"] == 3
+    assert output["save"]["schemaVersion"] == 4
     assert "5製品運用" in output["productHtml"]
 
 

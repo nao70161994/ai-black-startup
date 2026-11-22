@@ -39,7 +39,19 @@ window.AIBS_CREATE_SAVE_RUNTIME = function (options) {
     return migrated;
   }
 
-  const migrations = { 0: migrateV0ToV1, 1: migrateV1ToV2, 2: migrateV2ToV3 };
+  function migrateV3ToV4(source) {
+    const migrated = cloneData(source);
+    const founding = migrated.secondFounding && typeof migrated.secondFounding === "object" ? migrated.secondFounding : {};
+    migrated.secondFounding = {
+      unlocked: Boolean(founding.unlocked),
+      stage: Math.max(0, Math.min(5, Math.floor(Number(founding.stage) || 0)))
+    };
+    if (!migrated.secondFounding.unlocked) migrated.secondFounding.stage = 0;
+    migrated.schemaVersion = 4;
+    return migrated;
+  }
+
+  const migrations = { 0: migrateV0ToV1, 1: migrateV1ToV2, 2: migrateV2ToV3, 3: migrateV3ToV4 };
 
   function migrateData(source) {
     if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("Save root must be an object.");

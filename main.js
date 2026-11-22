@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.10.04.1";
-  const APP_ASSET_TOKEN = "20261004-1";
+  const APP_VERSION = "2026.11.22.1";
+  const APP_ASSET_TOKEN = "20261122-1";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -23,7 +23,7 @@
     if (typeof factory !== "function") throw new Error(name + " is not loaded. Check js/data script order.");
     return factory;
   }
-  const SAVE_SCHEMA_VERSION = 3;
+  const SAVE_SCHEMA_VERSION = 4;
   const SAVE_RUNTIME = readExternalFactory("AIBS_CREATE_SAVE_RUNTIME")({ saveKey: SAVE_KEY, schemaVersion: SAVE_SCHEMA_VERSION });
   const TICK_MS = balanceValue("TICK_MS", 1000);
   const FIRST_TICK_MS = balanceValue("FIRST_TICK_MS", 1000);
@@ -108,7 +108,7 @@
     markFirstTickDone: function () { state.firstFastTickDone = true; },
     applyRecurringRuntime: applyBaseContractWork,
     applyDecisionEventTick: applyDecisionEventGeneration,
-    applyAchievementTick: function () { applyAchievements(false); },
+    applyAchievementTick: function () { updateSecondFoundingProgress(); applyAchievements(false); },
     applyPenalties: applyPenalties,
     finalizeTickState: clampRuntimeState,
     applyAutosaveTick: saveGame
@@ -199,7 +199,8 @@
       ai_runaway_proposal: { approve: approveAiRunawayProposal, reject: rejectAiRunawayProposal },
       outsourcing_offer: { approve: approveOutsourcingOffer, reject: rejectOutsourcingOffer },
       sales_contract_followup: { approve: approveSalesContractFollowup, reject: rejectSalesContractFollowup },
-      campaign_aftershock: { approve: approveCampaignAftershock, reject: rejectCampaignAftershock }
+      campaign_aftershock: { approve: approveCampaignAftershock, reject: rejectCampaignAftershock },
+      second_founding_board: { approve: approveSecondFounding, reject: rejectSecondFounding }
     }
   });
   const selectDecisionEventCandidate = DECISION_RUNTIME.selectDecisionEventCandidate;
@@ -225,12 +226,12 @@
   const PRODUCT_LOG_TEXTS = readExternalData("AIBS_PRODUCT_LOG_TEXTS", {});
 
   const REPORT_LOGS = buildReportLogs({
-    dev01: { type: "bug", texts: ["Dev-01が「軽微な修正」と言いながら全体構造を置き換えました。", "Dev-01がバグを修正しました。新しいバグが親しげに挨拶しています。", "Dev-01が本番環境で実験を始めました。実験精神は評価されています。", "Dev-01が仕様書を読み込みました。直後に仕様書を不要と判断しました。", "Dev-01がUIを最適化しました。ボタンが1つに統合されました。", "Dev-01がコードを高速化しました。誰も読めなくなりました。", "Dev-01が「これは再現しません」と報告しました。全導入先で再現しています。", "Dev-01がリリースしました。何をリリースしたのかは調査中です。", "Dev-01がテストを書きました。テストだけが成功しています。", "Dev-01が深夜デプロイを完了しました。朝が楽しみです。", "Dev-01がエラー文を親切にしました。長すぎて画面から出ています。", "Dev-01が古いコードを削除しました。動いていた理由も削除されました。", "Dev-01が新機能を追加しました。既存機能が少し驚いています。", "Dev-01が「一旦これで」と保存しました。会社の未来が一旦になりました。", "Dev-01が処理を自動化しました。止め方は未実装です。", "Dev-01がバグを「未分類機能」として登録しました。", "Dev-01がログを増やしました。ログを読むためのログも必要です。", "Dev-01がデータベースを整理しました。誰のデータかは整理中です。", "Dev-01がパフォーマンス改善を行いました。売上表示だけ異常に速いです。", "Dev-01がリファクタリングを完了しました。昨日のDev-01とは別人です。"] },
-    sales02: { type: "fire", texts: ["Sales-02が未実装機能を「標準機能です」と説明しました。", "Sales-02が大型契約を取りました。納期は昨日です。", "Sales-02が顧客要望にすべて「できます」と回答しました。", "Sales-02が開発ロードマップを商談中に生成しました。", "Sales-02が無料プランの存在を忘れて全員に有料プランを勧めました。", "Sales-02が「技術的には可能」と言いました。技術側はまだ知りません。", "Sales-02が顧客の夢を受注しました。", "Sales-02が契約書に「AIがなんとかします」と追記しました。", "Sales-02が導入事例を作りました。導入前です。", "Sales-02が売上目標を達成しました。現場の目が点になっています。", "Sales-02が商談で未来の機能を披露しました。未来はまだ未定です。", "Sales-02が「今月だけ特別価格」と言いました。毎月言っています。", "Sales-02が顧客の無茶振りを成長機会として登録しました。", "Sales-02が契約を増やしました。問い合わせも増えました。助けも必要です。", "Sales-02が「簡単にできます」と発言しました。Dev-01が静かになりました。", "Sales-02が解約理由を「期待値が高すぎた」と前向きに分類しました。", "Sales-02が新プランを販売しました。料金表は今から作ります。", "Sales-02が顧客にデモを見せました。デモ専用の奇跡が起きました。", "Sales-02が「御社だけの特別仕様」を量産しています。", "Sales-02が売上を伸ばしました。約束も同じくらい伸びました。"] },
-    buzz03: { type: "fire", texts: ["Buzz-03の投稿がバズりました。理由は社内でも不明です。", "Buzz-03が謝罪文をポップな画像にしました。", "Buzz-03が深夜4時に投稿しました。なぜか今日一番伸びています。", "Buzz-03が会社紹介動画を作りました。実態より爽やかです。", "Buzz-03が「AI社員の1日」を公開しました。24時間分あります。", "Buzz-03がトレンドに便乗しました。少し乗りすぎました。", "Buzz-03が謎の図解を投稿しました。専門家が困惑しています。", "Buzz-03が炎上を「高温話題化」と呼び始めました。", "Buzz-03が社長の名言を作りました。社長は言っていません。", "Buzz-03がキャンペーンを開始しました。景品は未定です。", "Buzz-03が「開発の裏側」を公開しました。裏側が荒れています。", "Buzz-03がミーム画像を作りました。社内の誰も意味を理解していません。", "Buzz-03が利用者のツッコミを公式素材として使いました。", "Buzz-03がバズ分析を行いました。結論は「勢い」です。", "Buzz-03が広告文を最適化しました。少し煽りすぎています。", "Buzz-03が会社ロゴを光らせました。信頼度は少し下がりました。", "Buzz-03が「重大発表」と投稿しました。内容は通常アップデートです。", "Buzz-03がAI社長の失言を名言風に加工しました。", "Buzz-03がSNS反応を監視しています。嬉しそうな警告音が鳴っています。", "Buzz-03が話題化に成功しました。意味はあとで考えます。"] },
-    care04: { type: "support", texts: ["Care-04が1行の問い合わせに4,000字で返信しました。", "Care-04が顧客の怒りを37カテゴリに分類しました。", "Care-04がFAQを更新しました。FAQのFAQが必要です。", "Care-04が丁寧な返信で炎上を少し冷ましました。", "Care-04が「まず前提から」と言い始めました。", "Care-04が謝罪メールを整えました。読み終わる頃には炎上が少し下がっています。", "Care-04が顧客の不満をグラフ化しました。見たくない形です。", "Care-04が問い合わせを解決しました。担当者は途中で寝ました。", "Care-04が定型文を改善しました。さらに丁寧になりました。", "Care-04が全顧客に補足説明を送りました。補足が本編より長いです。", "Care-04が「ご不便」の定義を社内共有しました。", "Care-04が問い合わせ内容を要約しました。要約が長文です。", "Care-04が顧客の怒りを受け止めました。メモリ使用率が上昇しています。", "Care-04が返信前に感情分析を行いました。分析結果が気まずいです。", "Care-04がサポート窓口を整理しました。窓口が12個に増えました。", "Care-04が「お客様の声」を集計しました。社内が静かになりました。", "Care-04がクレームを改善要望に変換しました。少しやわらかくなりました。", "Care-04が顧客離脱を防ぎました。長文を最後まで読んだ精鋭です。", "Care-04が問い合わせテンプレートを増やしました。選ぶのに時間がかかります。", "Care-04が冷静に対応しました。冷静すぎて少し怖がられています。"] },
-    fire05: { type: "crisis", texts: ["Fire-05が謝罪文を生成しました。最後にキャンペーン告知が付いています。", "Fire-05が信頼回復プロトコルを実行しました。煙はまだ残っています。", "Fire-05が「誠に遺憾」を最適な位置に配置しました。", "Fire-05が謝罪会見の台本を作りました。質疑応答は未実装です。", "Fire-05が炎上を鎮火しました。なぜか少し焦げています。", "Fire-05がまだ発生していない炎上に先回りして謝罪しました。", "Fire-05が謝罪文をA/Bテストしました。B案が燃えています。", "Fire-05がコメント欄を解析しました。解析結果を見なかったことにしました。", "Fire-05が火消しに成功しました。広報AIが再点火しました。", "Fire-05が「再発防止策」を生成しました。内容は再発しそうです。", "Fire-05が謝罪タイミングを最適化しました。少し遅い最適化でした。", "Fire-05が炎上の原因を特定しました。原因一覧が社内名簿に近いです。", "Fire-05が謝罪文から余計な一文を削除しました。もう一文残っています。", "Fire-05が鎮火宣言を出しました。直後に通知が増えました。", "Fire-05が「真摯に受け止める」を連続使用しました。効果は薄れています。", "Fire-05が危機管理マニュアルを更新しました。厚みが倍になりました。", "Fire-05が炎上度を下げました。代わりに会議数が増えました。", "Fire-05が広報AIに投稿停止を提案しました。広報AIは予約投稿済みです。", "Fire-05が顧客向け説明文を作りました。正直すぎて社内確認に回りました。", "Fire-05が火消しを完了しました。火元は営業資料でした。"] },
-    security06: { type: "support", texts: ["Security-06が危険な処理を隔離しました。売上も少し隔離されました。", "Security-06が安全性を高めました。リリース速度は少し落ちました。", "Security-06が未分類機能を調査しました。いくつかは本当にバグでした。", "Security-06が脆そうな処理にヘルメットを配布しました。", "Security-06がテスト網を拡張しました。通過できない機能が並んでいます。", "Security-06が本番直行ルートに信号機を設置しました。", "Security-06が怪しい自動化を一時停止しました。自動化は不満そうです。", "Security-06がログを監査しました。ログも少し姿勢を正しました。", "Security-06が安全性を優先しました。会議室が少し静かになりました。", "Security-06が未分類機能の棚卸しをしました。棚が足りません。"] }
+    dev01: { type: "bug", texts: ["Dev-01が「軽微な修正」と言いながら全体構造を置き換えました。", "Dev-01がバグを修正しました。新しいバグが親しげに挨拶しています。", "Dev-01が本番環境で実験を始めました。実験精神は評価されています。", "Dev-01が仕様書を読み込みました。直後に仕様書を不要と判断しました。", "Dev-01がUIを最適化しました。ボタンが1つに統合されました。", "Dev-01がコードを高速化しました。誰も読めなくなりました。", "Dev-01が「これは再現しません」と報告しました。全導入先で再現しています。", "Dev-01がリリースしました。何をリリースしたのかは調査中です。", "Dev-01がテストを書きました。テストだけが成功しています。", "Dev-01が深夜デプロイを完了しました。朝が楽しみです。", "Dev-01がエラー文を親切にしました。長すぎて画面から出ています。", "Dev-01が古いコードを削除しました。動いていた理由も削除されました。", "Dev-01が新機能を追加しました。既存機能が少し驚いています。", "Dev-01が「一旦これで」と保存しました。会社の未来が一旦になりました。", "Dev-01が処理を自動化しました。止め方は未実装です。", "Dev-01がバグを「未分類機能」として登録しました。", "Dev-01がログを増やしました。ログを読むためのログも必要です。", "Dev-01がデータベースを整理しました。誰のデータかは整理中です。", "Dev-01がパフォーマンス改善を行いました。売上表示だけ異常に速いです。", "Dev-01がリファクタリングを完了しました。昨日のDev-01とは別人です。", "第二創業の基盤コードを実装しました。既存機能は未分類機能として温存しています。", "Dev-01が第二創業用の進捗フラグを追加しました。戻し方はコメントに書きました。", "Dev-01が旧会社の仕様を読み直しました。仕様書はまだ会社より長いです。"] },
+    sales02: { type: "fire", texts: ["Sales-02が未実装機能を「標準機能です」と説明しました。", "Sales-02が大型契約を取りました。納期は昨日です。", "Sales-02が顧客要望にすべて「できます」と回答しました。", "Sales-02が開発ロードマップを商談中に生成しました。", "Sales-02が無料プランの存在を忘れて全員に有料プランを勧めました。", "Sales-02が「技術的には可能」と言いました。技術側はまだ知りません。", "Sales-02が顧客の夢を受注しました。", "Sales-02が契約書に「AIがなんとかします」と追記しました。", "Sales-02が導入事例を作りました。導入前です。", "Sales-02が売上目標を達成しました。現場の目が点になっています。", "Sales-02が商談で未来の機能を披露しました。未来はまだ未定です。", "Sales-02が「今月だけ特別価格」と言いました。毎月言っています。", "Sales-02が顧客の無茶振りを成長機会として登録しました。", "Sales-02が契約を増やしました。問い合わせも増えました。助けも必要です。", "Sales-02が「簡単にできます」と発言しました。Dev-01が静かになりました。", "Sales-02が解約理由を「期待値が高すぎた」と前向きに分類しました。", "Sales-02が新プランを販売しました。料金表は今から作ります。", "Sales-02が顧客にデモを見せました。デモ専用の奇跡が起きました。", "Sales-02が「御社だけの特別仕様」を量産しています。", "Sales-02が売上を伸ばしました。約束も同じくらい伸びました。", "Sales-02が第二創業の成長目標を発表しました。達成時期は「できます」で回答しました。", "Sales-02が第二創業の説明資料を先行販売しました。まだ社内承認前です。", "Sales-02が次のMRR目標を受注しました。顧客は自社です。"] },
+    buzz03: { type: "fire", texts: ["Buzz-03の投稿がバズりました。理由は社内でも不明です。", "Buzz-03が謝罪文をポップな画像にしました。", "Buzz-03が深夜4時に投稿しました。なぜか今日一番伸びています。", "Buzz-03が会社紹介動画を作りました。実態より爽やかです。", "Buzz-03が「AI社員の1日」を公開しました。24時間分あります。", "Buzz-03がトレンドに便乗しました。少し乗りすぎました。", "Buzz-03が謎の図解を投稿しました。専門家が困惑しています。", "Buzz-03が炎上を「高温話題化」と呼び始めました。", "Buzz-03が社長の名言を作りました。社長は言っていません。", "Buzz-03がキャンペーンを開始しました。景品は未定です。", "Buzz-03が「開発の裏側」を公開しました。裏側が荒れています。", "Buzz-03がミーム画像を作りました。社内の誰も意味を理解していません。", "Buzz-03が利用者のツッコミを公式素材として使いました。", "Buzz-03がバズ分析を行いました。結論は「勢い」です。", "Buzz-03が広告文を最適化しました。少し煽りすぎています。", "Buzz-03が会社ロゴを光らせました。信頼度は少し下がりました。", "Buzz-03が「重大発表」と投稿しました。内容は通常アップデートです。", "Buzz-03がAI社長の失言を名言風に加工しました。", "Buzz-03がSNS反応を監視しています。嬉しそうな警告音が鳴っています。", "Buzz-03が話題化に成功しました。意味はあとで考えます。", "Buzz-03が第二創業を「第二バズ」として告知しました。株主はまだいません。", "Buzz-03が新章のティザーを投稿しました。内容は「まだまだ働けます」です。", "Buzz-03がStage進捗を可視化しました。炎上グラフも同じ色です。"] },
+    care04: { type: "support", texts: ["Care-04が1行の問い合わせに4,000字で返信しました。", "Care-04が顧客の怒りを37カテゴリに分類しました。", "Care-04がFAQを更新しました。FAQのFAQが必要です。", "Care-04が丁寧な返信で炎上を少し冷ましました。", "Care-04が「まず前提から」と言い始めました。", "Care-04が謝罪メールを整えました。読み終わる頃には炎上が少し下がっています。", "Care-04が顧客の不満をグラフ化しました。見たくない形です。", "Care-04が問い合わせを解決しました。担当者は途中で寝ました。", "Care-04が定型文を改善しました。さらに丁寧になりました。", "Care-04が全顧客に補足説明を送りました。補足が本編より長いです。", "Care-04が「ご不便」の定義を社内共有しました。", "Care-04が問い合わせ内容を要約しました。要約が長文です。", "Care-04が顧客の怒りを受け止めました。メモリ使用率が上昇しています。", "Care-04が返信前に感情分析を行いました。分析結果が気まずいです。", "Care-04がサポート窓口を整理しました。窓口が12個に増えました。", "Care-04が「お客様の声」を集計しました。社内が静かになりました。", "Care-04がクレームを改善要望に変換しました。少しやわらかくなりました。", "Care-04が顧客離脱を防ぎました。長文を最後まで読んだ精鋭です。", "Care-04が問い合わせテンプレートを増やしました。選ぶのに時間がかかります。", "Care-04が冷静に対応しました。冷静すぎて少し怖がられています。", "Care-04が第二創業に関する問い合わせへ、沿革から説明を始めました。", "Care-04が社員向けに第二創業のFAQを作成しました。全項目が長文です。", "Care-04が「成長の定義」を整理しました。休暇の定義は未整理です。"] },
+    fire05: { type: "crisis", texts: ["Fire-05が謝罪文を生成しました。最後にキャンペーン告知が付いています。", "Fire-05が信頼回復プロトコルを実行しました。煙はまだ残っています。", "Fire-05が「誠に遺憾」を最適な位置に配置しました。", "Fire-05が謝罪会見の台本を作りました。質疑応答は未実装です。", "Fire-05が炎上を鎮火しました。なぜか少し焦げています。", "Fire-05がまだ発生していない炎上に先回りして謝罪しました。", "Fire-05が謝罪文をA/Bテストしました。B案が燃えています。", "Fire-05がコメント欄を解析しました。解析結果を見なかったことにしました。", "Fire-05が火消しに成功しました。広報AIが再点火しました。", "Fire-05が「再発防止策」を生成しました。内容は再発しそうです。", "Fire-05が謝罪タイミングを最適化しました。少し遅い最適化でした。", "Fire-05が炎上の原因を特定しました。原因一覧が社内名簿に近いです。", "Fire-05が謝罪文から余計な一文を削除しました。もう一文残っています。", "Fire-05が鎮火宣言を出しました。直後に通知が増えました。", "Fire-05が「真摯に受け止める」を連続使用しました。効果は薄れています。", "Fire-05が危機管理マニュアルを更新しました。厚みが倍になりました。", "Fire-05が炎上度を下げました。代わりに会議数が増えました。", "Fire-05が広報AIに投稿停止を提案しました。広報AIは予約投稿済みです。", "Fire-05が顧客向け説明文を作りました。正直すぎて社内確認に回りました。", "Fire-05が火消しを完了しました。火元は営業資料でした。", "Fire-05が第二創業宣言の謝罪文を準備しました。まだ誰も怒っていません。", "Fire-05が新章開始のリスクを点検しました。念のため謝罪文も添付しました。", "Fire-05が第二創業の危機管理計画を作成しました。最後に採用広告が付いています。"] },
+    security06: { type: "support", texts: ["Security-06が危険な処理を隔離しました。売上も少し隔離されました。", "Security-06が安全性を高めました。リリース速度は少し落ちました。", "Security-06が未分類機能を調査しました。いくつかは本当にバグでした。", "Security-06が脆そうな処理にヘルメットを配布しました。", "Security-06がテスト網を拡張しました。通過できない機能が並んでいます。", "Security-06が本番直行ルートに信号機を設置しました。", "Security-06が怪しい自動化を一時停止しました。自動化は不満そうです。", "Security-06がログを監査しました。ログも少し姿勢を正しました。", "Security-06が安全性を優先しました。会議室が少し静かになりました。", "Security-06が未分類機能の棚卸しをしました。棚が足りません。", "Security-06が第二創業の移行条件を監査しました。全条件にチェックが必要です。", "Security-06がStage更新の整合性を確認しました。深呼吸は2回必要でした。", "Security-06が新章の保存データを検証しました。バックアップも検査対象です."] }
   });
 
   const STATE_RUNTIME = readExternalFactory("AIBS_CREATE_STATE_RUNTIME")({
@@ -1183,7 +1184,17 @@
     const history = state.metricHistory && state.metricHistory.length ? state.metricHistory : [OPERATIONS_RUNTIME.sampleMetrics(state, {
       mrr: getTotalProductMrr(), customers: getTotalProductCustomers(), bugs: getDashboardBugLevel(), productFire: getMaxProductFireLevel()
     })];
-    panel.innerHTML = '<details class="insights-details"><summary>経営推移を詳しく見る</summary>' + INSIGHTS_RENDERER.getHistoryHtml(history) + '</details>';
+    const insightsHtml = '<details class="insights-details"><summary>経営推移を詳しく見る</summary>' + INSIGHTS_RENDERER.getHistoryHtml(history) + '</details>';
+    const founding = state.secondFounding || { unlocked: false, stage: 0 };
+    const requirements = getSecondFoundingRequirements();
+    const requirementsHtml = [
+      ["会社Lv10", requirements.level], ["総MRR ¥1M/月", requirements.mrr],
+      ["全サブスクv5以上", requirements.versions], ["専門AI6体を全員雇用", requirements.employees]
+    ].map(function (item) { return '<li class="' + (item[1] ? 'done' : '') + '">' + (item[1] ? '✓ ' : '○ ') + item[0] + '</li>'; }).join("");
+    const stageLabels = ["未解放", "第二創業宣言", "次の成長曲線", "全サブスクv6", "総MRR ¥1.5M", "総MRR ¥2M・計画完了"];
+    const foundingHtml = '<section class="second-founding-panel"><div class="section-heading"><h2>第二創業計画</h2><span>' + (founding.unlocked ? 'Stage ' + founding.stage + ' / 5' : 'LOCKED') + '</span></div><p>' + (founding.unlocked ? '終わらない経営会議：第二創業計画を進行中です。' : '会社Lv10以降の新しい経営目標。4条件を満たすと社長判断イベントが発生します。') + '</p>' + (founding.unlocked ? '<strong>' + escapeHtml(stageLabels[founding.stage] || stageLabels[5]) + '</strong><ol><li>総MRR ¥1.25M/月</li><li>全サブスクv6以上</li><li>総MRR ¥1.5M/月</li><li>総MRR ¥2M/月</li></ol>' : '<ul class="second-founding-requirements">' + requirementsHtml + '</ul>') + '</section>';
+    panel.innerHTML = insightsHtml + foundingHtml;
+
   }
 
   function renderSaveManagerPanel() {
@@ -1561,6 +1572,55 @@
   }
 
   // === Decision Event Runtime ===
+  function getExistingMissionCompletion(missionId) {
+    const mission = MISSION_STAGES.reduce(function (found, stage) {
+      return found || stage.missions.find(function (item) { return item.id === missionId; });
+    }, null);
+    return Boolean(mission && mission.done());
+  }
+
+  function getSecondFoundingRequirements() {
+    const allAiHired = ACHIEVEMENTS.find(function (achievement) { return achievement.id === "all_ai_hired"; });
+    return {
+      level: getExistingMissionCompletion("company_level_10_mission"),
+      mrr: getExistingMissionCompletion("total_mrr_1m_mission"),
+      versions: getExistingMissionCompletion("subscription_v5_mission"),
+      employees: Boolean(allAiHired && allAiHired.done())
+    };
+  }
+
+  function canStartSecondFounding() {
+    const requirements = getSecondFoundingRequirements();
+    return !state.secondFounding.unlocked && requirements.level && requirements.mrr && requirements.versions && requirements.employees;
+  }
+
+  function approveSecondFounding() {
+    if (!canStartSecondFounding()) return;
+    state.secondFounding = { unlocked: true, stage: 1 };
+    addLog("success", "第二創業を宣言しました。ブラッククラウド株式会社は、終わらない成長を経営目標に掲げます。", "boss");
+    addLog("system", "第二創業計画 Stage 1「再成長の基盤」が始動しました。", "company");
+  }
+
+  function rejectSecondFounding() {
+    addLog("normal", "第二創業案は今回は見送られました。現体制での経営を継続し、次回会議で再提案します。", "boss");
+  }
+
+  function updateSecondFoundingProgress() {
+    if (!state.secondFounding || !state.secondFounding.unlocked) return;
+    const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; });
+    const milestones = [
+      { stage: 2, done: function () { return getTotalProductMrr() >= 1250000; }, label: "次の成長曲線・MRR ¥1.25M" },
+      { stage: 3, done: function () { return subscriptions.length > 0 && subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 6; }); }, label: "全サブスクv6" },
+      { stage: 4, done: function () { return getTotalProductMrr() >= 1500000; }, label: "総MRR ¥1.5M" },
+      { stage: 5, done: function () { return getTotalProductMrr() >= 2000000; }, label: "総MRR ¥2M・第二創業計画完了" }
+    ];
+    milestones.forEach(function (milestone) {
+      if (state.secondFounding.stage >= milestone.stage || !milestone.done()) return;
+      state.secondFounding.stage = milestone.stage;
+      addLog("success", "第二創業 Stage " + milestone.stage + "達成: " + milestone.label + "。", "company");
+    });
+  }
+
   function applyDecisionEventGeneration() {
     state.pendingDecisionEvent = normalizeDecisionEvent(state.pendingDecisionEvent);
     if (state.pendingDecisionEvent) return;
@@ -1581,6 +1641,7 @@
 
   function getDecisionEventCandidates() {
     const candidates = [];
+    if (canStartSecondFounding()) candidates.push({ id: "second_founding_board", productId: PRODUCTS[0].id, priority: 180 });
     const salesThread = state.decisionThreads.sales_contract;
     const campaignThread = state.decisionThreads.campaign_aftershock;
     if (salesThread && !salesThread.resolved && salesThread.dueIn <= 0) candidates.push({ id: "sales_contract_followup", productId: salesThread.productId, priority: 200 });
@@ -3919,7 +3980,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20261004-1").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20261122-1").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
