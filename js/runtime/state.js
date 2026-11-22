@@ -261,6 +261,12 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     return flags;
   }
 
+  function normalizeSecondFounding(savedFounding) {
+    const source = savedFounding && typeof savedFounding === "object" ? savedFounding : {};
+    const unlocked = Boolean(source.unlocked);
+    return { unlocked: unlocked, stage: unlocked ? clamp(Math.floor(safeNumber(source.stage, 1)), 1, 5) : 0 };
+  }
+
   function normalizeState(saved) {
     saved = saved && typeof saved === "object" ? saved : {};
     const base = createInitialState();
@@ -326,7 +332,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     normalizeDecisionStats: normalizeDecisionStats,
     normalizeDecisionThreads: normalizeDecisionThreads,
     normalizeBooleanMap: normalizeBooleanMap,
-    normalizeAiUsageSeconds: normalizeAiUsageSeconds,
+    normalizeAiUsageSeconds: normalizeAiUsageSeconds,\n    normalizeSecondFounding: normalizeSecondFounding,
     normalizeText: normalizeText,
     normalizeLogs: normalizeLogs,
     normalizeClaimedMissions: normalizeClaimedMissions,
