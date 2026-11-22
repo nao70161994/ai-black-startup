@@ -277,7 +277,8 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       reviewSeconds: clamp(Math.floor(safeNumber(source.reviewSeconds, 0)), 0, 29),
       lastMrr: Math.max(0, safeNumber(source.lastMrr, 0)),
       dividendsPaid: Math.max(0, safeNumber(source.dividendsPaid, 0)),
-      qualityInvestments: Math.max(0, Math.floor(safeNumber(source.qualityInvestments, 0)))
+      qualityInvestments: Math.max(0, Math.floor(safeNumber(source.qualityInvestments, 0))),
+      meetingsHeld: Math.max(0, Math.floor(safeNumber(source.meetingsHeld, 0)))
     };
   }
 
