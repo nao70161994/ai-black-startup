@@ -920,3 +920,20 @@ body:not([data-page="home"]) .page-location { min-height: 82px; padding-top: 16p
 .shareholder-board-stats span { display:flex; flex-direction:column; gap:4px; padding:10px; border-radius:9px; background:rgba(255,255,255,.04); color:var(--muted); font-size:12px; }
 .shareholder-board-stats b { color:var(--text); font-size:14px; }
 @media (max-width:600px) { .shareholder-board-stats { grid-template-columns:1fr; } }
+
+/* Phase 5: final acquisition dashboard and completion sequence */
+.acquisition-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:12px; }
+.acquisition-target { padding:14px; border:1px solid rgba(93,200,231,.3); border-radius:12px; background:rgba(4,18,36,.52); }
+.acquisition-target p { margin:8px 0 12px; }
+.acquisition-target button { min-height:42px; }
+.final-goals ul { list-style:none; padding:0; line-height:2; }
+.final-goals.completed { border-color:#d8bf78; }
+.completion-overlay:not([hidden]) { position:fixed; z-index:5000; inset:0; display:grid; place-items:center; padding:20px; background:rgba(0,7,19,.9); backdrop-filter:blur(12px); }
+.completion-card { width:min(100%,620px); padding:clamp(24px,7vw,58px); text-align:center; border:2px solid #ddc581; border-radius:22px; color:#f8f4e8; background:radial-gradient(circle at top,#2c486a,#081626 65%); box-shadow:0 0 90px rgba(221,197,129,.3); animation:completion-reveal .7s ease-out both; }
+.completion-card h2 { font-size:clamp(1.5rem,5vw,2.7rem); color:#ffdc87; }
+.completion-card p { line-height:1.8; }
+.completion-crown { font-size:64px; color:#ffdc87; animation:completion-sparkle 2.2s ease-in-out infinite; }
+.completion-card button { min-height:48px; margin-top:16px; }
+@keyframes completion-reveal { from { opacity:0; transform:scale(.88) translateY(18px); } to { opacity:1; transform:none; } }
+@keyframes completion-sparkle { 50% { filter:drop-shadow(0 0 18px #ffdc87); transform:scale(1.08); } }
+@media (prefers-reduced-motion:reduce) { .completion-card,.completion-crown { animation:none; } }
