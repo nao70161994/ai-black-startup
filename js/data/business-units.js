@@ -16,6 +16,6 @@ window.AIBS_BUSINESS_UNITS = [
     id: "customerRisk",
     name: "カスタマーリスク事業部",
     description: "問い合わせ対応と危機コミュニケーションを支える製品群",
-    productIds: ["supportReplyAi", "apologyWriterAi"]
+    productIds: ["supportReplyAi", "apologyWriterAi", "attendanceMonitorAi"]
   }
 ];
