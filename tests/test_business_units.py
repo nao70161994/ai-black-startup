@@ -6,7 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run_node(source):
-    subprocess.run(["node", "-e", source], cwd=ROOT, check=True, capture_output=True, text=True)
+    result = subprocess.run(["node", "-e", source], cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_business_unit_definitions_group_all_five_existing_products_once():
@@ -20,7 +21,7 @@ vm.runInNewContext(fs.readFileSync("js/data/business-units.js", "utf8"), { windo
 const products = window.AIBS_PRODUCTS.map(product => product.id).sort();
 const grouped = window.AIBS_BUSINESS_UNITS.reduce((all, unit) => all.concat(unit.productIds), []).sort();
 assert.strictEqual(window.AIBS_BUSINESS_UNITS.length, 3);
-assert.deepStrictEqual(grouped, products);
+assert.strictEqual(JSON.stringify(grouped), JSON.stringify(products));
 assert.strictEqual(new Set(grouped).size, 5);
 """)
 
