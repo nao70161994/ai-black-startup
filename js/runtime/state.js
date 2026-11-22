@@ -115,6 +115,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       secondFounding: { unlocked: false, stage: 0 },
       businessUnits: { enabled: true },
       shareholderBoard: { satisfaction: 50, reviewSeconds: 0, lastMrr: 0, dividendsPaid: 0, qualityInvestments: 0, meetingsHeld: 0 },
+      competition: { competitorMrr: 250000, reviewSeconds: 0, lastShare: 0, lastCompetitorMrr: 0, eventsSeen: 0 },
       lastSavedAt: Date.now()
     };
     initialLogs.slice().reverse().forEach(function (text, index) {
@@ -270,6 +271,17 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
     return { unlocked: unlocked, stage: unlocked ? clamp(Math.floor(safeNumber(source.stage, 1)), 1, 5) : 0 };
   }
 
+  function normalizeCompetition(savedCompetition) {
+    const source = savedCompetition && typeof savedCompetition === "object" ? savedCompetition : {};
+    return {
+      competitorMrr: Math.max(0, safeNumber(source.competitorMrr, 250000)),
+      reviewSeconds: clamp(Math.floor(safeNumber(source.reviewSeconds, 0)), 0, 29),
+      lastShare: clamp(safeNumber(source.lastShare, 0), 0, 100),
+      lastCompetitorMrr: Math.max(0, safeNumber(source.lastCompetitorMrr, 0)),
+      eventsSeen: Math.max(0, Math.floor(safeNumber(source.eventsSeen, 0)))
+    };
+  }
+
   function normalizeShareholderBoard(savedBoard) {
     const source = savedBoard && typeof savedBoard === "object" ? savedBoard : {};
     return {
@@ -322,6 +334,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       secondFounding: normalizeSecondFounding(saved.secondFounding),
       businessUnits: { enabled: !(saved.businessUnits && saved.businessUnits.enabled === false) },
       shareholderBoard: normalizeShareholderBoard(saved.shareholderBoard),
+      competition: normalizeCompetition(saved.competition),
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     const legacyBugLevel = clamp(safeNumber(saved.legacyGlobalBugs, 0), 0, 100);

@@ -280,6 +280,33 @@ window.AIBS_DECISION_EVENTS = [
       riskLevel: "normal"
     },
     {
+      id: "whiteai_price_war",
+      label: "ホワイトAIの価格攻勢",
+      workerId: "sales02",
+      message: "Sales-02「株式会社ホワイトAIが勤怠SaaSの月額を値下げしました。こちらも対抗値下げを出せますが、利益率の説明は私に任せてください。」",
+      approveImpact: "承認: 自社シェア獲得キャンペーン。認知度+10 / 炎上+2",
+      rejectImpact: "却下: 値下げ競争を避け、通常運用を継続",
+      riskLevel: "warning"
+    },
+    {
+      id: "whiteai_enterprise_contract",
+      label: "ホワイトAIの大型契約",
+      workerId: "buzz03",
+      message: "Buzz-03「ホワイトAIが大企業との契約を発表！話題が持っていかれています。こちらもキャンペーンを打てば、たぶんもっと伸びます！」",
+      approveImpact: "承認: 自社認知度+15 / 炎上+3",
+      rejectImpact: "却下: 競合の発表を静観",
+      riskLevel: "warning"
+    },
+    {
+      id: "whiteai_data_incident",
+      label: "ホワイトAIの情報管理事故",
+      workerId: "security06",
+      message: "Security-06「株式会社ホワイトAIで情報管理上の事故が報告されました。競合の信用低下に乗じる場合も、誤認を招く表現は避けてください。」",
+      approveImpact: "承認: 比較広告を適正範囲で実施。自社認知度+8 / 株主満足度+1",
+      rejectImpact: "却下: 他社の事故を利用せず、通常の品質改善を継続",
+      riskLevel: "normal"
+    },
+    {
       id: "second_founding_board",
       label: "第二創業の経営会議",
       workerId: "boss",

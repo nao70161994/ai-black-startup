@@ -81,7 +81,10 @@ window.AIBS_CREATE_ACHIEVEMENTS = function (api) {
     { id: "second_founding_mrr_1250k", category: "第二創業", title: "次の成長曲線", description: "第二創業後の総MRRを¥1.25M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 1250000; } },
     { id: "second_founding_all_v6", category: "第二創業", title: "全製品・再成長", description: "すべてのサブスク製品をv6以上にする", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && PRODUCTS.filter(function (definition) { return definition.type === "subscription"; }).every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 6; }); } },
     { id: "second_founding_mrr_1500k", category: "第二創業", title: "成長企業の顔", description: "第二創業後の総MRRを¥1.5M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 1500000; } },
-    { id: "second_founding_mrr_2000k", category: "第二創業", title: "終わらない成長", description: "第二創業後の総MRRを¥2M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 2000000; } }
+    { id: "second_founding_mrr_2000k", category: "第二創業", title: "終わらない成長", description: "第二創業後の総MRRを¥2M/月に伸ばす", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && getTotalProductMrr() >= 2000000; } },
+    { id: "market_share_20", category: "競争", title: "市場に食い込む", description: "業界シェア20%を達成する", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && safeNumber(state.competition && state.competition.lastShare, 0) >= 20; } },
+    { id: "market_share_40", category: "競争", title: "二強の一角", description: "業界シェア40%を達成する", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && safeNumber(state.competition && state.competition.lastShare, 0) >= 40; } },
+    { id: "market_share_60", category: "競争", title: "業界の主役", description: "業界シェア60%を達成する", done: function () { return Boolean(state.secondFounding && state.secondFounding.unlocked) && safeNumber(state.competition && state.competition.lastShare, 0) >= 60; } }
   ];
 
 

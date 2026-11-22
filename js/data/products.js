@@ -4,7 +4,8 @@ window.AIBS_PRODUCTS = [
     { id: "meetingMinutesAi", name: "自動議事録AI", type: "subscription", monthlyPrice: 1200, category: "document", developmentRequired: 180, demand: 1.0, risk: 1.0, initialQuality: 55 },
     { id: "slideKitAi", name: "AIスライド生成キット", type: "oneShot", price: 9800, category: "oneShotTool", developmentRequired: 160, demand: 1.2, risk: 1.0, initialQuality: 55 },
     { id: "supportReplyAi", name: "AI問い合わせ返信", type: "subscription", monthlyPrice: 900, category: "support", developmentRequired: 140, demand: 1.0, risk: 0.8, initialQuality: 58 },
-    { id: "apologyWriterAi", name: "AI謝罪文ジェネレーター", type: "oneShot", price: 7800, category: "crisis", developmentRequired: 120, demand: 0.9, risk: 1.3, initialQuality: 52 }
+    { id: "apologyWriterAi", name: "AI謝罪文ジェネレーター", type: "oneShot", price: 7800, category: "crisis", developmentRequired: 120, demand: 0.9, risk: 1.3, initialQuality: 52 },
+    { id: "attendanceMonitorAi", name: "AI勤怠監視クラウド", type: "subscription", monthlyPrice: 3000, category: "security", developmentRequired: 260, demand: 0.72, risk: 1.35, initialQuality: 48 }
   ];
 
 window.AIBS_PRODUCT_LOG_TEXTS = {
@@ -86,5 +87,22 @@ window.AIBS_PRODUCT_LOG_TEXTS = {
       marketingStarted: "Buzz-03がAI謝罪文ジェネレーターの広報を開始しました。宣伝文が少し謝っています。",
       awareness50: "AI謝罪文ジェネレーターの認知度が50を超えました。Fire-05が売れ行きを監視しています。",
       awareness100: "AI謝罪文ジェネレーターの認知度が100に到達しました。使わないことが一番の宣伝です。"
+    },
+    attendanceMonitorAi: {
+      started: "AI勤怠監視クラウドの開発を開始しました。休憩時間も分析対象です。",
+      developmentTargetChanged: "開発対象をAI勤怠監視クラウドに設定しました。",
+      noDevelopmentWorker: "勤怠データの分析基盤が待機しています。Dev-01の割り当てをお願いします。",
+      completed: "AI勤怠監視クラウドが完成しました。出勤率は上がり、自由時間は統計になりました。",
+      salesStarted: "AI勤怠監視クラウドの販売を開始しました。導入企業の時計が少し正確になります。",
+      customer10: "AI勤怠監視クラウドの顧客が10社に到達しました。Sales-02は「休憩削減」を生産性向上と説明しています。",
+      customer50: "AI勤怠監視クラウドの顧客が50社に到達しました。勤怠データの集計が定額サービスになりました。",
+      customer100: "AI勤怠監視クラウドの顧客が100社に到達しました。Care-04がプライバシーFAQを増補しています。",
+      mrr10k: "AI勤怠監視クラウドのMRRが¥10K/月を超えました。監視対象と売上が同時に増えています。",
+      mrr100k: "AI勤怠監視クラウドのMRRが¥100K/月を超えました。勤務時間の可視化が経営の柱になりました。",
+      upgradeStarted: "AI勤怠監視クラウド v{version} の開発を開始しました。分析項目が増えます。",
+      upgradeCompleted: "AI勤怠監視クラウドが v{version} にアップデートされました。検知精度と監視範囲が向上しました。",
+      marketingStarted: "Buzz-03がAI勤怠監視クラウドの広報を開始しました。『見える化』の意味が議論されています。",
+      awareness50: "AI勤怠監視クラウドの認知度が50を超えました。労務担当者の通知欄が賑やかです。",
+      awareness100: "AI勤怠監視クラウドの認知度が100に到達しました。Buzz-03は「透明性のバズ」と呼んでいます。"
     }
   };

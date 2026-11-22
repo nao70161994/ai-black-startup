@@ -10,7 +10,7 @@ def run_node(source):
     assert result.returncode == 0, result.stderr
 
 
-def test_business_unit_definitions_group_all_five_existing_products_once():
+def test_business_unit_definitions_group_all_six_products_once():
     run_node(r"""
 const assert = require("assert");
 const fs = require("fs");
@@ -22,7 +22,7 @@ const products = window.AIBS_PRODUCTS.map(product => product.id).sort();
 const grouped = window.AIBS_BUSINESS_UNITS.reduce((all, unit) => all.concat(unit.productIds), []).sort();
 assert.strictEqual(window.AIBS_BUSINESS_UNITS.length, 3);
 assert.strictEqual(JSON.stringify(grouped), JSON.stringify(products));
-assert.strictEqual(new Set(grouped).size, 5);
+assert.strictEqual(new Set(grouped).size, 6);
 """)
 
 def test_business_unit_ratings_and_efficiency_bonus_are_calculated_without_revenue_changes():

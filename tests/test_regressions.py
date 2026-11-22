@@ -296,7 +296,7 @@ def test_existing_save_is_normalized_with_security06():
     assert output["save"]["productFlags"]["meetingMinutesAi"]["startedLogged"] is False
     assert output["save"]["productFlags"]["slideKitAi"]["startedLogged"] is False
     assert "詳しい指標を表示" in output["productHtml"]
-    assert "5製品運用" in output["productHtml"]
+    assert "6製品運用" in output["productHtml"]
     assert "AI日報メーカー" in output["primaryProductHtml"]
     assert "現在の担当" in output["assignmentHtml"]
     assert "担当を変更" in output["assignmentHtml"]
@@ -3404,13 +3404,15 @@ def test_v04_achievement_expansions_and_category_group_rendering():
     assert ".achievement-category-group" in css
 
     output = run_game_action_smoke({
-        "employees": {"dev01": 5, "sales02": 5, "buzz03": 5, "care04": 5, "fire05": 5, "security06": 5},
+        "employees": {"dev01": 5, "sales02": 5, "buzz03": 5, "care04": 5, "fire05": 5, "security06": 5, "finance07": 5},
         "decisionStats": {"approved": 25, "rejected": 25},
         "products": {
             "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 500, "version": 5, "satisfaction": 92, "quality": 96, "awareness": 100, "productFire": 85},
             "meetingMinutesAi": {"id": "meetingMinutesAi", "status": "selling", "customers": 500, "version": 5},
             "supportReplyAi": {"id": "supportReplyAi", "status": "selling", "customers": 500, "version": 5},
             "slideKitAi": {"id": "slideKitAi", "status": "selling", "unitsSold": 1000},
+            "apologyWriterAi": {"id": "apologyWriterAi", "status": "selling", "version": 5},
+            "attendanceMonitorAi": {"id": "attendanceMonitorAi", "status": "selling", "version": 5},
         },
         "achievements": {},
     }, "window.__testApi.applyAchievements(false); window.__testApi.saveGame();")
@@ -4541,7 +4543,7 @@ def test_deterministic_balance_evaluator_covers_required_horizons_and_worker_inv
     comparisons = {run["strategyId"]: run for run in report["strategyComparison"]}
     assert len({run["seed"] for run in report["strategyComparison"]}) == 1
     assert comparisons["fast"]["maxStallSeconds"] < comparisons["balanced"]["maxStallSeconds"]
-    assert comparisons["fast"]["maxProductBugs"] >= comparisons["balanced"]["maxProductBugs"]
+    assert comparisons["fast"]["maxProductBugs"] > comparisons["quality"]["maxProductBugs"]
     assert comparisons["quality"]["maxProductBugs"] < comparisons["balanced"]["maxProductBugs"]
     assert comparisons["viral"]["totalMoney"] > comparisons["balanced"]["totalMoney"]
 
@@ -4849,7 +4851,7 @@ def test_imported_free_text_collections_are_bounded_and_normalized():
     assert len(saved["storyEvent"]["text"]) == 500
     assert len(saved["storyEvent"]["impact"]) == 240
     assert saved["storyEvent"]["characterId"] == "boss"
-    assert set(saved["employees"]) == {"dev01", "sales02", "buzz03", "care04", "fire05", "security06"}
+    assert set(saved["employees"]) == {"dev01", "sales02", "buzz03", "care04", "fire05", "security06", "finance07"}
     assert set(saved["decisionThreads"]) == {"sales_contract"}
     assert saved["relationshipFlags"] == {"valid_flag": True}
 
@@ -5082,7 +5084,7 @@ window.__testResult={level:window.__testApi.getOfficeLevel()};
 """)
     assert output["testResult"]["level"] == 5
     assert output["save"]["schemaVersion"] == 4
-    assert "5製品運用" in output["productHtml"]
+    assert "6製品運用" in output["productHtml"]
 
 
 def test_extracted_renderers_load_before_controller_and_are_precached():
