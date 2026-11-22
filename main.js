@@ -1226,6 +1226,9 @@
     const market = COMPETITION_RUNTIME.normalize(state.competition);
     const marketShare = COMPETITION_RUNTIME.getShare(market, getTotalProductMrr());
     const marketHtml = founding.unlocked ? '<section class="competition-market-panel"><div class="section-heading"><h2>業界シェア</h2><span>目標 60%</span></div><strong class="market-share-value">' + marketShare.toFixed(1) + '%</strong><div class="market-share-track" role="progressbar" aria-label="自社の業界シェア" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + marketShare.toFixed(1) + '"><span style="width:' + marketShare + '%"></span></div><p>株式会社ホワイトAI：推定MRR ¥' + Math.round(market.competitorMrr).toLocaleString("ja-JP") + '/月</p><p>市場評価：' + escapeHtml(COMPETITION_RUNTIME.getRating(marketShare)) + ' / 目標まで ' + Math.max(0, 60 - marketShare).toFixed(1) + 'pt</p></section>' : "";
+    const market = COMPETITION_RUNTIME.normalize(state.competition);
+    const marketShare = COMPETITION_RUNTIME.getShare(market, getTotalProductMrr());
+    const marketHtml = founding.unlocked ? '<section class="competition-market-panel"><div class="section-heading"><h2>業界シェア</h2><span>目標 60%</span></div><strong class="market-share-value">' + marketShare.toFixed(1) + '%</strong><div class="market-share-track" role="progressbar" aria-label="自社の業界シェア" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + marketShare.toFixed(1) + '"><span style="width:' + marketShare + '%"></span></div><p>株式会社ホワイトAI：推定MRR ¥' + Math.round(market.competitorMrr).toLocaleString("ja-JP") + '/月</p><p>市場評価：' + escapeHtml(COMPETITION_RUNTIME.getRating(marketShare)) + ' / 目標まで ' + Math.max(0, 60 - marketShare).toFixed(1) + 'pt</p></section>' : "";
     panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml + shareholderHtml + marketHtml;
 
   }
