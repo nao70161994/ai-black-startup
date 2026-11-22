@@ -5,7 +5,8 @@ window.AIBS_EMPLOYEES = [
     { id: "buzz03", code: "Buzz-03", nickname: "バズミ", role: "広報AI", unlockLevel: 2, baseCost: 1000, description: "認知度を上げ、販売成功率を高めます。副作用として炎上が少し増えます。", personality: "ノリが軽い。バズと炎上の区別が曖昧。", catchphrase: "伸びています。" },
     { id: "care04", code: "Care-04", nickname: "ケアフォー", role: "サポートAI", unlockLevel: 3, baseCost: 1200, description: "サポート負荷を下げ、満足度を上げ、解約リスクを抑えます。", personality: "真面目で丁寧。長文返信をしがち。", catchphrase: "まず前提から整理します。" },
     { id: "fire05", code: "Fire-05", nickname: "ファイヴァー", role: "炎上対応AI", unlockLevel: 4, baseCost: 2000, description: "炎上対応専門。炎上度を大きく下げます。対応中は売上機会を少し失います。", personality: "冷静。謝罪文を大量生成する。最後に余計な一文を足す。", catchphrase: "信頼回復プロトコルを実行します。" },
-    { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。" }
+    { id: "security06", code: "Security-06", nickname: "セキュロク", role: "品質管理AI / セキュリティAI", unlockLevel: 5, baseCost: 5000, description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", personality: "慎重。危険な処理を隔離し、リリース前に深呼吸を要求する。", catchphrase: "安全性を優先します。" },
+    { id: "finance07", code: "Finance-07", nickname: "ファイナナ", role: "財務AI", unlockLevel: 10, baseCost: 18000, description: "経営判断に伴う費用を抑え、資金繰りを確認します。雇用すると社長判断の支出をレベルごとに3%軽減します。", personality: "数字に厳格。福利厚生も投資対効果で判断する。", catchphrase: "その支出は、将来のキャッシュフローで説明できますか？" }
   ];
 
 window.AIBS_WORKERS = {
@@ -15,7 +16,8 @@ window.AIBS_WORKERS = {
     sales02: { id: "sales02", label: "Sales-02" },
     buzz03: { id: "buzz03", label: "Buzz-03" },
     care04: { id: "care04", label: "Care-04" },
-    fire05: { id: "fire05", label: "Fire-05" }
+    fire05: { id: "fire05", label: "Fire-05" },
+    finance07: { id: "finance07", label: "Finance-07" }
   };
 
 window.AIBS_WORKER_TASK_PROFILES = {
@@ -25,5 +27,6 @@ window.AIBS_WORKER_TASK_PROFILES = {
     buzz03: { specialty: "広報", description: "認知度を上げ、販売成功率を高めます。副作用として炎上が少し増えます。", levelHint: "Lvアップで認知度上昇量UP" },
     care04: { specialty: "サポート", description: "サポート負荷を下げ、満足度を上げ、解約リスクを抑えます。", levelHint: "Lvアップでサポート効果UP" },
     fire05: { specialty: "炎上対応", description: "炎上対応専門。炎上度を大きく下げます。対応中は売上機会を少し失います。", levelHint: "Lvアップで炎上対応効果UP" },
-    security06: { specialty: "品質管理", description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", levelHint: "Lvアップで品質改善量UP" }
+    security06: { specialty: "品質管理", description: "品質を上げ、製品バグを下げます。サブスクの解約リスク抑制にもつながります。", levelHint: "Lvアップで品質改善量UP" },
+    finance07: { specialty: "財務・資金管理", description: "雇用すると社長判断に伴う支出をレベルごとに3%軽減します。担当タスクを持たない経営アドバイザーです。", levelHint: "Lvアップで判断コストを3%ずつ軽減" }
   };
