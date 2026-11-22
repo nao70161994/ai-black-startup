@@ -87,6 +87,7 @@ state.products.p1.productFire = 30;
 state.products.p2.productFire = 30;
 assert.strictEqual(runtime.getBusinessUnitEvaluations(state)[0].grade, "D");
 state.products.p1.mrr = 25000;
+state.products.p2.mrr = 25000;
 state.products.p1.quality = 100;
 state.products.p2.quality = 100;
 state.products.p1.satisfaction = 100;
