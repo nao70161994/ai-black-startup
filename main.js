@@ -731,7 +731,7 @@
     const result = COMPETITION_RUNTIME.tick(state.competition, getTotalProductMrr(), financeLevel);
     state.competition = result.state;
     if (result.reviewed) {
-      const previous = Number(state.competition.lastShare) || 0;
+      const previous = Number(result.previousShare) || 0;
       if (result.share >= 60 && previous < 60) addLog("success", "業界シェア60%を達成しました。AI社長は「市場の主役」と発表し、Finance-07は計算根拠を求めています。", "boss");
       else if (result.delta >= 1) addLog("success", "市場シェアが" + result.share.toFixed(1) + "%へ上昇。株式会社ホワイトAIとの差が縮まりました。", "sales02");
       else if (result.delta <= -1) addLog("fire", "株式会社ホワイトAIが成長し、自社シェアは" + result.share.toFixed(1) + "%へ低下。Buzz-03は「話題の奪還」を提案しています。", "buzz03");
@@ -1223,7 +1223,10 @@
     const businessUnitHtml = INSIGHTS_RENDERER.getBusinessUnitsHtml(OPERATIONS_RUNTIME.getBusinessUnitEvaluations(state), PRODUCTS, Boolean(founding.unlocked && state.businessUnits && state.businessUnits.enabled));
     const board = getShareholderBoard();
     const shareholderHtml = founding.unlocked ? INSIGHTS_RENDERER.getShareholderBoardHtml(board, SHAREHOLDER_RUNTIME.getRating(board.satisfaction)) : "";
-    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml + shareholderHtml;
+    const market = COMPETITION_RUNTIME.normalize(state.competition);
+    const marketShare = COMPETITION_RUNTIME.getShare(market, getTotalProductMrr());
+    const marketHtml = founding.unlocked ? '<section class="competition-market-panel"><div class="section-heading"><h2>業界シェア</h2><span>目標 60%</span></div><strong class="market-share-value">' + marketShare.toFixed(1) + '%</strong><div class="market-share-track" role="progressbar" aria-label="自社の業界シェア" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + marketShare.toFixed(1) + '"><span style="width:' + marketShare + '%"></span></div><p>株式会社ホワイトAI：推定MRR ¥' + Math.round(market.competitorMrr).toLocaleString("ja-JP") + '/月</p><p>市場評価：' + escapeHtml(COMPETITION_RUNTIME.getRating(marketShare)) + ' / 目標まで ' + Math.max(0, 60 - marketShare).toFixed(1) + 'pt</p></section>' : "";
+    panel.innerHTML = insightsHtml + foundingHtml + businessUnitHtml + shareholderHtml + marketHtml;
 
   }
 
@@ -1728,28 +1731,40 @@
   function rejectBoardDividend() {
     adjustShareholderSatisfaction(-3, "配当を見送り成長投資を優先", "boss");
   }
+  function applyWhiteAiMarketEvent(eventId) {
+    state.competition = COMPETITION_RUNTIME.applyCompetitorEvent(state.competition, eventId);
+    const share = COMPETITION_RUNTIME.getShare(state.competition, getTotalProductMrr());
+    state.competition.lastShare = share;
+    state.competition.lastCompetitorMrr = state.competition.competitorMrr;
+  }
   function approveWhiteAiPriceWar(context) {
+    applyWhiteAiMarketEvent("whiteai_price_war");
     decisionAddAwareness(context.product, 10);
     decisionAddGlobalFire(2);
     addLog("fire", "株式会社ホワイトAIが勤怠SaaSの価格を引き下げました。Buzz-03は「価格比較の投稿が伸びています」と報告しています。", "sales02");
   }
   function rejectWhiteAiPriceWar() {
+    applyWhiteAiMarketEvent("whiteai_price_war");
     addLog("normal", "ホワイトAIの値下げには追随せず、機能と品質で差別化する方針を選びました。", "boss");
   }
   function approveWhiteAiEnterprise(context) {
+    applyWhiteAiMarketEvent("whiteai_enterprise_contract");
     decisionAddAwareness(context.product, 15);
     decisionAddGlobalFire(3);
     addLog("fire", "ホワイトAIが大企業との大型契約を発表。Buzz-03は競合ニュースを自社キャンペーンへ転用しました。", "buzz03");
   }
   function rejectWhiteAiEnterprise() {
+    applyWhiteAiMarketEvent("whiteai_enterprise_contract");
     addLog("normal", "ホワイトAIの大型契約を静観しました。営業チームは自社案件に集中します。", "boss");
   }
   function approveWhiteAiDataIncident(context) {
+    applyWhiteAiMarketEvent("whiteai_data_incident");
     decisionAddAwareness(context.product, 8);
     adjustShareholderSatisfaction(1, "適正な比較広告を実施", "security06");
     addLog("support", "Security-06はホワイトAIの情報管理事故を確認しました。未確認情報を使わず、自社の監査実績だけを比較資料に掲載しました。", "security06");
   }
   function rejectWhiteAiDataIncident() {
+    applyWhiteAiMarketEvent("whiteai_data_incident");
     addLog("normal", "競合の事故を利用せず、自社の品質改善を続けます。", "boss");
   }
 
@@ -1890,7 +1905,7 @@
 
   function decisionAddCost(amount) {
     const financeLevel = Math.max(0, safeNumber(state.employees && state.employees.finance07, 0));
-    const value = Math.max(0, Math.ceil(Math.max(0, safeNumber(amount, 0)) * Math.max(0.7, 1 - financeLevel * 0.03)));
+    const value = COMPETITION_RUNTIME.calculateDecisionCost(amount, financeLevel);
     const paid = Math.min(state.money, value);
     const shortfall = Math.max(0, value - paid);
     state.money = Math.max(0, state.money - value);
