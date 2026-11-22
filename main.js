@@ -76,6 +76,7 @@
   const WORKER_TASK_PROFILES = readExternalData("AIBS_WORKER_TASK_PROFILES", {});
   const OPERATIONS_RUNTIME = readExternalFactory("AIBS_CREATE_OPERATIONS_RUNTIME")({ strategies: STRATEGIES, synergies: PRODUCT_SYNERGIES, relationships: AI_RELATIONSHIPS, products: PRODUCTS, tasks: TASKS, businessUnits: BUSINESS_UNITS });
   const SHAREHOLDER_RUNTIME = readExternalFactory("AIBS_CREATE_SHAREHOLDER_RUNTIME")({ clamp: clamp });
+  const COMPETITION_RUNTIME = readExternalFactory("AIBS_CREATE_COMPETITION_RUNTIME")({ clamp: clamp });
   const ASSIGNMENT_RUNTIME = readExternalFactory("AIBS_CREATE_ASSIGNMENT_RUNTIME")({
     tasks: TASKS,
     products: PRODUCTS,
@@ -208,7 +209,10 @@
       board_customer_protection: { approve: approveBoardCustomerProtection, reject: rejectBoardCustomerProtection },
       board_brand_campaign: { approve: approveBoardBrandCampaign, reject: rejectBoardBrandCampaign },
       board_crisis_response: { approve: approveBoardCrisisResponse, reject: rejectBoardCrisisResponse },
-      board_dividend: { approve: approveBoardDividend, reject: rejectBoardDividend }
+      board_dividend: { approve: approveBoardDividend, reject: rejectBoardDividend },
+      whiteai_price_war: { approve: approveWhiteAiPriceWar, reject: rejectWhiteAiPriceWar },
+      whiteai_enterprise_contract: { approve: approveWhiteAiEnterprise, reject: rejectWhiteAiEnterprise },
+      whiteai_data_incident: { approve: approveWhiteAiDataIncident, reject: rejectWhiteAiDataIncident }
     }
   });
   const selectDecisionEventCandidate = DECISION_RUNTIME.selectDecisionEventCandidate;
@@ -718,6 +722,21 @@
   function applyBaseContractWork() {
     applyRecurringRevenue();
     advanceOperationsState();
+    updateCompetitionMarket();
+  }
+
+  function updateCompetitionMarket() {
+    if (!state.secondFounding || !state.secondFounding.unlocked) return;
+    const financeLevel = Math.max(0, safeNumber(state.employees && state.employees.finance07, 0));
+    const result = COMPETITION_RUNTIME.tick(state.competition, getTotalProductMrr(), financeLevel);
+    state.competition = result.state;
+    if (result.reviewed) {
+      const previous = Number(state.competition.lastShare) || 0;
+      if (result.share >= 60 && previous < 60) addLog("success", "業界シェア60%を達成しました。AI社長は「市場の主役」と発表し、Finance-07は計算根拠を求めています。", "boss");
+      else if (result.delta >= 1) addLog("success", "市場シェアが" + result.share.toFixed(1) + "%へ上昇。株式会社ホワイトAIとの差が縮まりました。", "sales02");
+      else if (result.delta <= -1) addLog("fire", "株式会社ホワイトAIが成長し、自社シェアは" + result.share.toFixed(1) + "%へ低下。Buzz-03は「話題の奪還」を提案しています。", "buzz03");
+      else addLog("normal", "市場調査更新：株式会社ホワイトAIの推定MRRは¥" + Math.round(result.state.competitorMrr).toLocaleString("ja-JP") + "/月、自社シェアは" + result.share.toFixed(1) + "%。", "finance07");
+    }
   }
 
   function advanceOperationsState() {
@@ -1709,6 +1728,31 @@
   function rejectBoardDividend() {
     adjustShareholderSatisfaction(-3, "配当を見送り成長投資を優先", "boss");
   }
+  function approveWhiteAiPriceWar(context) {
+    decisionAddAwareness(context.product, 10);
+    decisionAddGlobalFire(2);
+    addLog("fire", "株式会社ホワイトAIが勤怠SaaSの価格を引き下げました。Buzz-03は「価格比較の投稿が伸びています」と報告しています。", "sales02");
+  }
+  function rejectWhiteAiPriceWar() {
+    addLog("normal", "ホワイトAIの値下げには追随せず、機能と品質で差別化する方針を選びました。", "boss");
+  }
+  function approveWhiteAiEnterprise(context) {
+    decisionAddAwareness(context.product, 15);
+    decisionAddGlobalFire(3);
+    addLog("fire", "ホワイトAIが大企業との大型契約を発表。Buzz-03は競合ニュースを自社キャンペーンへ転用しました。", "buzz03");
+  }
+  function rejectWhiteAiEnterprise() {
+    addLog("normal", "ホワイトAIの大型契約を静観しました。営業チームは自社案件に集中します。", "boss");
+  }
+  function approveWhiteAiDataIncident(context) {
+    decisionAddAwareness(context.product, 8);
+    adjustShareholderSatisfaction(1, "適正な比較広告を実施", "security06");
+    addLog("support", "Security-06はホワイトAIの情報管理事故を確認しました。未確認情報を使わず、自社の監査実績だけを比較資料に掲載しました。", "security06");
+  }
+  function rejectWhiteAiDataIncident() {
+    addLog("normal", "競合の事故を利用せず、自社の品質改善を続けます。", "boss");
+  }
+
 
   function updateSecondFoundingProgress() {
     if (!state.secondFounding || !state.secondFounding.unlocked) return;
@@ -1748,6 +1792,9 @@
     const candidates = [];
     if (canStartSecondFounding()) candidates.push({ id: "second_founding_board", productId: PRODUCTS[0].id, priority: 180 });
     if (state.secondFounding && state.secondFounding.unlocked) {
+      candidates.push({ id: "whiteai_price_war", productId: getPrimaryProductDefinition().id, priority: 34 });
+      candidates.push({ id: "whiteai_enterprise_contract", productId: getPrimaryProductDefinition().id, priority: 30 });
+      candidates.push({ id: "whiteai_data_incident", productId: getPrimaryProductDefinition().id, priority: 24 });
       const board = getShareholderBoard();
       const boardProduct = getPrimaryProductDefinition().id;
       if (isWorkerAvailable("sales02", state.employees)) candidates.push({ id: "board_sales_growth", productId: boardProduct, priority: 46 });
@@ -1842,7 +1889,8 @@
   }
 
   function decisionAddCost(amount) {
-    const value = Math.max(0, safeNumber(amount, 0));
+    const financeLevel = Math.max(0, safeNumber(state.employees && state.employees.finance07, 0));
+    const value = Math.max(0, Math.ceil(Math.max(0, safeNumber(amount, 0)) * Math.max(0.7, 1 - financeLevel * 0.03)));
     const paid = Math.min(state.money, value);
     const shortfall = Math.max(0, value - paid);
     state.money = Math.max(0, state.money - value);
