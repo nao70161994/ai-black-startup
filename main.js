@@ -1571,13 +1571,20 @@
   }
 
   // === Decision Event Runtime ===
+  function getExistingMissionCompletion(missionId) {
+    const mission = MISSION_STAGES.reduce(function (found, stage) {
+      return found || stage.missions.find(function (item) { return item.id === missionId; });
+    }, null);
+    return Boolean(mission && mission.done());
+  }
+
   function getSecondFoundingRequirements() {
-    const subscriptions = PRODUCTS.filter(function (definition) { return definition.type === "subscription"; });
+    const allAiHired = ACHIEVEMENTS.find(function (achievement) { return achievement.id === "all_ai_hired"; });
     return {
-      level: state.companyLevel >= 10,
-      mrr: getTotalProductMrr() >= 1000000,
-      versions: subscriptions.length > 0 && subscriptions.every(function (definition) { return getProductVersion(getProduct(definition.id)) >= 5; }),
-      employees: EMPLOYEES.length === 6 && EMPLOYEES.every(function (employee) { return (state.employees[employee.id] || 0) > 0; })
+      level: getExistingMissionCompletion("company_level_10_mission"),
+      mrr: getExistingMissionCompletion("total_mrr_1m_mission"),
+      versions: getExistingMissionCompletion("subscription_v5_mission"),
+      employees: Boolean(allAiHired && allAiHired.done())
     };
   }
 
