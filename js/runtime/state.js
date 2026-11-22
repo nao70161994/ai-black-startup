@@ -116,6 +116,8 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       businessUnits: { enabled: true },
       shareholderBoard: { satisfaction: 50, reviewSeconds: 0, lastMrr: 0, dividendsPaid: 0, qualityInvestments: 0, meetingsHeld: 0 },
       competition: { competitorMrr: 250000, reviewSeconds: 0, lastShare: 0, lastCompetitorMrr: 0, eventsSeen: 0 },
+      acquisitions: [],
+      endingCompleted: false,
       lastSavedAt: Date.now()
     };
     initialLogs.slice().reverse().forEach(function (text, index) {
@@ -342,6 +344,8 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       businessUnits: { enabled: !(saved.businessUnits && saved.businessUnits.enabled === false) },
       shareholderBoard: normalizeShareholderBoard(saved.shareholderBoard),
       competition: normalizeCompetition(saved.competition),
+      acquisitions: normalizeAcquisitions(saved.acquisitions),
+      endingCompleted: saved.endingCompleted === true,
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     const legacyBugLevel = clamp(safeNumber(saved.legacyGlobalBugs, 0), 0, 100);
