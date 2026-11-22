@@ -25,9 +25,9 @@ const original = {
 };
 const migrated = runtime.migrateData(original).data;
 assert.strictEqual(migrated.schemaVersion, 4);
-assert.deepStrictEqual(migrated.secondFounding, { unlocked: false, stage: 0 });
+assert.strictEqual(JSON.stringify(migrated.secondFounding), JSON.stringify({ unlocked: false, stage: 0 }));
 for (const key of ['companyLevel', 'money', 'totalMoney', 'fire', 'employees', 'products', 'achievements', 'logs']) {
-  assert.deepStrictEqual(migrated[key], original[key], key + ' must be preserved');
+  assert.strictEqual(JSON.stringify(migrated[key]), JSON.stringify(original[key]), key + ' must be preserved');
 }
 """.replace(/\n/g, "\n"))
 
@@ -55,7 +55,7 @@ const runtime = window.AIBS_CREATE_STATE_RUNTIME({
   recalculateProductMrr: product => { product.mrr = product.customers * 500; },
   getStrategy: id => ({ id: id || 'balanced' }), normalizeHistory: value => value || []
 });
-assert.deepStrictEqual(runtime.createInitialState().secondFounding, { unlocked: false, stage: 0 });
+assert.strictEqual(JSON.stringify(runtime.createInitialState().secondFounding), JSON.stringify({ unlocked: false, stage: 0 }));
 """.replace(/\n/g, "\n"))
 
 
@@ -100,5 +100,5 @@ assert.strictEqual(normalized.products.dailyReportAi.version, 5);
 assert.strictEqual(normalized.employees.security06, 1);
 assert.strictEqual(normalized.achievements.first_customer.unlocked, true);
 assert.strictEqual(normalized.logs[0].text, '既存ログ');
-assert.deepStrictEqual(normalized.secondFounding, { unlocked: false, stage: 0 });
+assert.strictEqual(JSON.stringify(normalized.secondFounding), JSON.stringify({ unlocked: false, stage: 0 }));
 """.replace(/\n/g, "\n"))
