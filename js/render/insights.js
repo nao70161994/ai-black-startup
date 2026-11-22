@@ -64,5 +64,31 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
       '<details class="operations-bonuses synergy-summary"><summary>現在の連携効果</summary><ul>' + synergyHtml + relationshipHtml + '</ul></details>';
   }
 
-  return { getHistoryHtml: getHistoryHtml, getStrategyHtml: getStrategyHtml };
+  function getBusinessUnitsHtml(evaluations, products, enabled) {
+    const definitions = Array.isArray(products) ? products : [];
+    const units = Array.isArray(evaluations) ? evaluations : [];
+    const cards = units.map(function (unit) {
+      const productNames = unit.productIds.map(function (id) {
+        const definition = definitions.find(function (product) { return product.id === id; });
+        return definition ? definition.name : id;
+      });
+      const metrics = unit.metrics || {};
+      const bonus = Math.round((Number(unit.bonus) || 0) * 100);
+      return '<article class="business-unit-card">' +
+        '<div class="business-unit-heading"><div><span class="section-kicker">BUSINESS UNIT</span><h3>' + escapeHtml(unit.name) + '</h3></div><strong class="business-unit-grade grade-' + escapeHtml(unit.grade) + '">' + escapeHtml(unit.grade) + '</strong></div>' +
+        '<p>' + escapeHtml(unit.description) + '</p>' +
+        '<div class="business-unit-score"><strong>' + escapeHtml(String(unit.score)) + '<small> / 100</small></strong><span>' + (enabled ? '業務効率 +' + bonus + '%' : '第二創業解放後にボーナス適用') + '</span></div>' +
+        '<div class="business-unit-metrics">' +
+        '<span>売上 <b>' + escapeHtml(String(metrics.sales || 0)) + '</b></span>' +
+        '<span>品質 <b>' + escapeHtml(String(metrics.quality || 0)) + '</b></span>' +
+        '<span>顧客満足度 <b>' + escapeHtml(String(metrics.satisfaction || 0)) + '</b></span>' +
+        '<span>炎上安全度 <b>' + escapeHtml(String(metrics.fireSafety || 0)) + '</b></span>' +
+        '</div><p class="business-unit-products">担当製品：' + escapeHtml(productNames.join(' / ')) + '</p></article>';
+    }).join('');
+    return '<section class="business-units-panel"><div class="section-heading"><h2>事業部評価</h2><span>' + (enabled ? '第二創業・稼働中' : '第二創業解放後に有効') + '</span></div>' +
+      '<p class="dashboard-summary">売上40%・品質20%・顧客満足度20%・炎上安全度20%で評価。B: +3% / A: +6% / S: +10%の業務効率ボーナス。</p>' +
+      '<div class="business-unit-grid">' + cards + '</div></section>';
+  }
+
+  return { getHistoryHtml: getHistoryHtml, getStrategyHtml: getStrategyHtml, getBusinessUnitsHtml: getBusinessUnitsHtml };
 };

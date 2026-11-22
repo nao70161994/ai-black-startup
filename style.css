@@ -1,4 +1,4 @@
-/* AI Black Startup — command-center interface v2026.11.22.1 */
+/* AI Black Startup — command-center interface v2026.11.22.2 */
 :root {
   color-scheme: dark;
   --bg-0: #030811;
@@ -882,3 +882,26 @@ body:not([data-page="home"]) .page-location { min-height: 82px; padding-top: 16p
 .second-founding-panel > strong { display: block; margin: 12px 0; color: var(--accent); }
 .second-founding-panel ol, .second-founding-requirements { display: grid; gap: 7px; margin: 12px 0 0; padding-left: 22px; color: var(--muted); }
 .second-founding-requirements li.done { color: var(--good); }
+
+
+/* Business unit ratings */
+.business-units-panel { margin-top: 18px; }
+.business-unit-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.business-unit-card { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(12,29,43,.72); }
+.business-unit-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.business-unit-heading h3 { margin: 4px 0; font-size: 16px; }
+.business-unit-grade { display:grid; place-items:center; width:42px; height:42px; border:1px solid var(--line-strong); border-radius:50%; font-size:20px; }
+.business-unit-grade.grade-S, .business-unit-grade.grade-A { color:var(--good); }
+.business-unit-grade.grade-B { color:var(--accent); }
+.business-unit-grade.grade-C { color:var(--warn); }
+.business-unit-grade.grade-D { color:var(--danger); }
+.business-unit-card > p { color:var(--muted); font-size:13px; line-height:1.6; }
+.business-unit-score { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:12px 0; }
+.business-unit-score > strong { font-size:26px; }
+.business-unit-score small { font-size:12px; color:var(--muted); }
+.business-unit-score > span { color:var(--good); font-size:13px; }
+.business-unit-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.business-unit-metrics span { display:flex; justify-content:space-between; padding:7px; border-radius:8px; background:rgba(255,255,255,.04); color:var(--muted); font-size:12px; }
+.business-unit-metrics b { color:var(--text); }
+.business-unit-products { border-top:1px solid var(--line); padding-top:9px; }
+@media (max-width:959px) { .business-unit-grid { grid-template-columns:1fr; } }

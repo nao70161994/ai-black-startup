@@ -113,6 +113,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       playtestStageId: missionStages[0] ? missionStages[0].id : "",
       playtestStageEnteredAt: 0,
       secondFounding: { unlocked: false, stage: 0 },
+      businessUnits: { enabled: true },
       lastSavedAt: Date.now()
     };
     initialLogs.slice().reverse().forEach(function (text, index) {
@@ -306,6 +307,7 @@ window.AIBS_CREATE_STATE_RUNTIME = function (options) {
       playtestStageId: missionStages.some(function (stage) { return stage.id === saved.playtestStageId; }) ? saved.playtestStageId : "",
       playtestStageEnteredAt: Math.max(0, Math.floor(safeNumber(saved.playtestStageEnteredAt, 0))),
       secondFounding: normalizeSecondFounding(saved.secondFounding),
+      businessUnits: { enabled: !(saved.businessUnits && saved.businessUnits.enabled === false) },
       lastSavedAt: safeNumber(saved.lastSavedAt, Date.now())
     };
     const legacyBugLevel = clamp(safeNumber(saved.legacyGlobalBugs, 0), 0, 100);

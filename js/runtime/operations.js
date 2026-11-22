@@ -7,6 +7,7 @@ window.AIBS_CREATE_OPERATIONS_RUNTIME = function (options) {
   const relationships = Array.isArray(settings.relationships) ? settings.relationships : [];
   const products = Array.isArray(settings.products) ? settings.products : [];
   const tasks = Array.isArray(settings.tasks) ? settings.tasks : [];
+  const businessUnits = Array.isArray(settings.businessUnits) ? settings.businessUnits : [];
   const defaults = { development: 1, bugGeneration: 1, qa: 1, marketing: 1, fireGeneration: 1, sales: 1, support: 1, crisis: 1, churnPressure: 1, revenue: 1 };
 
   function getStrategy(strategyId) {
@@ -54,6 +55,55 @@ window.AIBS_CREATE_OPERATIONS_RUNTIME = function (options) {
     });
   }
 
+  function getBusinessUnitEvaluations(state) {
+    const enabled = Boolean(state && state.secondFounding && state.secondFounding.unlocked && state.businessUnits && state.businessUnits.enabled);
+    return businessUnits.map(function (unit) {
+      const definitions = unit.productIds.map(function (productId) {
+        return products.find(function (definition) { return definition.id === productId; });
+      }).filter(Boolean);
+      const records = definitions.map(function (definition) {
+        return state.products && state.products[definition.id] || {};
+      });
+      const salesValue = definitions.reduce(function (sum, definition, index) {
+        const product = records[index];
+        return sum + (definition.type === "subscription"
+          ? Math.max(0, Number(product.mrr) || 0)
+          : Math.max(0, Number(product.lifetimeRevenue) || 0));
+      }, 0);
+      const salesScore = Math.max(0, Math.min(100, salesValue / 50000 * 100));
+      const average = function (key, fallback) {
+        if (!records.length) return fallback;
+        return records.reduce(function (sum, product) {
+          return sum + Math.max(0, Math.min(100, Number(product[key]) || 0));
+        }, 0) / records.length;
+      };
+      const quality = average("quality", 0);
+      const satisfaction = average("satisfaction", 0);
+      const fireRisk = 100 - average("productFire", 0);
+      const score = Math.round(salesScore * 0.4 + quality * 0.2 + satisfaction * 0.2 + fireRisk * 0.2);
+      const grade = score >= 90 ? "S" : score >= 80 ? "A" : score >= 65 ? "B" : score >= 50 ? "C" : "D";
+      const bonus = enabled ? ({ S: 0.10, A: 0.06, B: 0.03 }[grade] || 0) : 0;
+      return {
+        id: unit.id, name: unit.name, description: unit.description,
+        productIds: unit.productIds.slice(), enabled: enabled,
+        score: score, grade: grade, bonus: bonus,
+        metrics: { sales: Math.round(salesScore), quality: Math.round(quality), satisfaction: Math.round(satisfaction), fireSafety: Math.round(fireRisk) }
+      };
+    });
+  }
+
+  function getBusinessUnitForProduct(productId) {
+    return businessUnits.find(function (unit) { return unit.productIds.indexOf(productId) !== -1; }) || null;
+  }
+
+  function getBusinessUnitBonus(state, targetDefinition) {
+    if (!targetDefinition) return 0;
+    const unit = getBusinessUnitForProduct(targetDefinition.id);
+    if (!unit) return 0;
+    const evaluation = getBusinessUnitEvaluations(state).find(function (item) { return item.id === unit.id; });
+    return evaluation ? evaluation.bonus : 0;
+  }
+
   function getModifiers(state, targetDefinition) {
     const modifiers = Object.assign({}, defaults);
     multiplyModifiers(modifiers, getStrategy(state.strategyId).modifiers);
@@ -69,6 +119,12 @@ window.AIBS_CREATE_OPERATIONS_RUNTIME = function (options) {
       getActiveRelationships(state, targetDefinition.id).forEach(function (relationship) {
         multiplyModifiers(modifiers, relationship.modifiers);
       });
+      const businessUnitBonus = getBusinessUnitBonus(state, targetDefinition);
+      if (businessUnitBonus > 0) {
+        ["development", "qa", "sales", "marketing", "support", "crisis"].forEach(function (key) {
+          modifiers[key] *= 1 + businessUnitBonus;
+        });
+      }
     }
     return modifiers;
   }
@@ -155,6 +211,9 @@ window.AIBS_CREATE_OPERATIONS_RUNTIME = function (options) {
   return {
     getStrategy: getStrategy,
     getModifiers: getModifiers,
+    getBusinessUnitEvaluations: getBusinessUnitEvaluations,
+    getBusinessUnitForProduct: getBusinessUnitForProduct,
+    getBusinessUnitBonus: getBusinessUnitBonus,
     getActiveSynergies: getActiveSynergies,
     getActiveRelationships: getActiveRelationships,
     getAllActiveRelationships: getAllActiveRelationships,
