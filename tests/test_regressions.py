@@ -3404,7 +3404,7 @@ def test_v04_achievement_expansions_and_category_group_rendering():
     assert ".achievement-category-group" in css
 
     output = run_game_action_smoke({
-        "employees": {"dev01": 5, "sales02": 5, "buzz03": 5, "care04": 5, "fire05": 5, "security06": 5, "finance07": 5},
+        "employees": {"dev01": 5, "sales02": 5, "buzz03": 5, "care04": 5, "fire05": 5, "security06": 5, "finance07": 5, "legal08": 5},
         "decisionStats": {"approved": 25, "rejected": 25},
         "products": {
             "dailyReportAi": {"id": "dailyReportAi", "status": "selling", "customers": 500, "version": 5, "satisfaction": 92, "quality": 96, "awareness": 100, "productFire": 85},
@@ -4740,7 +4740,7 @@ def test_guided_experience_covers_all_eight_uiux_requirements():
     assert 'personality:' in employees and 'catchphrase:' in employees
     assert 'getWorkerRelationshipSummary(workerId)' in main
     assert '<strong>性格</strong>' in main and '<strong>相性</strong>' in main
-    assert characters.count('dialogue: [') == 7
+    assert characters.count('dialogue: [') == 8
 
 
 def test_tutorial_stage_is_derived_from_real_hire_assignment_and_revenue_state():
@@ -4851,7 +4851,7 @@ def test_imported_free_text_collections_are_bounded_and_normalized():
     assert len(saved["storyEvent"]["text"]) == 500
     assert len(saved["storyEvent"]["impact"]) == 240
     assert saved["storyEvent"]["characterId"] == "boss"
-    assert set(saved["employees"]) == {"dev01", "sales02", "buzz03", "care04", "fire05", "security06", "finance07"}
+    assert set(saved["employees"]) == {"dev01", "sales02", "buzz03", "care04", "fire05", "security06", "finance07", "legal08"}
     assert set(saved["decisionThreads"]) == {"sales_contract"}
     assert saved["relationshipFlags"] == {"valid_flag": True}
 
