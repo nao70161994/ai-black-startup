@@ -90,5 +90,21 @@ window.AIBS_CREATE_INSIGHTS_RENDERER = function (options) {
       '<div class="business-unit-grid">' + cards + '</div></section>';
   }
 
-  return { getHistoryHtml: getHistoryHtml, getStrategyHtml: getStrategyHtml, getBusinessUnitsHtml: getBusinessUnitsHtml };
+  function getShareholderBoardHtml(board, rating) {
+    const value = board && typeof board === "object" ? board : {};
+    const satisfaction = Math.max(0, Math.min(100, Math.round(Number(value.satisfaction) || 0)));
+    const progress = satisfaction + "%";
+    return '<section class="shareholder-board-panel">' +
+      '<div class="section-heading"><h2>株主・取締役会</h2><span>株主満足度 ' + satisfaction + '/100</span></div>' +
+      '<div class="shareholder-board-score"><strong>' + satisfaction + '<small> / 100</small></strong><span>' + escapeHtml(rating || "慎重") + '</span></div>' +
+      '<div class="shareholder-board-meter" role="meter" aria-label="株主満足度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + satisfaction + '"><span style="width:' + progress + '"></span></div>' +
+      '<p>定期レビュー：30秒ごと。MRRの成長、全社炎上、全製品の平均品質を評価します。</p>' +
+      '<div class="shareholder-board-stats"><span>累計配当 <b>' + escapeHtml(String(Math.round(Number(value.dividendsPaid) || 0))) + '円</b></span>' +
+      '<span>品質投資 <b>' + escapeHtml(String(Number(value.qualityInvestments) || 0)) + '回</b></span>' +
+      '<span>取締役会レビュー <b>' + escapeHtml(String(Number(value.meetingsHeld) || 0)) + '回</b></span></div>' +
+      '<p class="shareholder-board-note">株主満足度は20未満で危機、20〜39で不満、40〜59で慎重、60〜79で概ね良好、80以上で安定。</p>' +
+      '</section>';
+  }
+
+  return { getHistoryHtml: getHistoryHtml, getStrategyHtml: getStrategyHtml, getBusinessUnitsHtml: getBusinessUnitsHtml, getShareholderBoardHtml: getShareholderBoardHtml };
 };
