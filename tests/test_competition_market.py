@@ -118,6 +118,7 @@ const vm = require("vm");
 const window = {};
 vm.runInNewContext(fs.readFileSync("js/data/products.js", "utf8"), { window });
 vm.runInNewContext(fs.readFileSync("js/data/employees.js", "utf8"), { window });
+vm.runInNewContext(fs.readFileSync("js/data/tasks.js", "utf8"), { window });
 const product = window.AIBS_PRODUCTS.find(item => item.id === "attendanceMonitorAi");
 assert.ok(product);
 assert.strictEqual(product.type, "subscription");
@@ -128,5 +129,5 @@ assert.strictEqual(finance.code, "Finance-07");
 assert.strictEqual(finance.nickname, "ファイナナ");
 assert.strictEqual(finance.unlockLevel, 10);
 assert.ok(window.AIBS_WORKER_TASK_PROFILES.finance07);
-assert.strictEqual(window.AIBS_TASKS, undefined);
+assert.strictEqual(window.AIBS_TASKS.length, 6);
 """)
