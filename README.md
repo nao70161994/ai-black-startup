@@ -242,7 +242,7 @@ python3 -m http.server 8000
 その後、ブラウザで以下を開きます。
 
 ```text
-http://localhost:8000/?v=20261122-4
+http://localhost:8000/?v=20261123-1
 ```
 
 PCで確認する場合は `http://localhost:8000` でも起動できます。実機確認では、同一ネットワーク上の端末からPCのローカルIPを使ってアクセスします。PWA/Service Workerの確認は `file://` ではなく、GitHub PagesまたはHTTP(S)配信で行ってください。
@@ -315,18 +315,18 @@ schema 0/1/2/3の旧データは起動時にschema 4へ順番に移行します�
 
 ## キャッシュ更新仕様
 
-現在のアプリバージョンは `2026.11.22.4` です。
+現在のアプリバージョンは `2026.11.23.1` です。
 
 `manifest.webmanifest` により、スマホではホーム画面追加時にアプリらしい表示で起動できます。表示モードは `standalone`、テーマカラーと起動背景はコマンドセンターに合わせた濃紺です。
 
 `index.html` ではCSS/JSにcache busting用のクエリを付けています。
 
 ```html
-<link rel="stylesheet" href="style.css?v=20261122-4">
-<script src="js/data/products.js?v=20261122-4"></script>
-<script src="js/data/achievements.js?v=20261122-4"></script>
-<script src="js/data/missions.js?v=20261122-4"></script>
-<script src="main.js?v=20261122-4"></script>
+<link rel="stylesheet" href="style.css?v=20261123-1">
+<script src="js/data/products.js?v=20261123-1"></script>
+<script src="js/data/achievements.js?v=20261123-1"></script>
+<script src="js/data/missions.js?v=20261123-1"></script>
+<script src="main.js?v=20261123-1"></script>
 ```
 
 `js/data/` 配下の定義ファイルも同じバージョンで読み込み、Service Workerのキャッシュ対象に含めます。
@@ -334,18 +334,18 @@ schema 0/1/2/3の旧データは起動時にschema 4へ順番に移行します�
 Service Workerも同じバージョンのキャッシュ名を使います。
 
 ```text
-ai-black-startup-2026.11.22.4
+ai-black-startup-2026.11.23.1
 ```
 
 `sw.js` はインストール時に `skipWaiting()` を呼び、アクティベート時に古いキャッシュを削除して `clients.claim()` を実行します。これにより、PWA/ブラウザキャッシュで古いJSを読み続け、新しいAI社員や新機能が表示されない事故を減らします。`Cache-Control` metaはHTTPヘッダの完全な代替ではないため、公開時はcache bustingとService Worker更新を中心に確認します。
 
 キャッシュが残る場合の対処:
 
-- URLに `?v=20261122-4` を付けて開く
+- URLに `?v=20261123-1` を付けて開く
 - ブラウザで強制リロードする
 - PWAとして追加している場合は一度ホーム画面から削除して追加し直す
 - ブラウザのサイトデータまたはキャッシュストレージを削除する
-- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20261122-4` を直接開く
+- それでも古い画面が残る場合は、ブラウザで `https://nao70161994.github.io/ai-black-startup/?v=20261123-1` を直接開く
 - 開発中はDevToolsのApplicationタブでService WorkerとCache Storageを削除する
 
 ## テスト方法
@@ -447,7 +447,7 @@ factoryへ渡すcontextはgetterを使用するため、save importやslot load�
 最新状態を描画します。ゲーム操作と保存はcontroller/runtimeが引き続き管理します。
 
 
-## モジュールの責務と再レビュー（2026.11.22.4）
+## モジュールの責務と再レビュー（2026.11.23.1）
 
 - `main.js`: 起動、操作コマンド、状態の接続。セーブの置換後も各モジュールはlive getterから現在状態を読みます。
 - `js/runtime/product-tasks.js`: 開発・品質・販売・顧客運用・製品収益の計算。DOM、タイマー、保存は直接扱いません。
@@ -499,7 +499,7 @@ schemaVersionは4のままです。Phase 1/2のschema 4セーブには `sharehol
 
 保存スキーマはschemaVersion 4のままです。Phase 1のschema 4セーブには `businessUnits.enabled` を既定値で補完し、会社Lv、製品、社員、売上、炎上、第二創業stage、実績、ログを保持します。新しいschema migrationは不要です。
 
-## 2026.11.22.4 — 判断しやすさとプレイ体験の改善
+## 2026.11.23.1 — 判断しやすさとプレイ体験の改善
 
 - オフィスの「売上」は所持金を示す「資金」へ修正。毎秒収入、月額収入（MRR）、売り切り累計を区別し、300秒＝ゲーム内1か月の換算を説明します。
 - 製品概要の開発バーも必要開発量から百分率を計算します。「注力製品」は月額収入トップ／開発中から自動選択し、ユーザーが固定できます。累計ベストセラーは別表示です。固定は端末内の表示設定で、schema 3のゲームセーブや計算には影響しません。
@@ -516,3 +516,12 @@ schemaVersionは4のままです。Phase 1/2のschema 4セーブには `sharehol
 Android/iOS実機のPWAインストールとOS共有、長期プレイの面白さは別途実機・ユーザープレイテストが必要です。
 
 このリリースの回帰CIは全て合格し、pytest は 310 passed でした。
+
+## 第二創業編 Phase 5（最終フェーズ）
+
+- **Legal-08 / リーガルエイト**：会社Lv10で解放する法務・コンプライアンス専任アドバイザー。Finance-07と同様に製品タスクには配置せず、雇用・強化で買収費用をLvごとに2%（最大20%）軽減し、未審査買収の炎上ペナルティを回避します。
+- **M&A**：第二創業解放後、経営画面の企業買収パネルから4社を買収できます。会社資金から買収額を一度だけ支出し、対象会社のMRRを総MRR・継続収入・業界シェアに反映します。買収済み企業の重複購入と資金不足による購入は不可です。
+- **推定時価総額**：総MRR × 12 × 16 ＋ 手元資金。ゲーム内の評価ルールです。
+- **コンプリート**：業界シェア60%以上・総MRR ¥5,000,000以上・推定時価総額 ¥1,000,000,000以上を同時に達成すると演出が一度発生します。達成フラグは保存され、経営画面のCOMPLETE表示と再演ボタンで確認できます。
+- セーブの `schemaVersion` は **4のまま**。新フィールド `acquisitions` / `endingCompleted` とLegal-08の社員レベルは旧データからdefault-fillで補完します。
+- リリース: `version.json` → `python scripts/release_version.py` → `python scripts/release_version.py --check`。回帰確認: `python -m pytest -q`、`node scripts/evaluate_balance.js --assert`、UIチェック。
