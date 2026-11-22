@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "2026.11.22.1";
-  const APP_ASSET_TOKEN = "20261122-1";
+  const APP_VERSION = "2026.11.22.2";
+  const APP_ASSET_TOKEN = "20261122-2";
   const PUBLIC_URL = "https://nao70161994.github.io/ai-black-startup/";
   const SAVE_KEY = "ai_black_startup_save_v1";
 
@@ -3982,7 +3982,7 @@
         if (window.location && window.location.reload) window.location.reload();
       });
     }
-    navigator.serviceWorker.register("sw.js?v=20261122-1").then(function (registration) {
+    navigator.serviceWorker.register("sw.js?v=20261122-2").then(function (registration) {
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", function () {
         const worker = registration.installing;
