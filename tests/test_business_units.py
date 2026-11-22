@@ -9,6 +9,21 @@ def run_node(source):
     subprocess.run(["node", "-e", source], cwd=ROOT, check=True, capture_output=True, text=True)
 
 
+def test_business_unit_definitions_group_all_five_existing_products_once():
+    run_node(r"""
+const assert = require("assert");
+const fs = require("fs");
+const vm = require("vm");
+const window = {};
+vm.runInNewContext(fs.readFileSync("js/data/products.js", "utf8"), { window });
+vm.runInNewContext(fs.readFileSync("js/data/business-units.js", "utf8"), { window });
+const products = window.AIBS_PRODUCTS.map(product => product.id).sort();
+const grouped = window.AIBS_BUSINESS_UNITS.reduce((all, unit) => all.concat(unit.productIds), []).sort();
+assert.strictEqual(window.AIBS_BUSINESS_UNITS.length, 3);
+assert.deepStrictEqual(grouped, products);
+assert.strictEqual(new Set(grouped).size, 5);
+""")
+
 def test_business_unit_ratings_and_efficiency_bonus_are_calculated_without_revenue_changes():
     run_node(r"""
 const assert = require("assert");
@@ -52,6 +67,31 @@ assert.strictEqual(runtime.getBusinessUnitEvaluations(state)[0].bonus, 0);
 assert.strictEqual(runtime.getModifiers(state, { id: "p1", type: "subscription" }).development, 1);
 """)
 
+def test_business_unit_renderer_shows_grade_and_product_names():
+    run_node(r"""
+const assert = require("assert");
+const fs = require("fs");
+const vm = require("vm");
+const window = {};
+vm.runInNewContext(fs.readFileSync("js/render/insights.js", "utf8"), { window });
+const renderer = window.AIBS_CREATE_INSIGHTS_RENDERER({
+  escapeHtml: value => String(value),
+  formatNumber: value => String(value)
+});
+const html = renderer.getBusinessUnitsHtml([{
+  id: "efficiency", name: "業務効率化事業部", description: "業務自動化",
+  productIds: ["dailyReportAi", "meetingMinutesAi"], score: 88, grade: "A",
+  bonus: 0.06, metrics: { sales: 100, quality: 70, satisfaction: 80, fireSafety: 90 }
+}], [
+  { id: "dailyReportAi", name: "AI日報メーカー" },
+  { id: "meetingMinutesAi", name: "自動議事録AI" }
+], true);
+assert.ok(html.includes("業務効率化事業部"));
+assert.ok(html.includes("AI日報メーカー"));
+assert.ok(html.includes("自動議事録AI"));
+assert.ok(html.includes("業務効率 +6%"));
+assert.ok(html.includes("grade-A"));
+""")
 
 def test_schema_four_save_defaults_business_unit_state_and_preserves_existing_data():
     run_node(r"""
